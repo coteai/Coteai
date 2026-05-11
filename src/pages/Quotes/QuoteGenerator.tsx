@@ -360,37 +360,37 @@ const QuoteGenerator = () => {
 
   const renderStepIcon = (num, icon, label) => (
     <div className="flex flex-col items-center">
-      <div className={`relative w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-[var(--color-surface)] ${
+      <div className={`relative w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-[var(--color-surface)] ${
         step === num ? 'border-white text-white scale-110 shadow-[0_0_20px_rgba(255,255,255,0.25)]' : 
         step > num ? `${theme.colors.border} ${theme.colors.primary}` : 'border-white/10 text-zinc-600'
       }`} style={step > num ? { boxShadow: `0 0 15px ${theme.colors.shadow}` } : {}}>
         <div className={`absolute inset-0 rounded-full ${step === num ? 'bg-white/5' : ''}`} style={step > num ? { backgroundColor: `${theme.colors.glowHex}1A` } : {}}></div>
-        <div className="relative z-10">{step > num ? <CheckCircle2 size={22} className={theme.colors.primary} /> : icon}</div>
+        <div className="relative z-10">{step > num ? <CheckCircle2 size={18} className={theme.colors.primary} /> : icon}</div>
       </div>
-      <span className={`mt-2 text-[10px] font-bold uppercase tracking-widest ${
+      <span className={`mt-1.5 text-[9px] font-bold uppercase tracking-widest ${
         step === num ? 'text-white' : step > num ? theme.colors.primary : 'text-zinc-600'
       }`}>{label}</span>
     </div>
   );
 
   return (
-    <div className="space-y-8 flex flex-col h-full max-w-5xl mx-auto w-full">
+    <div className="space-y-4 md:space-y-8 flex flex-col h-full max-w-5xl mx-auto w-full">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="premium-title text-3xl md:text-4xl uppercase tracking-tighter mb-2">Máquina de Cotação</h1>
-          <p className="text-slate-400">Gere propostas instantâneas. Precisão FIPE total.</p>
+          <h1 className="premium-title text-2xl md:text-4xl uppercase tracking-tighter mb-1">Máquina de Cotação</h1>
+          <p className="text-slate-400 text-sm">Gere propostas instantâneas. Precisão FIPE total.</p>
         </div>
       </div>
 
-      <div className="bg-[var(--color-surface)]/80 backdrop-blur-xl border border-white/5 rounded-2xl px-8 py-5 relative">
+      <div className="bg-[var(--color-surface)]/80 backdrop-blur-xl border border-white/5 rounded-2xl px-4 md:px-8 py-4 md:py-5 relative">
         {/* Progress track */}
-        <div className="absolute top-[42px] left-[10%] right-[10%] h-px bg-white/10 z-0"></div>
-        <div className="absolute top-[42px] left-[10%] h-px z-0 transition-all duration-500" style={{ backgroundColor: theme.colors.glowHex, width: `${([1,'2b',3,4].indexOf(step)) * (80/3)}%` }}></div>
+        <div className="absolute top-[38px] left-[10%] right-[10%] h-px bg-white/10 z-0"></div>
+        <div className="absolute top-[38px] left-[10%] h-px z-0 transition-all duration-500" style={{ backgroundColor: theme.colors.glowHex, width: `${([1,'2b',3,4].indexOf(step)) * (80/3)}%` }}></div>
         <div className="flex justify-between relative z-10">
-          {renderStepIcon(1, <Car size={18} />, "Placa")}
-          {renderStepIcon(2, <ListTree size={18} />, "Versão")}
-          {renderStepIcon(3, <Zap size={18} />, "Preços")}
-          {renderStepIcon(4, <FileText size={18} />, "Resumo")}
+          {renderStepIcon(1, <Car size={16} />, "Placa")}
+          {renderStepIcon(2, <ListTree size={16} />, "Versão")}
+          {renderStepIcon(3, <Zap size={16} />, "Preços")}
+          {renderStepIcon(4, <FileText size={16} />, "Resumo")}
         </div>
       </div>
 
@@ -399,9 +399,9 @@ const QuoteGenerator = () => {
 
           {/* STEP 1: PLACA E TIPO */}
           {step === 1 && (
-            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-12 flex-1 flex flex-col justify-center max-w-2xl mx-auto w-full text-center">
-              <h2 className="premium-title text-3xl uppercase tracking-tighter mb-2">Consulta de Veículo</h2>
-              <p className="text-zinc-500 mb-8">Selecione o tipo e digite a placa.</p>
+            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-5 md:p-12 flex-1 flex flex-col justify-center max-w-2xl mx-auto w-full text-center">
+              <h2 className="premium-title text-2xl md:text-3xl uppercase tracking-tighter mb-2">Consulta de Veículo</h2>
+              <p className="text-zinc-500 text-sm mb-5 md:mb-8">Selecione o tipo e digite a placa.</p>
 
               <div className="flex justify-center mb-8 bg-[#141f38]/80 p-1.5 rounded-2xl border border-white/5 mx-auto max-w-sm">
                 <button onClick={() => setFormData({...formData, tipo_veiculo: 'carro'})} className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl transition-all ${
@@ -455,7 +455,7 @@ const QuoteGenerator = () => {
 
           {/* STEP 2: VERSÕES FIPE */}
           {step === 2 && (
-            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 flex-1 flex flex-col max-w-3xl mx-auto w-full max-h-[80vh]">
+            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-4 md:p-8 flex-1 flex flex-col max-w-3xl mx-auto w-full">
               <div className="flex justify-between items-end mb-6">
                  <div>
                    <h2 className="premium-title text-3xl uppercase tracking-tighter mb-1">Selecione a versão correta</h2>
@@ -548,10 +548,10 @@ const QuoteGenerator = () => {
 
           {/* STEP 3: PREÇO & PLANO */}
           {step === 3 && (
-            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 flex-1 flex flex-col h-full min-h-0">
-              <div className="flex justify-between items-center mb-6">
+            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-4 md:p-8 flex-1 flex flex-col h-full min-h-0">
+              <div className="flex justify-between items-center mb-4 md:mb-6">
                 <div>
-                  <h2 className="premium-title text-3xl uppercase tracking-tighter">Planos Disponíveis</h2>
+                  <h2 className="premium-title text-xl md:text-3xl uppercase tracking-tighter">Planos Disponíveis</h2>
                   <p className="text-zinc-500 flex flex-wrap items-center mt-1 text-sm">
                     <CheckCircle2 className="text-white mr-2 w-4 shrink-0"/>
                     <span className="font-medium mr-2">{formData.modelo}</span> 
