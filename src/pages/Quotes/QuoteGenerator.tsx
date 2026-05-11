@@ -561,41 +561,46 @@ const QuoteGenerator = () => {
                 <button onClick={() => setStep(2)} className="text-zinc-300 text-sm hover:underline font-bold bg-white/5 px-4 py-2 rounded-lg">Trocar Versão</button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 flex-1 overflow-y-auto pb-4 pr-1 min-h-0 items-start content-start">
+              <div className="overflow-y-auto max-h-[55vh] md:max-h-none grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 pr-1 items-start">
                 {availablePlans.map((planPrice) => {
                   const isVip = planPrice.plans?.nome?.toLowerCase().includes('vip');
                   return (
-                    <div key={planPrice.id} className="relative overflow-hidden flex flex-col p-6 rounded-2xl transition-all border border-zinc-800 bg-[#121212] hover:border-zinc-700" style={isVip ? { borderColor: theme.colors.glowHex, boxShadow: `0 0 40px ${theme.colors.shadow}` } : {}}>
-                      {isVip && <div className="absolute top-0 left-1/2 -translate-x-1/2 text-white text-[10px] font-black uppercase tracking-widest px-6 py-1 rounded-b-lg z-20" style={{ backgroundColor: theme.colors.glowHex, boxShadow: `0 0 15px ${theme.colors.shadow}` }}>Recomendado</div>}
+                    <div key={planPrice.id} className="relative flex flex-col rounded-2xl transition-all border border-zinc-800 bg-[#121212] hover:border-zinc-700 overflow-hidden" style={isVip ? { borderColor: theme.colors.glowHex, boxShadow: `0 0 40px ${theme.colors.shadow}` } : {}}>
+                      {/* VIP badge at top - inside card, no overflow */}
+                      {isVip && (
+                        <div className="w-full text-center text-white text-[10px] font-black uppercase tracking-widest px-6 py-1.5 z-10" style={{ backgroundColor: theme.colors.glowHex }}>
+                          ⭐ Recomendado
+                        </div>
+                      )}
                       {isVip && <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full blur-3xl z-0" style={{ backgroundColor: `${theme.colors.glowHex}1A` }}></div>}
-
-                      <div className="mb-4 relative z-10 border-b border-white/5 pb-4 mt-4 text-center">
-                        <h3 className={`text-2xl font-black uppercase tracking-widest ${isVip ? theme.colors.primary : 'text-zinc-200'}`}>
+                      <div className="p-5 flex flex-col flex-1">
+                      <div className="mb-3 relative z-10 border-b border-white/5 pb-3 text-center">
+                        <h3 className={`text-xl font-black uppercase tracking-widest ${isVip ? theme.colors.primary : 'text-zinc-200'}`}>
                           {planPrice.plans?.nome}
                         </h3>
                       </div>
 
-                      <div className="mb-6 relative z-10 text-center">
-                        <span className="text-4xl font-black text-white">{formatCurrency(planPrice.mensalidade)}<span className="text-sm text-zinc-500 font-medium">/mês</span></span>
-                        
-                        <div className="flex flex-col space-y-2 mt-5 bg-black/60 p-4 rounded-xl border border-white/5 text-left">
+                      <div className="mb-4 relative z-10 text-center">
+                        <span className="text-3xl font-black text-white">{formatCurrency(planPrice.mensalidade)}<span className="text-sm text-zinc-500 font-medium">/mês</span></span>
+                        <div className="flex flex-col space-y-1.5 mt-4 bg-black/60 p-3 rounded-xl border border-white/5 text-left">
                           <div className="flex justify-between items-center">
-                             <span className="text-xs text-zinc-500 font-bold">Cota Participação</span>
-                             <span className="font-bold text-sm text-white">{planPrice.franquia_percentual}%</span>
+                            <span className="text-xs text-zinc-500 font-bold">Cota Participação</span>
+                            <span className="font-bold text-sm text-white">{planPrice.franquia_percentual}%</span>
                           </div>
                           <div className="flex justify-between items-center">
-                             <span className="text-xs text-zinc-500 font-bold">Cobertura Máx.</span>
-                             <span className="font-bold text-sm text-white">{formatCurrency(planPrice.cobertura_maxima)}</span>
+                            <span className="text-xs text-zinc-500 font-bold">Cobertura Máx.</span>
+                            <span className="font-bold text-sm text-white">{formatCurrency(planPrice.cobertura_maxima)}</span>
                           </div>
                         </div>
                       </div>
 
-                      <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase mb-4 text-center">BENEFÍCIOS DO PLANO</p>
-                      <ul className="space-y-3 flex-1 text-zinc-300 relative z-10 text-xs font-medium">
+                      <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase mb-3 text-center">BENEFÍCIOS DO PLANO</p>
+                      <ul className="space-y-2 flex-1 text-zinc-300 relative z-10 text-xs font-medium">
                         {(planPrice.plans?.coberturas || []).map((c, i) => (
-                          <li key={i} className="flex items-center"><CheckCircle2 className={`w-4 mr-2 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
+                          <li key={i} className="flex items-start"><CheckCircle2 className={`w-3.5 h-3.5 mr-1.5 mt-0.5 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
                         ))}
                       </ul>
+                      </div>
                     </div>
                   );
                 })}
