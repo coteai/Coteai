@@ -44,16 +44,21 @@ export const ConsultorAuthProvider = ({ children }: { children: ReactNode }) => 
       return { error: 'Preencha e-mail e senha.' };
     }
 
+    // Use maybeSingle() - safer than single() (no error if 0 rows)
+    // Fetch only columns guaranteed to exist (tema_cor added via migration may be missing)
     const { data, error } = await supabase
       .from('consultants')
-      .select('id, nome, email, whatsapp, ativo, senha, tema_cor')
+      .select('id, nome, email, whatsapp, ativo, senha')
       .eq('email', email.trim().toLowerCase())
-      .single();
+      .maybeSingle();
 
-    if (error || !data) {
-      console.error("Erro no login do consultor:", error);
-      const detail = error ? ` (${error.code}: ${error.message})` : ' (Não encontrado)';
-      return { error: 'E-mail não encontrado' + detail };
+    if (error) {
+      console.error("Erro Supabase no login do consultor:", error);
+      return { error: `Erro de conexão (${error.code}: ${error.message})` };
+    }
+
+    if (!data) {
+      return { error: 'E-mail não encontrado.' };
     }
 
     if (!data.ativo) {
@@ -69,7 +74,7 @@ export const ConsultorAuthProvider = ({ children }: { children: ReactNode }) => 
       nome: data.nome,
       email: data.email,
       whatsapp: data.whatsapp,
-      tema_cor: data.tema_cor,
+      tema_cor: undefined, // loaded separately if needed
     };
 
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
