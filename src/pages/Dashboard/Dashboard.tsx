@@ -18,7 +18,7 @@ const StatCard = ({ title, value, change, icon: Icon, delay, accentHex }: any) =
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
     transition={{ delay, duration: 0.4 }}
-    className="glass-card p-6 flex flex-col relative group cursor-default overflow-hidden border transition-all duration-500"
+    className="glass-card p-4 md:p-6 flex flex-col relative group cursor-default overflow-hidden border transition-all duration-500"
     style={{ 
       background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)`,
       borderColor: 'rgba(255,255,255,0.05)'
@@ -28,22 +28,22 @@ const StatCard = ({ title, value, change, icon: Icon, delay, accentHex }: any) =
     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none rounded-2xl shadow-[inset_0_0_40px_rgba(255,255,255,0.02)]`} />
 
     {/* Subtle Watermark Icon */}
-    <Icon className="absolute -right-4 -bottom-4 w-32 h-32 opacity-[0.02] group-hover:scale-105 group-hover:opacity-[0.05] transition-all duration-700 pointer-events-none" style={{ color: accentHex }} />
+    <Icon className="absolute -right-4 -bottom-4 w-24 h-24 md:w-32 md:h-32 opacity-[0.02] group-hover:scale-105 group-hover:opacity-[0.05] transition-all duration-700 pointer-events-none" style={{ color: accentHex }} />
     
     <div className="absolute -right-10 -top-10 w-32 h-32 rounded-full blur-[80px] opacity-10 transition-all duration-700 group-hover:opacity-30 pointer-events-none" style={{ backgroundColor: accentHex }} />
     
     <div className="flex flex-col relative z-10">
-      <div className="flex items-center justify-between mb-8">
-        <p className="premium-label">{title}</p>
-        <div className="p-2 rounded-lg border group-hover:scale-110 transition-transform" style={{ backgroundColor: `${accentHex}18`, borderColor: `${accentHex}40`, color: accentHex }}>
-          <Icon size={16} />
+      <div className="flex items-center justify-between mb-4 md:mb-8">
+        <p className="premium-label text-[0.6rem] md:text-[0.65rem]">{title}</p>
+        <div className="p-1.5 md:p-2 rounded-lg border group-hover:scale-110 transition-transform" style={{ backgroundColor: `${accentHex}18`, borderColor: `${accentHex}40`, color: accentHex }}>
+          <Icon size={14} />
         </div>
       </div>
       
       <div className="flex flex-col">
-        <h3 className="premium-title text-3xl mb-1 text-white">{value}</h3>
+        <h3 className="premium-title text-2xl md:text-3xl mb-1 text-white">{value}</h3>
         {change && (
-          <span className="font-sans text-[0.7rem] text-slate-400 mt-1">
+          <span className="font-sans text-[0.65rem] md:text-[0.7rem] text-slate-400 mt-1">
             {change}
           </span>
         )}
@@ -191,17 +191,17 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-end mb-12 relative">
+    <div className="space-y-5 md:space-y-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6 md:mb-12 relative">
         <div className="absolute -left-20 -top-20 w-64 h-64 bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
         <div className="relative z-10">
-          <p className="premium-label mb-2">Monitoramento de Performance</p>
-          <h1 className="premium-title text-4xl uppercase tracking-tighter">Visão Global</h1>
+          <p className="premium-label mb-1">Monitoramento de Performance</p>
+          <h1 className="premium-title text-2xl md:text-4xl uppercase tracking-tighter">Visão Global</h1>
         </div>
         <button 
           onClick={fetchDashboardData}
           disabled={loading}
-          className="relative z-10 px-8 py-3 glass-card rounded-xl font-bold text-sm hover:scale-105 active:scale-95 transition-all text-white border-white/20 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
+          className="relative z-10 px-5 md:px-8 py-2.5 md:py-3 glass-card rounded-xl font-bold text-sm hover:scale-105 active:scale-95 transition-all text-white border-white/20 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2 self-start sm:self-auto"
         >
           {loading && <Loader2 size={16} className="animate-spin" />}
           Atualizar Dados
@@ -215,7 +215,7 @@ const Dashboard = () => {
       ) : (
         <>
           {/* KPI Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <StatCard title="Cotações Totais" value={formatNumber(kpis.total)} change="Geradas pela associação" icon={FileText} delay={0.1} accentHex={accentHex} />
             <StatCard title="Convertidas" value={formatNumber(kpis.converted)} change="Vendas confirmadas" icon={CheckCircle2} delay={0.2} accentHex={accentHex} />
             <StatCard title="Taxa Conversão" value={`${kpis.conversionRate}%`} change="Conversão global" icon={TrendingUp} delay={0.3} accentHex={accentHex} />
@@ -223,20 +223,20 @@ const Dashboard = () => {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
 
             {/* Main Chart */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 0.6 }}
-              className="lg:col-span-2 glass-card p-8 flex flex-col relative overflow-hidden"
+              className="lg:col-span-2 glass-card p-4 md:p-8 flex flex-col relative overflow-hidden"
               style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)` }}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent pointer-events-none" />
-              <div className="mb-10 relative z-10 flex justify-between items-center">
-                <h3 className="premium-label">Evolução de Atividade (Últimos 14 dias)</h3>
-                <div className="flex space-x-4">
+              <div className="mb-4 md:mb-10 relative z-10 flex justify-between items-center">
+                <h3 className="premium-label">Atividade — Últimos 14 dias</h3>
+                <div className="hidden sm:flex space-x-4">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-blue-500/20 border border-blue-500/40" />
                     <span className="text-xs text-slate-400 font-bold uppercase">Cotações</span>
@@ -247,7 +247,7 @@ const Dashboard = () => {
                   </div>
                 </div>
               </div>
-              <div className="h-[300px] w-full relative z-10">
+              <div className="h-[180px] md:h-[300px] w-full relative z-10">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
@@ -327,10 +327,10 @@ const Dashboard = () => {
           </div>
 
           {/* Analytics Row */}
-          <div className="pt-12 relative">
+          <div className="pt-6 md:pt-12 relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-            <p className="premium-label mb-8 text-center italic opacity-60">Insights Avançados Cote AI</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <p className="premium-label mb-4 md:mb-8 text-center italic opacity-60">Insights Avançados Cote AI</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
 
             {/* Most Quoted Vehicles */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="glass-card p-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)` }}>

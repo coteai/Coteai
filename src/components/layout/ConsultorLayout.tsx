@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Zap, LogOut, Bell, Settings } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Zap, LogOut, Bell, Settings, MoreHorizontal, X } from 'lucide-react';
 import Logo from '../common/Logo';
 import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
 import { useAssociation } from '../../contexts/AssociationContext';
@@ -11,17 +11,13 @@ const ConsultorLayout = () => {
   const { associationData } = useAssociation();
   const navigate = useNavigate();
   const location = useLocation();
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
     logout();
     navigate('/consultor/login');
   };
-
-  const menuItems = [
-    { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/consultor' },
-    { name: 'Minhas Vendas', icon: <Briefcase size={20} />, path: '/consultor/vendas' },
-    { name: 'Configurações', icon: <Settings size={20} />, path: '/consultor/config' },
-  ];
 
   // Dynamic theme colors from consultor preferences (defaults to emerald)
   const theme = getThemeConfig(consultor?.tema_cor || 'emerald');
@@ -29,9 +25,38 @@ const ConsultorLayout = () => {
   const accentShadow = theme.colors.shadow;
   const bgClass = theme.colors.bg;
 
+  // Desktop sidebar items
+  const sidebarItems = [
+    { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/consultor', end: true },
+    { name: 'Minhas Vendas', icon: <Briefcase size={20} />, path: '/consultor/vendas' },
+    { name: 'Configurações', icon: <Settings size={20} />, path: '/consultor/config' },
+  ];
+
+  // Bottom nav primary (mobile - flanking the FAB)
+  const bottomPrimaryItems = [
+    { name: 'Painel', icon: <LayoutDashboard size={22} />, path: '/consultor', end: true },
+    { name: 'Vendas', icon: <Briefcase size={22} />, path: '/consultor/vendas' },
+  ];
+
+  // Items hidden under "..."
+  const bottomMoreItems = [
+    { name: 'Configurações', icon: <Settings size={18} />, path: '/consultor/config' },
+  ];
+
+  // Close more menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)]">
-      {/* Sidebar (Desktop/Tablet) */}
+      {/* ── Sidebar (Desktop) ────────────────────────────────────── */}
       <aside className="w-64 m-4 flex-col justify-between hidden md:flex relative z-20 glass-panel rounded-3xl overflow-hidden shrink-0">
         {/* Top glow accent */}
         <div
@@ -76,11 +101,11 @@ const ConsultorLayout = () => {
 
           {/* Nav items */}
           <nav className="mt-8 space-y-2">
-            {menuItems.map((item) => (
+            {sidebarItems.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.path}
-                end={item.path === '/consultor'}
+                end={item.end}
               >
                 {({ isActive }) => (
                   <div
@@ -99,9 +124,7 @@ const ConsultorLayout = () => {
                     }
                   >
                     <div
-                      className={
-                        isActive ? '' : 'text-slate-500 group-hover:text-slate-300'
-                      }
+                      className={isActive ? '' : 'text-slate-500 group-hover:text-slate-300'}
                       style={isActive ? { color: accentHex } : {}}
                     >
                       {item.icon}
@@ -144,11 +167,11 @@ const ConsultorLayout = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* ── Main Content ─────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative z-10 p-4 md:pl-0">
         {/* Top Header */}
         <header
-          className="h-16 mb-4 flex items-center justify-between px-4 md:px-8 glass-panel rounded-2xl relative overflow-hidden shrink-0"
+          className="h-14 md:h-16 mb-4 flex items-center justify-between px-4 md:px-8 glass-panel rounded-2xl relative overflow-hidden shrink-0"
         >
           <div
             className="absolute top-0 left-0 w-full h-full pointer-events-none"
@@ -156,7 +179,7 @@ const ConsultorLayout = () => {
               background: `linear-gradient(to right, ${accentHex}10, transparent, ${accentHex}10)`,
             }}
           />
-          <div className="flex items-center space-x-4 relative z-10">
+          <div className="flex items-center space-x-3 relative z-10">
             <Logo className="md:hidden scale-75 origin-left" />
             <div className="hidden md:flex items-center space-x-4">
               <h2 className="text-xl premium-title uppercase">
@@ -175,7 +198,7 @@ const ConsultorLayout = () => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4 relative z-10">
+          <div className="flex items-center space-x-3 relative z-10">
             <button className="relative p-2 text-zinc-500 hover:text-white transition-colors">
               <Bell size={20} />
               <span
@@ -183,7 +206,7 @@ const ConsultorLayout = () => {
                 style={{ backgroundColor: accentHex }}
               />
             </button>
-            <div className="flex items-center space-x-3 pl-4 border-l border-white/10">
+            <div className="flex items-center space-x-3 pl-3 border-l border-white/10">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-bold text-white">{consultor?.nome}</p>
                 <p className="text-xs text-zinc-500">Consultor de Vendas</p>
@@ -198,66 +221,131 @@ const ConsultorLayout = () => {
               >
                 {consultor?.nome?.charAt(0) ?? '?'}
               </div>
+              <button
+                onClick={handleLogout}
+                className="hidden md:flex ml-1 p-1.5 text-zinc-500 hover:text-red-400 transition-colors rounded-lg hover:bg-white/5"
+                title="Sair"
+              >
+                <LogOut size={16} />
+              </button>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 rounded-2xl overflow-y-auto overflow-x-hidden p-4 md:p-8 bg-transparent styled-scrollbar pb-24 md:pb-8">
+        <div
+          className="flex-1 rounded-2xl overflow-y-auto overflow-x-hidden p-4 md:p-8 bg-transparent styled-scrollbar"
+          style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom) + 88px), 100px)' }}
+        >
           <Outlet />
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-white/5 z-50 px-6 py-2 pb-safe bg-[#0A0F1C]/95 backdrop-blur-xl">
-        <div className="flex justify-between items-end relative h-14">
-          {/* Left Items */}
-          <NavLink
-            to="/consultor"
-            end
-            className={({ isActive }) => `flex flex-col items-center p-2 transition-colors ${isActive ? 'text-white' : 'text-zinc-500'}`}
-            style={({ isActive }) => isActive ? { color: accentHex } : {}}
+      {/* ── Mobile Bottom Navigation ─────────────────────────────── */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50">
+        {/* "More" popup menu */}
+        {moreMenuOpen && (
+          <div
+            ref={moreMenuRef}
+            className="absolute bottom-full right-4 mb-2 glass-panel rounded-2xl overflow-hidden border border-white/10 w-52 shadow-2xl"
+            style={{ boxShadow: `0 -8px 40px rgba(0,0,0,0.5)` }}
           >
-            <LayoutDashboard size={22} />
-            <span className="text-[9px] font-bold mt-1 uppercase tracking-wider">Painel</span>
-          </NavLink>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+              <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Menu</span>
+              <button
+                onClick={() => setMoreMenuOpen(false)}
+                className="text-zinc-500 hover:text-white transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            {bottomMoreItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <NavLink
+                  key={item.name}
+                  to={item.path}
+                  onClick={() => setMoreMenuOpen(false)}
+                  className="flex items-center space-x-3 px-4 py-3 hover:bg-white/5 transition-colors"
+                  style={isActive ? { color: accentHex } : { color: '#94a3b8' }}
+                >
+                  {item.icon}
+                  <span className="text-sm font-semibold">{item.name}</span>
+                </NavLink>
+              );
+            })}
+            <button
+              onClick={() => { handleLogout(); setMoreMenuOpen(false); }}
+              className="flex items-center space-x-3 px-4 py-3 text-zinc-500 hover:text-red-400 transition-colors w-full border-t border-white/5"
+            >
+              <LogOut size={18} />
+              <span className="text-sm font-semibold">Sair</span>
+            </button>
+          </div>
+        )}
 
-          <NavLink
-            to="/consultor/vendas"
-            className={({ isActive }) => `flex flex-col items-center p-2 mr-6 transition-colors ${isActive ? 'text-white' : 'text-zinc-500'}`}
-            style={({ isActive }) => isActive ? { color: accentHex } : {}}
+        {/* Bottom Bar */}
+        <div
+          className="flex items-end justify-around px-4 pt-2"
+          style={{
+            background: 'rgba(10, 15, 28, 0.97)',
+            backdropFilter: 'blur(24px)',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            paddingBottom: 'max(env(safe-area-inset-bottom), 10px)',
+          }}
+        >
+          {/* Primary nav items (flanking the FAB) */}
+          {bottomPrimaryItems.map((item) => (
+            <NavLink
+              key={item.name}
+              to={item.path}
+              end={item.end}
+              className="flex flex-col items-center justify-center py-2 px-3 transition-all"
+              style={({ isActive }) => isActive ? { color: accentHex } : { color: '#71717a' }}
+            >
+              {item.icon}
+              <span className="text-[9px] font-bold mt-1 uppercase tracking-wider">{item.name}</span>
+            </NavLink>
+          ))}
+
+          {/* Center: Nova Cotação FAB */}
+          <div
+            className="flex flex-col items-center justify-end pb-1 relative"
+            style={{ marginTop: '-18px' }}
           >
-            <Briefcase size={22} />
-            <span className="text-[9px] font-bold mt-1 uppercase tracking-wider">Vendas</span>
-          </NavLink>
-
-          {/* Center Floating Action Button */}
-          <div className="absolute left-1/2 bottom-4 -translate-x-1/2 flex flex-col items-center">
             <NavLink
               to="/consultor/cotacao"
-              className="flex items-center justify-center w-14 h-14 rounded-full text-white shadow-lg border-4 border-[#0B101E] transition-transform active:scale-95"
-              style={{ backgroundColor: accentHex, boxShadow: `0 8px 25px ${accentShadow}` }}
+              className="flex items-center justify-center w-16 h-16 rounded-full text-white border-4 transition-transform active:scale-90"
+              style={{
+                backgroundColor: accentHex,
+                borderColor: 'rgba(10,15,28,1)',
+                boxShadow: `0 4px 24px ${accentShadow}, 0 0 0 1px ${accentHex}30`,
+              }}
             >
-              <Zap size={24} className="fill-white" />
+              <Zap size={26} className="fill-white" />
             </NavLink>
+            <span
+              className="text-[9px] font-bold mt-1.5 uppercase tracking-wider"
+              style={{ color: accentHex }}
+            >
+              Cotação
+            </span>
           </div>
 
-          {/* Right Items */}
-          <NavLink
-            to="/consultor/config"
-            className={({ isActive }) => `flex flex-col items-center p-2 ml-6 transition-colors ${isActive ? 'text-white' : 'text-zinc-500'}`}
-            style={({ isActive }) => isActive ? { color: accentHex } : {}}
-          >
-            <Settings size={22} />
-            <span className="text-[9px] font-bold mt-1 uppercase tracking-wider">Ajustes</span>
-          </NavLink>
-
+          {/* More menu button */}
           <button
-            onClick={handleLogout}
-            className="flex flex-col items-center p-2 text-zinc-500 active:text-red-400 transition-colors"
+            onClick={() => setMoreMenuOpen((v) => !v)}
+            className="flex flex-col items-center justify-center py-2 px-3 transition-all"
+            style={{
+              color: moreMenuOpen
+                ? accentHex
+                : bottomMoreItems.some((i) => location.pathname === i.path)
+                  ? accentHex
+                  : '#71717a',
+            }}
           >
-            <LogOut size={22} />
-            <span className="text-[9px] font-bold mt-1 uppercase tracking-wider">Sair</span>
+            <MoreHorizontal size={22} />
+            <span className="text-[9px] font-bold mt-1 uppercase tracking-wider">Mais</span>
           </button>
         </div>
       </nav>

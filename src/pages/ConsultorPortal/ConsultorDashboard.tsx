@@ -31,7 +31,7 @@ const KpiCard = ({ title, value, sub, icon: Icon, delay, accentHex }: KpiCardPro
     initial={{ opacity: 0, scale: 0.95 }}
     animate={{ opacity: 1, scale: 1 }}
     transition={{ delay, duration: 0.4 }}
-    className="glass-card p-6 flex flex-col relative group cursor-default overflow-hidden border transition-all duration-500"
+    className="glass-card p-4 md:p-6 flex flex-col relative group cursor-default overflow-hidden border transition-all duration-500"
     style={{ 
       background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)`,
       borderColor: 'rgba(255,255,255,0.05)'
@@ -40,27 +40,27 @@ const KpiCard = ({ title, value, sub, icon: Icon, delay, accentHex }: KpiCardPro
     {/* Clean Inner Glow on Hover */}
     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none rounded-2xl shadow-[inset_0_0_40px_rgba(255,255,255,0.02)]`} />
 
-    <Icon className="absolute -right-4 -bottom-4 w-32 h-32 opacity-[0.02] group-hover:scale-105 group-hover:opacity-[0.05] transition-all duration-700 pointer-events-none" style={{ color: accentHex }} />
+    <Icon className="absolute -right-4 -bottom-4 w-24 h-24 md:w-32 md:h-32 opacity-[0.02] group-hover:scale-105 group-hover:opacity-[0.05] transition-all duration-700 pointer-events-none" style={{ color: accentHex }} />
     <div
       className="absolute -right-10 -top-10 w-32 h-32 rounded-full blur-[80px] opacity-10 transition-all duration-700 group-hover:opacity-30 pointer-events-none"
       style={{ backgroundColor: accentHex }}
     />
-    <div className="flex items-center justify-between mb-8 relative z-10">
-      <p className="premium-label">{title}</p>
+    <div className="flex items-center justify-between mb-4 md:mb-8 relative z-10">
+      <p className="premium-label text-[0.6rem] md:text-[0.65rem]">{title}</p>
       <div
-        className="p-2 rounded-lg border group-hover:scale-110 transition-transform"
+        className="p-1.5 md:p-2 rounded-lg border group-hover:scale-110 transition-transform"
         style={{
           backgroundColor: `${accentHex}18`,
           borderColor: `${accentHex}40`,
           color: accentHex,
         }}
       >
-        <Icon size={16} />
+        <Icon size={14} />
       </div>
     </div>
     <div className="relative z-10 flex flex-col">
-      <h3 className="premium-title text-3xl mb-1 text-white">{value}</h3>
-      {sub && <span className="font-sans text-[0.7rem] text-slate-400 mt-1">{sub}</span>}
+      <h3 className="premium-title text-2xl md:text-3xl mb-1 text-white">{value}</h3>
+      {sub && <span className="font-sans text-[0.65rem] md:text-[0.7rem] text-slate-400 mt-1">{sub}</span>}
     </div>
   </motion.div>
 );
@@ -180,28 +180,28 @@ const ConsultorDashboard = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 md:space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3">
         <div>
-          <p className="premium-label mb-2" style={{ color: accentHex }}>
+          <p className="premium-label mb-1" style={{ color: accentHex }}>
             Meu Desempenho
           </p>
-          <h1 className="premium-title text-4xl uppercase tracking-tighter">
+          <h1 className="premium-title text-2xl md:text-4xl uppercase tracking-tighter">
             Olá, {consultor?.nome?.split(' ')[0]}
           </h1>
-          <p className="text-slate-400 mt-1">Aqui estão as métricas das suas cotações.</p>
+          <p className="text-slate-400 text-sm mt-1">Aqui estão as métricas das suas cotações.</p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
           <button
             onClick={fetchData}
             className="p-2 bg-white/5 border border-white/10 text-zinc-400 hover:text-white rounded-xl hover:bg-white/10 transition-all"
           >
-            <RefreshCw size={18} />
+            <RefreshCw size={16} />
           </button>
           <button
             onClick={() => navigate('/consultor/cotacao')}
-            className="flex items-center space-x-2 py-2.5 px-5 rounded-xl font-black text-sm text-black uppercase tracking-wide transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-95"
+            className="hidden sm:flex items-center space-x-2 py-2.5 px-5 rounded-xl font-black text-sm text-black uppercase tracking-wide transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-95"
             style={{ backgroundColor: accentHex }}
           >
             <Zap size={15} className="fill-black" />
@@ -217,34 +217,34 @@ const ConsultorDashboard = () => {
       ) : (
         <>
           {/* KPI Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <KpiCard title="Total de Cotações" value={String(total)} sub="geradas por mim" icon={FileText} delay={0.1} accentHex={accentHex} />
             <KpiCard
               title="Convertidas"
               value={String(converted)}
-              sub={`${conversionRate}% de conversão`}
+              sub={`${conversionRate}% conversão`}
               icon={CheckCircle2}
               delay={0.2}
               accentHex={accentHex}
             />
-            <KpiCard title="Pendentes" value={String(pending)} sub="aguardando aprovação" icon={Clock} delay={0.3} accentHex={accentHex} />
+            <KpiCard title="Pendentes" value={String(pending)} sub="aguardando" icon={Clock} delay={0.3} accentHex={accentHex} />
             <KpiCard
               title="Receita Gerada"
               value={formatCurrency(totalValue)}
-              sub="em mensalidades convertidas"
+              sub="mensalidades convertidas"
               icon={DollarSign}
               delay={0.4}
               accentHex={accentHex}
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
             {/* Chart */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="lg:col-span-2 glass-card p-8 flex flex-col relative overflow-hidden"
+              className="lg:col-span-2 glass-card p-4 md:p-8 flex flex-col relative overflow-hidden"
             >
               <div
                 className="absolute inset-0 pointer-events-none"
@@ -252,14 +252,14 @@ const ConsultorDashboard = () => {
                   background: `linear-gradient(to bottom right, ${accentHex}08, transparent)`,
                 }}
               />
-              <div className="mb-8 relative z-10 flex justify-between items-center">
-                <h3 className="premium-label">Cotações nos Últimos 14 Dias</h3>
+              <div className="mb-4 md:mb-8 relative z-10 flex justify-between items-center">
+                <h3 className="premium-label">Cotações — Últimos 14 Dias</h3>
                 <div
                   className="w-3 h-3 rounded-full border"
                   style={{ backgroundColor: `${accentHex}33`, borderColor: `${accentHex}80` }}
                 />
               </div>
-              <div className="h-[260px] relative z-10">
+              <div className="h-[180px] md:h-[260px] relative z-10">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
@@ -348,7 +348,7 @@ const ConsultorDashboard = () => {
           </div>
           
           {/* Recent Quotes */}
-          <div className="glass-card p-8 flex flex-col">
+          <div className="glass-card p-4 md:p-8 flex flex-col">
             <div className="mb-6 flex justify-between items-center">
               <h3 className="premium-label">Últimas Cotações</h3>
               <button
