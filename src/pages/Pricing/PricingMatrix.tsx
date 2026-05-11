@@ -22,7 +22,9 @@ const PricingPage = () => {
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [newGroupState, setNewGroupState] = useState({ nome: '', base_type: 'carro', pricing_mode: 'plans' });
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
-  const [editGroupState, setEditGroupState] = useState<any>(null); // grupo sendo editado
+  const [editGroupState, setEditGroupState] = useState<any>(null);
+  const [groupDropdownOpen, setGroupDropdownOpen] = useState(false);
+  const groupDropdownRef = useRef<HTMLDivElement>(null);
 
   // Computed helpers
   const activeGroup = vehicleGroups.find(g => g.id === activeGroupId);
@@ -53,6 +55,17 @@ const PricingPage = () => {
       setIsLoading(false);
     };
     init();
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (groupDropdownRef.current && !groupDropdownRef.current.contains(e.target as Node)) {
+        setGroupDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchGroups = async (assocId) => {
@@ -390,23 +403,36 @@ const PricingPage = () => {
         {/* Grupos de Veículo Selector */}
         <div className="flex items-center space-x-2">
           {vehicleGroups.length > 0 && (
-            <div className="relative group/dropdown">
-              <button className="flex items-center space-x-3 px-5 py-2.5 bg-black/40 border border-white/10 rounded-xl shadow-[0_0_15px_rgba(0,0,0,0.5)] text-white font-bold hover:bg-white/5 transition-all">
-                {vehicleGroups.find(g => g.id === activeGroupId)?.base_type === 'carro' ? <Car size={16} className="text-zinc-300" /> : 
-                 vehicleGroups.find(g => g.id === activeGroupId)?.base_type === 'moto' ? <Bike size={16} className="text-zinc-300" /> : 
-                 <Truck size={16} className="text-zinc-300" />}
-                <span>{vehicleGroups.find(g => g.id === activeGroupId)?.nome || 'Carregando...'}</span>
-                <ChevronDown size={14} className="text-zinc-500 ml-2" />
+            <div className="relative" ref={groupDropdownRef}>
+              <button
+                onClick={() => setGroupDropdownOpen(v => !v)}
+                className="flex items-center space-x-2 px-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-white font-bold hover:bg-white/5 transition-all"
+              >
+                {vehicleGroups.find(g => g.id === activeGroupId)?.base_type === 'moto'
+                  ? <Bike size={16} className="text-zinc-300" />
+                  : vehicleGroups.find(g => g.id === activeGroupId)?.base_type === 'caminhao'
+                  ? <Truck size={16} className="text-zinc-300" />
+                  : <Car size={16} className="text-zinc-300" />}
+                <span>{vehicleGroups.find(g => g.id === activeGroupId)?.nome || 'Grupo...'}</span>
+                <ChevronDown size={14} className={`text-zinc-500 transition-transform ${groupDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
-              
-              <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-900 border border-white/10 rounded-xl shadow-xl overflow-hidden opacity-0 invisible group-hover/dropdown:opacity-100 group-hover/dropdown:visible transition-all z-50">
-                {vehicleGroups.map(g => (
-                  <button key={g.id} onClick={() => setActiveGroupId(g.id)} className={`w-full text-left px-4 py-3 flex items-center space-x-3 hover:bg-white/5 transition-colors ${activeGroupId === g.id ? 'bg-white/10/10 text-zinc-300 font-bold border-l-2 border-white/10' : 'text-zinc-300 border-l-2 border-transparent'}`}>
-                    {g.base_type === 'carro' ? <Car size={16} /> : g.base_type === 'moto' ? <Bike size={16} /> : <Truck size={16} />}
-                    <span>{g.nome}</span>
-                  </button>
-                ))}
-              </div>
+
+              {groupDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-zinc-900 border border-white/10 rounded-xl shadow-xl overflow-hidden z-50">
+                  {vehicleGroups.map(g => (
+                    <button
+                      key={g.id}
+                      onClick={() => { setActiveGroupId(g.id); setGroupDropdownOpen(false); }}
+                      className={`w-full text-left px-4 py-3 flex items-center space-x-3 hover:bg-white/5 transition-colors border-l-2 ${
+                        activeGroupId === g.id ? 'bg-white/10 text-white font-bold border-white/30' : 'text-zinc-300 border-transparent'
+                      }`}
+                    >
+                      {g.base_type === 'moto' ? <Bike size={16} /> : g.base_type === 'caminhao' ? <Truck size={16} /> : <Car size={16} />}
+                      <span>{g.nome}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           
