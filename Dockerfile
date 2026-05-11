@@ -4,6 +4,17 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+
+# Declara os build args para que o Vite possa usá-los no build
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_DEFAULT_ASSOCIATION_SLUG
+
+# Exporta como variáveis de ambiente para o Vite encontrar
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+ENV VITE_DEFAULT_ASSOCIATION_SLUG=$VITE_DEFAULT_ASSOCIATION_SLUG
+
 RUN npx vite build
 
 # Etapa 2: Servir com Nginx
