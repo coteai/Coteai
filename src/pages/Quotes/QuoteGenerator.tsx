@@ -662,7 +662,6 @@ const QuoteGenerator = () => {
                   {saving ? <Loader2 className="animate-spin" size={20} /> : 'GERAR PROPOSTA'}
                 </button>
               </div>
-            </motion.div>
           )}
 
           {/* STEP 4: COMPARTILHAMENTO */}
