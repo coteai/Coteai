@@ -394,7 +394,7 @@ const QuoteGenerator = () => {
         </div>
       </div>
 
-      <div className="glass-panel flex-1 flex flex-col overflow-hidden relative min-h-[400px]">
+      <div className="glass-panel flex-1 flex flex-col overflow-y-auto relative min-h-[400px] custom-scrollbar">
         <AnimatePresence mode="wait">
 
           {/* STEP 1: PLACA E TIPO */}
@@ -548,7 +548,7 @@ const QuoteGenerator = () => {
 
           {/* STEP 3: PREÇO & PLANO */}
           {step === 3 && (
-            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-4 md:p-8 flex-1 flex flex-col h-full min-h-0">
+            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-4 md:p-8 flex flex-col w-full">
               <div className="flex justify-between items-center mb-4 md:mb-6">
                 <div>
                   <h2 className="premium-title text-xl md:text-3xl uppercase tracking-tighter">Planos Disponíveis</h2>
