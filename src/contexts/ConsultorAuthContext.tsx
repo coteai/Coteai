@@ -52,7 +52,8 @@ export const ConsultorAuthProvider = ({ children }: { children: ReactNode }) => 
 
     if (error || !data) {
       console.error("Erro no login do consultor:", error);
-      return { error: 'E-mail não encontrado ou erro de conexão.' };
+      const detail = error ? ` (${error.code}: ${error.message})` : ' (Não encontrado)';
+      return { error: 'E-mail não encontrado' + detail };
     }
 
     if (!data.ativo) {
