@@ -374,7 +374,7 @@ const QuoteGenerator = () => {
   );
 
   return (
-    <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto w-full">
+    <div className="space-y-4 md:space-y-8 flex flex-col h-full max-w-5xl mx-auto w-full">
       <div className="flex justify-between items-end">
         <div>
           <h1 className="premium-title text-2xl md:text-4xl uppercase tracking-tighter mb-1">Máquina de Cotação</h1>
@@ -394,12 +394,12 @@ const QuoteGenerator = () => {
         </div>
       </div>
 
-      <div className="glass-panel relative">
+      <div className="glass-panel flex-1 flex flex-col overflow-hidden relative min-h-[400px]">
         <AnimatePresence mode="wait">
 
           {/* STEP 1: PLACA E TIPO */}
           {step === 1 && (
-            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-5 md:p-12 min-h-[320px] flex flex-col justify-center max-w-2xl mx-auto w-full text-center">
+            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-5 md:p-12 flex-1 flex flex-col justify-center max-w-2xl mx-auto w-full text-center">
               <h2 className="premium-title text-2xl md:text-3xl uppercase tracking-tighter mb-2">Consulta de Veículo</h2>
               <p className="text-zinc-500 text-sm mb-5 md:mb-8">Selecione o tipo e digite a placa.</p>
 
@@ -455,7 +455,7 @@ const QuoteGenerator = () => {
 
           {/* STEP 2: VERSÕES FIPE */}
           {step === 2 && (
-            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-4 md:p-8 flex flex-col max-w-3xl mx-auto w-full">
+            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-4 md:p-8 flex-1 flex flex-col max-w-3xl mx-auto w-full">
               <div className="flex justify-between items-end mb-6">
                  <div>
                    <h2 className="premium-title text-3xl uppercase tracking-tighter mb-1">Selecione a versão correta</h2>
@@ -548,43 +548,34 @@ const QuoteGenerator = () => {
 
           {/* STEP 3: PREÇO & PLANO */}
           {step === 3 && (
-            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-4 md:p-8">
-              {/* Info do veículo */}
-              <div className="flex justify-between items-start mb-4 gap-2">
-                <div className="flex-1 min-w-0">
-                  <h2 className="premium-title text-lg md:text-3xl uppercase tracking-tighter">Planos Disponíveis</h2>
-                  <p className="text-zinc-500 text-xs mt-1 truncate">
-                    <CheckCircle2 className="text-white inline mr-1 w-3 h-3" />
-                    {formData.modelo}
+            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-4 md:p-8 flex-1 flex flex-col h-full min-h-0">
+              <div className="flex justify-between items-center mb-4 md:mb-6">
+                <div>
+                  <h2 className="premium-title text-xl md:text-3xl uppercase tracking-tighter">Planos Disponíveis</h2>
+                  <p className="text-zinc-500 flex flex-wrap items-center mt-1 text-sm">
+                    <CheckCircle2 className="text-white mr-2 w-4 shrink-0"/>
+                    <span className="font-medium mr-2">{formData.modelo}</span> 
+                  <span className="bg-black/40 px-2 py-0.5 rounded text-xs border border-white/5 inline-block mt-1">FIPE: {formatCurrency(formData.fipe)}</span>
                   </p>
-                  <span className="inline-block bg-black/40 px-2 py-0.5 rounded text-xs border border-white/5 mt-1 text-zinc-400">
-                    FIPE: {formatCurrency(formData.fipe)}
-                  </span>
                 </div>
-                <button onClick={() => setStep(2)} className="text-zinc-300 text-xs hover:underline font-bold bg-white/5 px-3 py-2 rounded-lg shrink-0">Trocar Versão</button>
+                <button onClick={() => setStep(2)} className="text-zinc-300 text-sm hover:underline font-bold bg-white/5 px-4 py-2 rounded-lg">Trocar Versão</button>
               </div>
 
-              {/* ── Mobile: Lista compacta (1 col) ─────────────── */}
+              {/* Mobile: lista compacta (portrait) */}
               <div className="md:hidden space-y-3 mb-4">
                 {availablePlans.map((planPrice) => {
                   const isVip = planPrice.plans?.nome?.toLowerCase().includes('vip');
                   return (
                     <div key={planPrice.id} className="relative rounded-2xl overflow-hidden border" style={isVip ? { borderColor: theme.colors.glowHex, boxShadow: `0 0 20px ${theme.colors.shadow}` } : { borderColor: '#27272a' }}>
-                      {isVip && (
-                        <div className="w-full text-center text-white text-[9px] font-black uppercase tracking-widest py-1" style={{ backgroundColor: theme.colors.glowHex }}>⭐ Recomendado</div>
-                      )}
+                      {isVip && <div className="w-full text-center text-white text-[9px] font-black uppercase tracking-widest py-1" style={{ backgroundColor: theme.colors.glowHex }}>⭐ Recomendado</div>}
                       <div className="bg-[#121212] p-3">
-                        {/* Row 1: Name + Price */}
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className={`text-base font-black uppercase tracking-wider ${isVip ? theme.colors.primary : 'text-zinc-200'}`}>
-                            {planPrice.plans?.nome}
-                          </h3>
+                          <h3 className={`text-base font-black uppercase tracking-wider ${isVip ? theme.colors.primary : 'text-zinc-200'}`}>{planPrice.plans?.nome}</h3>
                           <div className="text-right">
                             <span className="text-xl font-black text-white">{formatCurrency(planPrice.mensalidade)}</span>
                             <span className="text-xs text-zinc-500">/mês</span>
                           </div>
                         </div>
-                        {/* Row 2: Cota + Cobertura */}
                         <div className="flex items-center justify-between bg-black/50 rounded-xl px-3 py-2 mb-2">
                           <div className="text-center">
                             <p className="text-[10px] text-zinc-600 font-bold uppercase">Cota Partic.</p>
@@ -596,7 +587,6 @@ const QuoteGenerator = () => {
                             <p className="text-sm font-black text-white">{formatCurrency(planPrice.cobertura_maxima)}</p>
                           </div>
                         </div>
-                        {/* Row 3: Benefícios */}
                         {(planPrice.plans?.coberturas || []).length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {(planPrice.plans?.coberturas || []).map((c, i) => (
@@ -612,54 +602,49 @@ const QuoteGenerator = () => {
                 })}
               </div>
 
-              {/* ── Desktop: Grid de cards ──────────────────────── */}
-              <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+              {/* Desktop: grid de cards */}
+              <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 flex-1 overflow-y-auto pb-4 pr-1 min-h-0 items-start content-start">
                 {availablePlans.map((planPrice) => {
                   const isVip = planPrice.plans?.nome?.toLowerCase().includes('vip');
                   return (
-                    <div key={planPrice.id} className="relative flex flex-col rounded-2xl overflow-hidden border" style={isVip ? { borderColor: theme.colors.glowHex, boxShadow: `0 0 40px ${theme.colors.shadow}` } : { borderColor: '#27272a' }}>
-                      {isVip && (
-                        <div className="w-full text-center text-white text-[10px] font-black uppercase tracking-widest py-1.5" style={{ backgroundColor: theme.colors.glowHex }}>⭐ Recomendado</div>
-                      )}
+                    <div key={planPrice.id} className="relative overflow-hidden flex flex-col p-6 rounded-2xl transition-all border border-zinc-800 bg-[#121212] hover:border-zinc-700" style={isVip ? { borderColor: theme.colors.glowHex, boxShadow: `0 0 40px ${theme.colors.shadow}` } : {}}>
+                      {isVip && <div className="absolute top-0 left-1/2 -translate-x-1/2 text-white text-[10px] font-black uppercase tracking-widest px-6 py-1 rounded-b-lg z-20" style={{ backgroundColor: theme.colors.glowHex, boxShadow: `0 0 15px ${theme.colors.shadow}` }}>Recomendado</div>}
                       {isVip && <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full blur-3xl z-0" style={{ backgroundColor: `${theme.colors.glowHex}1A` }}></div>}
-                      <div className="bg-[#121212] p-5 flex flex-col flex-1">
-                        <div className="mb-3 border-b border-white/5 pb-3 text-center relative z-10">
-                          <h3 className={`text-xl font-black uppercase tracking-widest ${isVip ? theme.colors.primary : 'text-zinc-200'}`}>{planPrice.plans?.nome}</h3>
-                        </div>
-                        <div className="mb-4 text-center relative z-10">
-                          <span className="text-3xl font-black text-white">{formatCurrency(planPrice.mensalidade)}<span className="text-sm text-zinc-500 font-medium">/mês</span></span>
-                          <div className="flex flex-col space-y-1.5 mt-3 bg-black/60 p-3 rounded-xl border border-white/5 text-left">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-zinc-500 font-bold">Cota Participação</span>
-                              <span className="font-bold text-sm text-white">{planPrice.franquia_percentual}%</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-zinc-500 font-bold">Cobertura Máx.</span>
-                              <span className="font-bold text-sm text-white">{formatCurrency(planPrice.cobertura_maxima)}</span>
-                            </div>
+                      <div className="mb-4 relative z-10 border-b border-white/5 pb-4 mt-4 text-center">
+                        <h3 className={`text-2xl font-black uppercase tracking-widest ${isVip ? theme.colors.primary : 'text-zinc-200'}`}>{planPrice.plans?.nome}</h3>
+                      </div>
+                      <div className="mb-6 relative z-10 text-center">
+                        <span className="text-4xl font-black text-white">{formatCurrency(planPrice.mensalidade)}<span className="text-sm text-zinc-500 font-medium">/mês</span></span>
+                        <div className="flex flex-col space-y-2 mt-5 bg-black/60 p-4 rounded-xl border border-white/5 text-left">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-zinc-500 font-bold">Cota Participação</span>
+                            <span className="font-bold text-sm text-white">{planPrice.franquia_percentual}%</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-zinc-500 font-bold">Cobertura Máx.</span>
+                            <span className="font-bold text-sm text-white">{formatCurrency(planPrice.cobertura_maxima)}</span>
                           </div>
                         </div>
-                        <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase mb-2 text-center">BENEFÍCIOS</p>
-                        <ul className="space-y-1.5 flex-1 text-zinc-300 relative z-10 text-xs">
-                          {(planPrice.plans?.coberturas || []).map((c, i) => (
-                            <li key={i} className="flex items-start"><CheckCircle2 className={`w-3.5 h-3.5 mr-1.5 mt-0.5 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
-                          ))}
-                        </ul>
                       </div>
+                      <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase mb-4 text-center">BENEFÍCIOS DO PLANO</p>
+                      <ul className="space-y-3 flex-1 text-zinc-300 relative z-10 text-xs font-medium">
+                        {(planPrice.plans?.coberturas || []).map((c, i) => (
+                          <li key={i} className="flex items-center"><CheckCircle2 className={`w-4 mr-2 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
+                        ))}
+                      </ul>
                     </div>
                   );
                 })}
               </div>
 
-              {/* GERAR PROPOSTA */}
-              <div className="pt-4 border-t border-white/10">
+              <div className="mt-4 pt-6 border-t border-white/10">
                 <button
                   onClick={() => saveQuoteMulti()}
                   disabled={saving}
-                  className={`w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all text-white disabled:opacity-60 flex justify-center items-center text-sm ${theme.colors.bg}`}
+                  className={`w-full py-4 rounded-xl font-black uppercase tracking-widest transition-all text-white disabled:opacity-60 flex justify-center items-center ${theme.colors.bg}`}
                   style={{ boxShadow: `0 0 25px ${theme.colors.shadow}` }}
                 >
-                  {saving ? <Loader2 className="animate-spin" size={20} /> : 'GERAR PROPOSTA'}
+                  {saving ? <Loader2 className="animate-spin" size={20} /> : `GERAR PROPOSTA`}
                 </button>
               </div>
             </motion.div>
