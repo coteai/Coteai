@@ -167,9 +167,26 @@ const AdminLogin = () => {
               )}
             </button>
 
-            <p className="text-center text-xs text-zinc-700 pt-2">
+            <p className="text-center text-xs text-zinc-700 pt-2 pb-4">
               Problemas de acesso? Contate o suporte.
             </p>
+
+            <div className="pt-6 border-t border-white/5 flex justify-center space-x-6">
+              <button 
+                type="button"
+                onClick={() => window.location.href = '/consultor/login'}
+                className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
+              >
+                Acesso Consultor
+              </button>
+              <button 
+                type="button"
+                onClick={() => window.location.href = '/dev/login'}
+                className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
+              >
+                Acesso Dev
+              </button>
+            </div>
           </form>
         </div>
       </motion.div>
