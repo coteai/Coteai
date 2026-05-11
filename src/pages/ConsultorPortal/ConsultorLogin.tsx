@@ -11,6 +11,14 @@ const ConsultorLogin = () => {
   const { associationData } = useAssociation();
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    console.log("Configuração Consultor Portal:", {
+      supabaseUrl: import.meta.env.VITE_SUPABASE_URL ? 'Ok' : 'Faltando',
+      supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Ok' : 'Faltando',
+      associationData: associationData?.slug || 'Pendente'
+    });
+  }, [associationData]);
+
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [showPassword, setShowPassword] = useState(false);
