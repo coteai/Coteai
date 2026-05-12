@@ -2,6 +2,7 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { registerSW } from 'virtual:pwa-register'
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -97,3 +98,20 @@ createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )
 
+// Registra o Service Worker para habilitar PWA (cache offline + instalação)
+registerSW({
+  onNeedRefresh() {
+    // Nova versão disponível — recarrega automaticamente
+    console.log('[PWA] Nova versão disponível. Atualizando...')
+    window.location.reload()
+  },
+  onOfflineReady() {
+    console.log('[PWA] App pronto para uso offline! ✅')
+  },
+  onRegistered(registration) {
+    console.log('[PWA] Service Worker registrado com sucesso.', registration)
+  },
+  onRegisterError(error) {
+    console.error('[PWA] Erro ao registrar Service Worker:', error)
+  },
+})
