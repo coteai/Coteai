@@ -144,8 +144,7 @@ const QuotesManager = () => {
                 {/* Bottom row */}
                 <div className="flex items-center justify-between border-t border-white/5 pt-2">
                   <div>
-                    <p className="font-black text-white text-sm">{formatCurrency(quote.mensalidade)}<span className="text-xs font-normal text-zinc-500">/mês</span></p>
-                    <p className="text-xs text-zinc-600">{quote.plano_selecionado}</p>
+                    <p className="font-bold text-white text-sm">{quote.plano_selecionado || 'Cotação Multi-Plano'}</p>
                   </div>
                   {quote.status === 'pending' && (
                     <button
@@ -174,7 +173,7 @@ const QuotesManager = () => {
                   <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Cotação</th>
                   <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Cliente / Veículo</th>
                   <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Consultor</th>
-                  <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Plano / Valor</th>
+                  <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Plano Sugerido</th>
                   <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest text-right">Status / Ação</th>
                 </tr>
               </thead>
@@ -218,10 +217,9 @@ const QuotesManager = () => {
                       )}
                     </td>
                     <td className="p-4">
-                      <div className="font-black text-white mb-1">
-                        {formatCurrency(quote.mensalidade)}<span className="text-xs font-normal text-zinc-500">/mês</span>
+                      <div className="font-bold text-white mb-2">
+                        {quote.plano_selecionado || 'Cotação Multi-Plano'}
                       </div>
-                      <div className="text-xs text-zinc-500 mb-2">{quote.plano_selecionado}</div>
                       {getStatusBadge(quote.status)}
                     </td>
                     <td className="p-4 text-right">

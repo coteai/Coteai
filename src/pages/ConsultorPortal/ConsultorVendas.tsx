@@ -171,9 +171,8 @@ const ConsultorVendas = () => {
                 </div>
                 <div className="flex items-end justify-between border-t border-white/5 pt-3">
                   <div>
-                    <p className="text-[10px] text-zinc-600 uppercase font-bold tracking-wider">Mensalidade</p>
-                    <p className="font-black text-white">{formatCurrency(quote.mensalidade)}<span className="text-xs font-normal text-zinc-500">/mês</span></p>
-                    <p className="text-xs text-zinc-600 mt-0.5">{quote.plano_selecionado}</p>
+                    <p className="text-[10px] text-zinc-600 uppercase font-bold tracking-wider">Plano</p>
+                    <p className="font-bold text-white text-sm">{quote.plano_selecionado || 'Opções Geradas'}</p>
                   </div>
                   <p className="text-xs text-zinc-600 font-mono">
                     {new Date(quote.created_at).toLocaleDateString('pt-BR')}
@@ -190,7 +189,7 @@ const ConsultorVendas = () => {
                 <tr>
                   <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Cotação</th>
                   <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Cliente / Veículo</th>
-                  <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Plano / Valor</th>
+                  <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Plano Escolhido</th>
                   <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest text-right">Status</th>
                 </tr>
               </thead>
@@ -220,10 +219,9 @@ const ConsultorVendas = () => {
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="font-black text-white mb-0.5">
-                        {formatCurrency(quote.mensalidade)}<span className="text-xs font-normal text-zinc-500">/mês</span>
+                      <div className="font-bold text-white mb-0.5">
+                        {quote.plano_selecionado || 'Opções Geradas'}
                       </div>
-                      <div className="text-xs text-zinc-500">{quote.plano_selecionado}</div>
                     </td>
                     <td className="p-4 text-right">{getStatusBadge(quote.status)}</td>
                   </motion.tr>

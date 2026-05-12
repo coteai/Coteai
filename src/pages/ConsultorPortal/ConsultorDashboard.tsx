@@ -155,9 +155,7 @@ const ConsultorDashboard = () => {
   const converted = quotes.filter((q) => q.status === 'converted').length;
   const pending = quotes.filter((q) => q.status === 'pending').length;
   const conversionRate = total > 0 ? ((converted / total) * 100).toFixed(1) : '0.0';
-  const totalValue = quotes
-    .filter((q) => q.status === 'converted')
-    .reduce((sum, q) => sum + (q.mensalidade || 0), 0);
+
 
   const getStatusBadge = (status: string) => {
     if (status === 'converted')
@@ -228,14 +226,7 @@ const ConsultorDashboard = () => {
               accentHex={accentHex}
             />
             <KpiCard title="Pendentes" value={String(pending)} sub="aguardando" icon={Clock} delay={0.3} accentHex={accentHex} />
-            <KpiCard
-              title="Receita Gerada"
-              value={formatCurrency(totalValue)}
-              sub="mensalidades convertidas"
-              icon={DollarSign}
-              delay={0.4}
-              accentHex={accentHex}
-            />
+            <KpiCard title="Eficiência" value={`${conversionRate}%`} sub="taxa de conversão" icon={TrendingUp} delay={0.4} accentHex={accentHex} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">

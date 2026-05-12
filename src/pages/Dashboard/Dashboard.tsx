@@ -56,7 +56,7 @@ const Dashboard = () => {
   const { associationData } = useAssociation();
   const [loading, setLoading] = useState(true);
   
-  const [kpis, setKpis] = useState({ total: 0, converted: 0, conversionRate: '0.0', avgTicket: 0 });
+  const [kpis, setKpis] = useState({ total: 0, converted: 0, conversionRate: '0.0' });
   const [chartData, setChartData] = useState<any[]>([]);
   const [ranking, setRanking] = useState<any[]>([]);
   const [topVehicles, setTopVehicles] = useState<any[]>([]);
@@ -87,10 +87,7 @@ const Dashboard = () => {
     const total = quotes.length;
     const converted = quotes.filter(q => q.status === 'converted');
     const conversionRate = total > 0 ? ((converted.length / total) * 100).toFixed(1) : '0.0';
-    const totalRevenue = converted.reduce((sum, q) => sum + (Number(q.mensalidade) || 0), 0);
-    const avgTicket = converted.length > 0 ? totalRevenue / converted.length : 0;
-    
-    setKpis({ total, converted: converted.length, conversionRate, avgTicket });
+    setKpis({ total, converted: converted.length, conversionRate });
 
     // 2. Chart Data (Last 14 days)
     const days: any = {};
@@ -218,8 +215,8 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <StatCard title="Cotações Totais" value={formatNumber(kpis.total)} change="Geradas pela associação" icon={FileText} delay={0.1} accentHex={accentHex} />
             <StatCard title="Convertidas" value={formatNumber(kpis.converted)} change="Vendas confirmadas" icon={CheckCircle2} delay={0.2} accentHex={accentHex} />
-            <StatCard title="Taxa Conversão" value={`${kpis.conversionRate}%`} change="Conversão global" icon={TrendingUp} delay={0.3} accentHex={accentHex} />
-            <StatCard title="Ticket Médio" value={formatCurrency(kpis.avgTicket)} change="Mensalidade média convertida" icon={DollarSign} delay={0.4} accentHex={accentHex} />
+            <StatCard title="Conversão / Cotação" value={`${kpis.conversionRate}%`} change="Eficiência de vendas" icon={TrendingUp} delay={0.3} accentHex={accentHex} />
+            <StatCard title="Planos Ativos" value={formatNumber(kpis.converted)} change="Total convertido" icon={CheckCircle2} delay={0.4} accentHex={accentHex} />
           </div>
 
           {/* Main Content Grid */}
@@ -406,7 +403,6 @@ const Dashboard = () => {
                         <span className="font-sans text-[0.75rem] font-bold text-slate-200 uppercase tracking-wide">{name}</span>
                         <span className="font-mono text-sm text-white font-bold">{pct}</span>
                       </div>
-                      <p className="font-mono text-[0.6rem] text-slate-600 uppercase tracking-tighter">Média: {formatCurrency(avg)}</p>
                     </div>
                   </div>
                 ))}
