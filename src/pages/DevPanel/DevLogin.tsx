@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useSuperAdminAuth } from '../../contexts/SuperAdminAuthContext';
 import Logo from '../../components/common/Logo';
+import InstallAppButton from '../../components/common/InstallAppButton';
 
 const DEV_ACCENT = '#6366f1'; // Indigo
 
@@ -32,6 +33,10 @@ const DevLogin = () => {
 
   return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute right-4 top-4 z-20">
+        <InstallAppButton accentColor={DEV_ACCENT} />
+      </div>
+
       {/* Background glows */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[500px] blur-[160px] rounded-full" style={{ background: `radial-gradient(circle, ${DEV_ACCENT}15 0%, transparent 70%)` }} />

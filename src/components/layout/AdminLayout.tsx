@@ -5,6 +5,7 @@ import {
   Users, ListTree, Calculator, MoreHorizontal, X
 } from 'lucide-react';
 import Logo from '../common/Logo';
+import InstallAppButton from '../common/InstallAppButton';
 import { useAssociation } from '../../contexts/AssociationContext';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -147,6 +148,7 @@ const AdminLayout = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3 relative z-10">
+            <InstallAppButton accentColor={accentHex} />
             <button className="relative p-2 text-zinc-500 hover:text-white transition-colors">
               <Bell size={20} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2 border-[#0E1629]" style={{ backgroundColor: accentHex }} />

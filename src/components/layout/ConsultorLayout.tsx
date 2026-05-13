@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Briefcase, Zap, LogOut, Bell, Settings, MoreHorizontal, X } from 'lucide-react';
 import Logo from '../common/Logo';
+import InstallAppButton from '../common/InstallAppButton';
 import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
 import { useAssociation } from '../../contexts/AssociationContext';
 import { getThemeConfig } from '../../utils/themePresets';
@@ -149,6 +150,7 @@ const ConsultorLayout = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3 relative z-10">
+            <InstallAppButton accentColor={accentHex} />
             <button className="relative p-2 text-zinc-500 hover:text-white transition-colors">
               <Bell size={20} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border-2 border-[#0E1629]" style={{ backgroundColor: accentHex }} />

@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Building2, LogOut, Shield, Bell } from 'lucide-react';
 import { useSuperAdminAuth } from '../../contexts/SuperAdminAuthContext';
+import InstallAppButton from '../common/InstallAppButton';
 
 const DEV_ACCENT = '#6366f1';
 
@@ -93,6 +94,7 @@ const DevLayout = () => {
             </span>
           </div>
           <div className="flex items-center space-x-4">
+            <InstallAppButton accentColor={DEV_ACCENT} />
             <button className="relative p-2 text-zinc-500 hover:text-white transition-colors">
               <Bell size={20} />
             </button>

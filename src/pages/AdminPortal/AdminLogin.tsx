@@ -5,6 +5,7 @@ import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-re
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useAssociation } from '../../contexts/AssociationContext';
 import Logo from '../../components/common/Logo';
+import InstallAppButton from '../../components/common/InstallAppButton';
 
 const AdminLogin = () => {
   const { login } = useAdminAuth();
@@ -39,6 +40,10 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute right-4 top-4 z-20">
+        <InstallAppButton accentColor={accentHex} />
+      </div>
+
       {/* Background glows */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] blur-[140px] rounded-full" style={{ backgroundColor: `${accentHex}0F` }} />
