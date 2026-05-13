@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as htmlToImage from 'html-to-image';
+import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { CheckCircle2, ArrowRight, Smartphone, Loader2, AlertCircle, Bike, Truck, Zap, Car, FileText, ListTree, Share2, Download, Copy } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -9,6 +10,25 @@ import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
 import { getThemeConfig } from '../../utils/themePresets';
 
 const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val || 0);
+const PDF_TIMEOUT_MS = 12000;
+
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> => {
+  let timeoutId: number | undefined;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+};
+
+const getPdfFileName = (placa?: string) => {
+  const cleanPlate = (placa || 'Veiculo').replace(/[^A-Za-z0-9_-]/g, '');
+  return `Cotacao_${cleanPlate || 'Veiculo'}.pdf`;
+};
 
 const QuoteGenerator = () => {
   const [step, setStep] = useState(1);
@@ -16,7 +36,7 @@ const QuoteGenerator = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const pdfRef = useRef(null);
+  const pdfRef = useRef<HTMLDivElement | null>(null);
   
   const [formData, setFormData] = useState<any>({ placa: '', tipo_veiculo: 'carro', modelo: '', fipe: 0 });
   const [fipeVariants, setFipeVariants] = useState<any[]>([]);
@@ -276,16 +296,109 @@ const QuoteGenerator = () => {
     alert("Texto copiado!");
   };
 
+  const capturePageAsPng = async (pageElement: HTMLElement) => {
+    try {
+      return await withTimeout(
+        htmlToImage.toPng(pageElement, {
+          backgroundColor: '#080F1E',
+          cacheBust: true,
+          pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        }),
+        PDF_TIMEOUT_MS,
+        'A captura visual demorou demais.'
+      );
+    } catch (htmlToImageError) {
+      console.warn('[PDF] html-to-image falhou, tentando html2canvas:', htmlToImageError);
+
+      const canvas = await withTimeout(
+        html2canvas(pageElement, {
+          backgroundColor: '#080F1E',
+          scale: Math.min(window.devicePixelRatio || 1, 2),
+          useCORS: true,
+          logging: false,
+        }),
+        PDF_TIMEOUT_MS,
+        'A captura alternativa demorou demais.'
+      );
+
+      return canvas.toDataURL('image/png');
+    }
+  };
+
+  const generateTextPdfBlob = () => {
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 14;
+    let y = 16;
+
+    const addLine = (text, size = 10, isBold = false) => {
+      pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+      pdf.setFontSize(size);
+      const lines = pdf.splitTextToSize(String(text || ''), pageWidth - margin * 2);
+      lines.forEach((line) => {
+        if (y > 280) {
+          pdf.addPage();
+          y = 16;
+        }
+        pdf.text(line, margin, y);
+        y += size * 0.45 + 2;
+      });
+    };
+
+    addLine(associationData?.nome || 'Cote AI', 18, true);
+    addLine('Proposta de Protecao Veicular', 12, true);
+    y += 4;
+    addLine(`Data: ${new Date().toLocaleDateString('pt-BR')}`);
+    addLine(`Veiculo: ${formData.modelo || '-'}`);
+    addLine(`Placa: ${formData.placa || '-'}`);
+    addLine(`Valor FIPE: ${formatCurrency(formData.fipe)}`);
+    y += 4;
+    addLine('Planos disponiveis', 13, true);
+
+    availablePlans.forEach((planPrice) => {
+      y += 3;
+      addLine(`Plano ${planPrice.plans?.nome || '-'}`, 12, true);
+      addLine(`Mensalidade: ${formatCurrency(planPrice.mensalidade)}`);
+      addLine(`Taxa de adesao: ${formatCurrency(planPrice.mensalidade)}`);
+      addLine(`Cota de participacao: ${planPrice.franquia_percentual || 0}%`);
+      addLine(`Cobertura: ${formatCurrency(planPrice.cobertura_maxima)}`);
+
+      const coverages = planPrice.plans?.coberturas || [];
+      if (coverages.length > 0) {
+        addLine('Beneficios:', 10, true);
+        coverages.forEach((coverage) => {
+          addLine(`- ${coverage.label}${coverage.param ? `: ${coverage.param}` : ''}`);
+        });
+      }
+    });
+
+    y += 4;
+    addLine('Valores sujeitos a analise de perfil e vistoria do veiculo. Validade de 5 dias.', 9);
+
+    return pdf.output('blob');
+  };
+
   const generatePdfBlob = async () => {
     const input = pdfRef.current;
-    if (!input) return null;
+    if (!input) {
+      alert('Nao encontrei o conteudo da proposta para gerar o PDF.');
+      return null;
+    }
     
     setIsGeneratingPDF(true);
     try {
       await new Promise(r => setTimeout(r, 100)); // wait for rendering
+      if (document.fonts?.ready) {
+        await withTimeout(document.fonts.ready, 3000, 'As fontes demoraram demais para carregar.');
+      }
+
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       
-      const childrenNodes = Array.from(input.children);
+      const childrenNodes = Array.from(input.children) as HTMLElement[];
+      if (childrenNodes.length === 0) {
+        return generateTextPdfBlob();
+      }
+
       for (let i = 0; i < childrenNodes.length; i++) {
         const pageElement = childrenNodes[i];
         if (i > 0) pdf.addPage();
@@ -293,7 +406,7 @@ const QuoteGenerator = () => {
         pdf.setFillColor(8, 15, 30); // Theme background #080F1E
         pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 'F');
         
-        const imgData = await htmlToImage.toPng(pageElement, { backgroundColor: '#080F1E', pixelRatio: 2 });
+        const imgData = await capturePageAsPng(pageElement);
         
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
@@ -312,9 +425,8 @@ const QuoteGenerator = () => {
       }
       return pdf.output('blob');
     } catch (err) {
-      console.error("Erro gerando PDF:", err);
-      alert(`Houve um erro: ${err.message || err}`);
-      return null;
+      console.error("Erro gerando PDF visual, usando PDF simples:", err);
+      return generateTextPdfBlob();
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -324,7 +436,7 @@ const QuoteGenerator = () => {
     const blob = await generatePdfBlob();
     if (!blob) return;
 
-    const fileName = `Cotacao_${formData.placa || 'Veiculo'}.pdf`;
+    const fileName = getPdfFileName(formData.placa);
     const file = new File([blob], fileName, { type: 'application/pdf' });
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -336,13 +448,41 @@ const QuoteGenerator = () => {
         });
       } catch (err) {
         console.error('Share failed', err);
+        if ((err as { name?: string })?.name !== 'AbortError') {
+          alert('Nao foi possivel abrir o compartilhamento. Vou baixar o PDF para voce enviar manualmente.');
+          handleDownloadPDF(blob);
+        }
       }
     } else {
-      alert("Seu aparelho/navegador não suporta envio direto de documentos do sistema. O download do PDF começará agora, anexe manualmente onde preferir.");
+      alert("Seu aparelho/navegador nao suporta envio direto de documentos do sistema. O download do PDF comecara agora, anexe manualmente onde preferir.");
       handleDownloadPDF(blob); // fallback
     }
   };
 
+  const handleWhatsAppShare = async () => {
+    const blob = await generatePdfBlob();
+    if (!blob) return;
+
+    const fileName = getPdfFileName(formData.placa);
+    const file = new File([blob], fileName, { type: 'application/pdf' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: `Cotacao ${formData.modelo}`,
+          text: `Segue a proposta em PDF para o ${formData.modelo}.`
+        });
+        return;
+      } catch (err) {
+        console.error('WhatsApp share failed', err);
+        if ((err as { name?: string })?.name === 'AbortError') return;
+      }
+    }
+
+    handleDownloadPDF(blob);
+    window.open(`https://wa.me/?text=${encodeURIComponent(getShareText())}`, '_blank', 'noopener,noreferrer');
+  };
   const handleDownloadPDF = async (preGeneratedBlob = null) => {
     const blob = preGeneratedBlob || await generatePdfBlob();
     if (!blob) return;
@@ -350,7 +490,7 @@ const QuoteGenerator = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Cotacao_${formData.placa || 'Veiculo'}.pdf`;
+    link.download = getPdfFileName(formData.placa);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -919,7 +1059,7 @@ const QuoteGenerator = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-md mx-auto shrink-0 mb-6">
-                <button onClick={handleNativeShare} disabled={isGeneratingPDF} className={`flex flex-col items-center justify-center bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 py-3 rounded-xl font-bold transition-all group h-20 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_0_15px_rgba(37,211,102,0.15)]'}`}>
+                <button onClick={handleWhatsAppShare} disabled={isGeneratingPDF} className={`flex flex-col items-center justify-center bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 py-3 rounded-xl font-bold transition-all group h-20 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_0_15px_rgba(37,211,102,0.15)]'}`}>
                   {isGeneratingPDF ? <Loader2 className="w-6 h-6 mb-1.5 animate-spin" /> : <Smartphone className="w-6 h-6 mb-1.5" />}
                   <span className="text-[10px] uppercase tracking-wider">WhatsApp</span>
                 </button>
