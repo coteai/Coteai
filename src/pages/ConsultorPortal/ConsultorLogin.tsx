@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Zap, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
@@ -8,7 +9,7 @@ import Logo from '../../components/common/Logo';
 import InstallAppButton from '../../components/common/InstallAppButton';
 
 const ConsultorLogin = () => {
-  const { login } = useConsultorAuth();
+  const { login, consultor, loading: authLoading } = useConsultorAuth();
   const { associationData } = useAssociation();
   const navigate = useNavigate();
 
@@ -19,6 +20,12 @@ const ConsultorLogin = () => {
       associationData: associationData?.slug || 'Pendente'
     });
   }, [associationData]);
+
+  useEffect(() => {
+    if (!authLoading && consultor) {
+      navigate('/consultor', { replace: true });
+    }
+  }, [consultor, authLoading, navigate]);
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
@@ -8,7 +9,7 @@ import Logo from '../../components/common/Logo';
 import InstallAppButton from '../../components/common/InstallAppButton';
 
 const AdminLogin = () => {
-  const { login } = useAdminAuth();
+  const { login, admin, loading: authLoading } = useAdminAuth();
   const { associationData, theme } = useAssociation(); // Uses the default or mapped association context theme for the login page design
   const navigate = useNavigate();
 
@@ -19,6 +20,12 @@ const AdminLogin = () => {
   const [error, setError] = useState('');
 
   const accentHex = theme?.colors?.glowHex || '#3B82F6';
+
+  useEffect(() => {
+    if (!authLoading && admin) {
+      navigate('/', { replace: true });
+    }
+  }, [admin, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

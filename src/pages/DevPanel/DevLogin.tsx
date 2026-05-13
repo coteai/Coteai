@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
@@ -9,7 +10,7 @@ import InstallAppButton from '../../components/common/InstallAppButton';
 const DEV_ACCENT = '#6366f1'; // Indigo
 
 const DevLogin = () => {
-  const { login } = useSuperAdminAuth();
+  const { login, superAdmin, loading: authLoading } = useSuperAdminAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -17,6 +18,12 @@ const DevLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!authLoading && superAdmin) {
+      navigate('/dev', { replace: true });
+    }
+  }, [authLoading, navigate, superAdmin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
