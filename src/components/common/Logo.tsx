@@ -12,7 +12,7 @@ const Logo: React.FC<LogoProps> = ({ className = '' }) => {
 
   return (
     <div
-      className={`inline-flex items-baseline select-none ${className}`}
+      className={`inline-flex items-baseline justify-center w-full select-none ${className}`}
       aria-label="Cote AI"
     >
       {/* COTE — white luminous glow */}
@@ -20,7 +20,7 @@ const Logo: React.FC<LogoProps> = ({ className = '' }) => {
         style={{
           fontFamily: "'Montserrat', 'Outfit', sans-serif",
           fontWeight: 900,
-          fontSize: '1.15rem',
+          fontSize: '1.4rem',
           letterSpacing: '0.06em',
           lineHeight: 1,
           color: '#ffffff',
@@ -42,7 +42,7 @@ const Logo: React.FC<LogoProps> = ({ className = '' }) => {
         style={{
           fontFamily: "'Montserrat', 'Outfit', sans-serif",
           fontWeight: 900,
-          fontSize: '1.15rem',
+          fontSize: '1.4rem',
           letterSpacing: '0.06em',
           lineHeight: 1,
           background: `linear-gradient(135deg, ${accentColor} 0%, ${accentLight} 55%, #93c5fd 100%)`,
