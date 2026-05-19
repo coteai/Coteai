@@ -9,7 +9,7 @@ import { getThemeConfig } from '../../utils/themePresets';
 
 const ConsultorLayout = () => {
   const { consultor, logout } = useConsultorAuth();
-  const { associationData } = useAssociation();
+  const { associationData, theme } = useAssociation();
   const navigate = useNavigate();
   const location = useLocation();
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -20,7 +20,6 @@ const ConsultorLayout = () => {
     navigate('/consultor/login');
   };
 
-  const theme = getThemeConfig(consultor?.tema_cor || 'emerald');
   const accentHex = theme.colors.glowHex;
   const accentShadow = theme.colors.shadow;
   const bgClass = theme.colors.bg;

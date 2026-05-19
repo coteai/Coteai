@@ -10,8 +10,10 @@ import InstallAppButton from '../../components/common/InstallAppButton';
 
 const ConsultorLogin = () => {
   const { login, consultor, loading: authLoading } = useConsultorAuth();
-  const { associationData } = useAssociation();
+  const { associationData, theme } = useAssociation();
   const navigate = useNavigate();
+
+  const accentHex = theme?.colors?.glowHex || '#3B82F6';
 
   React.useEffect(() => {
     console.log("Configuração Consultor Portal:", {
@@ -51,13 +53,13 @@ const ConsultorLogin = () => {
   return (
     <div className="min-h-screen bg-[var(--color-background)] flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute right-4 top-4 z-20">
-        <InstallAppButton accentColor="#10b981" />
+        <InstallAppButton accentColor={accentHex} />
       </div>
 
       {/* Background glows */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-emerald-500/5 blur-[140px] rounded-full" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[300px] bg-emerald-600/5 blur-[120px] rounded-full" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] blur-[140px] rounded-full" style={{ backgroundColor: `${accentHex}0F` }} />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[300px] blur-[120px] rounded-full" style={{ backgroundColor: `${accentHex}0A` }} />
         {/* Grid pattern */}
         <div
           className="absolute inset-0 opacity-[0.03]"
@@ -77,7 +79,7 @@ const ConsultorLogin = () => {
         {/* Card */}
         <div className="bg-zinc-950/80 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.6)]">
           {/* Top accent line */}
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-emerald-500/60 to-transparent" />
+          <div className="h-px w-full" style={{ background: `linear-gradient(to right, transparent, ${accentHex}90, transparent)` }} />
 
           {/* Header */}
           <div className="px-10 pt-12 pb-8 text-center border-b border-white/5">
@@ -121,7 +123,9 @@ const ConsultorLogin = () => {
                   placeholder="seu@email.com"
                   required
                   autoComplete="username"
-                  className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-700 focus:outline-none focus:border-emerald-500/50 focus:shadow-[0_0_0_1px_rgba(16,185,129,0.2)] transition-all font-medium"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder:text-zinc-700 focus:outline-none transition-all font-medium"
+                  onFocus={(e) => e.target.style.borderColor = `${accentHex}50`}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
                 />
               </div>
             </div>
@@ -141,7 +145,9 @@ const ConsultorLogin = () => {
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
-                  className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-12 py-3 text-white placeholder:text-zinc-700 focus:outline-none focus:border-emerald-500/50 focus:shadow-[0_0_0_1px_rgba(16,185,129,0.2)] transition-all font-medium"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-12 py-3 text-white placeholder:text-zinc-700 focus:outline-none transition-all font-medium"
+                  onFocus={(e) => e.target.style.borderColor = `${accentHex}50`}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
                 />
                 <button
                   type="button"
@@ -158,7 +164,12 @@ const ConsultorLogin = () => {
               id="consultor-login-btn"
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/40 text-black font-black rounded-xl transition-all hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] active:scale-[0.98] flex items-center justify-center space-x-2 mt-2 text-sm uppercase tracking-wider"
+              className="w-full py-3.5 font-black rounded-xl transition-all active:scale-[0.98] flex items-center justify-center space-x-2 mt-2 text-sm uppercase tracking-wider text-black"
+              style={{
+                backgroundColor: accentHex,
+                boxShadow: loading ? 'none' : `0 0 30px ${accentHex}60`,
+                opacity: loading ? 0.6 : 1,
+              }}
             >
               {loading ? (
                 <>

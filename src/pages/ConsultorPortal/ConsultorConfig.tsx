@@ -3,11 +3,17 @@ import { motion } from 'framer-motion';
 import { Palette, Settings } from 'lucide-react';
 import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
 import { getThemeConfig, THEMES } from '../../utils/themePresets';
+import { useAssociation } from '../../contexts/AssociationContext';
 
 const ConsultorConfig = () => {
   const { consultor, updateTheme } = useConsultorAuth();
-  const theme = getThemeConfig(consultor?.tema_cor || 'emerald');
-  const accentHex = theme.colors.glowHex;
+  const { theme: systemTheme } = useAssociation();
+  
+  // UI Theme (Standard Admin Blue)
+  const accentHex = systemTheme.colors.glowHex;
+
+  // Selected Theme for Quotes
+  const selectedThemeConfig = getThemeConfig(consultor?.tema_cor || 'emerald');
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto md:mx-0 w-full pb-20 md:pb-0">
@@ -36,8 +42,8 @@ const ConsultorConfig = () => {
               <Palette size={24} style={{ color: accentHex }} />
             </div>
             <div>
-              <h3 className="text-lg font-black text-white uppercase tracking-tight">Cores do Portal</h3>
-              <p className="text-xs text-zinc-500">Escolha o seu tema visual preferido.</p>
+              <h3 className="text-lg font-black text-white uppercase tracking-tight">Cores da Cotação</h3>
+              <p className="text-xs text-zinc-500">Escolha o tema visual das suas cotações geradas.</p>
             </div>
           </div>
           
@@ -47,9 +53,9 @@ const ConsultorConfig = () => {
                 key={t.id}
                 onClick={() => updateTheme(t.id)}
                 className={`flex flex-col items-center p-3 md:p-4 rounded-2xl border transition-all ${
-                  theme.id === t.id ? 'bg-white/5' : 'border-white/5 hover:border-white/20 bg-black/20'
+                  selectedThemeConfig.id === t.id ? 'bg-white/5' : 'border-white/5 hover:border-white/20 bg-black/20'
                 }`}
-                style={theme.id === t.id ? { borderColor: t.colors.glowHex, boxShadow: `0 0 20px ${t.colors.shadow}` } : {}}
+                style={selectedThemeConfig.id === t.id ? { borderColor: t.colors.glowHex, boxShadow: `0 0 20px ${t.colors.shadow}` } : {}}
               >
                 <div className="w-6 h-6 md:w-8 md:h-8 rounded-full mb-2 md:mb-3 shadow-lg" style={{ backgroundColor: t.colors.glowHex }} />
                 <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-zinc-300 text-center">{t.name.split(' ')[0]}</span>
