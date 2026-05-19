@@ -90,7 +90,7 @@ const ConsultorLogin = () => {
               Portal do Consultor
             </h1>
             <p className="text-xs text-zinc-500 font-black uppercase tracking-widest mt-2">
-              {associationData?.nome || 'Cote AI'} — Área Restrita
+              Área Restrita
             </p>
           </div>
 
