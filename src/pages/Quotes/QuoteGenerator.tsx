@@ -296,11 +296,15 @@ const QuoteGenerator = () => {
     alert("Texto copiado!");
   };
 
+  const getPdfBackgroundColorHex = () => theme.id === 'viptruck' ? '#8a8c8e' : '#080F1E';
+  const getPdfBackgroundColorRgb = () => theme.id === 'viptruck' ? [138, 140, 142] : [8, 15, 30];
+
   const capturePageAsPng = async (pageElement: HTMLElement) => {
+    const bgColor = getPdfBackgroundColorHex();
     try {
       return await withTimeout(
         htmlToImage.toPng(pageElement, {
-          backgroundColor: '#080F1E',
+          backgroundColor: bgColor,
           cacheBust: true,
           pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
         }),
@@ -312,7 +316,7 @@ const QuoteGenerator = () => {
 
       const canvas = await withTimeout(
         html2canvas(pageElement, {
-          backgroundColor: '#080F1E',
+          backgroundColor: bgColor,
           scale: Math.min(window.devicePixelRatio || 1, 2),
           useCORS: true,
           logging: false,
@@ -403,7 +407,8 @@ const QuoteGenerator = () => {
         const pageElement = childrenNodes[i];
         if (i > 0) pdf.addPage();
         
-        pdf.setFillColor(8, 15, 30); // Theme background #080F1E
+        const rgb = getPdfBackgroundColorRgb();
+        pdf.setFillColor(rgb[0], rgb[1], rgb[2]); // Dynamic Theme background
         pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 'F');
         
         const imgData = await capturePageAsPng(pageElement);
@@ -811,7 +816,7 @@ const QuoteGenerator = () => {
                      const isLast = index === availablePlans.length - 1;
 
                      return (
-                      <div key={planPrice.id} className="bg-[#080F1E] text-[#E2E8F0] w-[800px] h-[1131px] p-8 font-sans relative overflow-hidden flex flex-col pt-12">
+                      <div key={planPrice.id} className="text-[#E2E8F0] w-[800px] h-[1131px] p-8 font-sans relative overflow-hidden flex flex-col pt-12" style={{ backgroundColor: getPdfBackgroundColorHex() }}>
                         {/* Background effects */}
                         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3"></div>
                         {isLast && <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-white/5 rounded-full blur-[120px] translate-y-1/3 -translate-x-1/4"></div>}
@@ -948,7 +953,7 @@ const QuoteGenerator = () => {
 
                   {/* COMPARISON PAGE */}
                   {availablePlans.length > 1 && (
-                      <div className="bg-[#080F1E] text-[#E2E8F0] w-[800px] min-h-[1131px] p-8 font-sans relative overflow-hidden flex flex-col pt-12 shrink-0">
+                      <div className="text-[#E2E8F0] w-[800px] min-h-[1131px] p-8 font-sans relative overflow-hidden flex flex-col pt-12 shrink-0" style={{ backgroundColor: getPdfBackgroundColorHex() }}>
                         {/* Background effects */}
                         <div className="absolute top-[20%] right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] translate-x-1/3"></div>
 

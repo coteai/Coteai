@@ -1,4 +1,4 @@
-export type ThemeId = 'blue' | 'red' | 'emerald' | 'violet' | 'amber' | 'slate';
+export type ThemeId = 'blue' | 'red' | 'emerald' | 'violet' | 'amber' | 'slate' | 'viptruck';
 
 export interface ThemeConfig {
   id: ThemeId;
@@ -84,6 +84,18 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
       border: 'border-slate-500/50',
       shadow: 'rgba(148,163,184,0.25)', // Tailwind slate-400
       glowHex: '#94a3b8',
+    }
+  },
+  viptruck: {
+    id: 'viptruck',
+    name: 'Vip Truck (Vermelho)',
+    colors: {
+      primary: 'text-red-600',
+      bg: 'bg-red-600',
+      gradientFrom: 'from-red-500',
+      border: 'border-red-600/50',
+      shadow: 'rgba(255, 0, 0, 0.25)',
+      glowHex: '#FF0000',
     }
   }
 };
