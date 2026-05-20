@@ -55,6 +55,7 @@ const QuoteGenerator = () => {
   const [availablePlans, setAvailablePlans] = useState<any[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
+  const [customAdesao, setCustomAdesao] = useState('');
 
   useEffect(() => {
     const init = async () => {
@@ -76,6 +77,7 @@ const QuoteGenerator = () => {
     setMatchedCategory(null);
     setSelectedPlan(null);
     setSavedQuoteId(null);
+    setCustomAdesao('');
     setError('');
   };
 
@@ -234,7 +236,10 @@ const QuoteGenerator = () => {
         valor_fipe: formData.fipe,
         plano_selecionado: availablePlans.length > 1 ? 'Múltiplas Opções' : availablePlans[0]?.plans?.nome,
         mensalidade: minPrice,
-        planos_cotados: availablePlans,
+        planos_cotados: availablePlans.map(p => ({
+          ...p,
+          custom_adesao: customAdesao ? parseFloat(customAdesao) : p.mensalidade
+        })),
         status: 'pending'
       })
       .select()
@@ -269,7 +274,7 @@ const QuoteGenerator = () => {
       
       text += `${icon} *Plano ${p.plans?.nome?.toUpperCase()}*\n\n`;
       text += `💰 Mensalidade: ${formatCurrency(p.mensalidade)}\n`;
-      text += `✅ Adesão: ${formatCurrency(p.mensalidade)}\n`; 
+      text += `✅ Adesão: ${formatCurrency(customAdesao ? parseFloat(customAdesao) : (p.custom_adesao || p.mensalidade))}\n`; 
       text += `🎯 Cota Participação: ${p.franquia_percentual}%\n\n`;
       
       text += `📋 *Benefícios:*\n\n`;
@@ -393,7 +398,7 @@ const QuoteGenerator = () => {
       y += 3;
       addLine(`Plano ${planPrice.plans?.nome || '-'}`, 12, true);
       addLine(`Mensalidade: ${formatCurrency(planPrice.mensalidade)}`);
-      addLine(`Taxa de adesao: ${formatCurrency(planPrice.mensalidade)}`);
+      addLine(`Taxa de adesao: ${formatCurrency(planPrice.custom_adesao || (customAdesao ? parseFloat(customAdesao) : planPrice.mensalidade))}`);
       addLine(`Cota de participacao: ${planPrice.franquia_percentual || 0}%`);
       addLine(`Cobertura: ${formatCurrency(planPrice.cobertura_maxima)}`);
 
@@ -736,6 +741,25 @@ const QuoteGenerator = () => {
                 <button onClick={() => setStep(2)} className="text-zinc-300 text-sm hover:underline font-bold bg-white/5 px-4 py-2 rounded-lg">Trocar Versão</button>
               </div>
 
+                            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/[0.02] p-4 rounded-2xl border border-white/5">
+                <div>
+                  <h3 className="text-white font-bold uppercase tracking-widest text-sm">Taxa de Adesão (Negociada)</h3>
+                  <p className="text-zinc-500 text-xs">Valor negociado com o associado (opcional)</p>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-zinc-500 font-bold">R$</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={customAdesao}
+                    onChange={(e) => setCustomAdesao(e.target.value)}
+                    placeholder="Padrão do plano"
+                    className="w-full md:w-48 pl-12 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:border-white/20 transition-all font-bold"
+                  />
+                </div>
+              </div>
+
               {/* Mobile: lista compacta (portrait) */}
               <div className="md:hidden space-y-3 mb-4">
                 {availablePlans.map((planPrice) => {
@@ -918,7 +942,7 @@ const QuoteGenerator = () => {
                                  <div className="flex justify-between items-center px-4">
                                     <div className="text-left">
                                       <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">Taxa de Adesão</p>
-                                      <p className="text-xl font-black text-white">{formatCurrency(planPrice.mensalidade)}</p>
+                                      <p className="text-xl font-black text-white">{formatCurrency(planPrice.custom_adesao || (customAdesao ? parseFloat(customAdesao) : planPrice.mensalidade))}</p>
                                     </div>
                                     <div className="h-10 w-px bg-white/5 mx-6"></div>
                                     <div className="text-left">
