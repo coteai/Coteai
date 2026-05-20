@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Car, Bike, Truck, ChevronDown, FolderPlus, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import PlansManager from '../Pricing/PlansManager';
+import FipeTiersManager from '../Pricing/FipeTiersManager';
 
 const PlansList = () => {
   const [associationId, setAssociationId] = useState<string | null>(null);
@@ -101,11 +102,18 @@ const PlansList = () => {
       ) : (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           {associationId && (
-            <PlansManager
-              associationId={associationId}
-              groupId={activeGroupId}
-              baseType={activeGroup?.base_type}
-            />
+            {activeGroup?.pricing_mode === 'fipe_tiers' ? (
+              <FipeTiersManager
+                associationId={associationId}
+                groupId={activeGroupId}
+              />
+            ) : (
+              <PlansManager
+                associationId={associationId}
+                groupId={activeGroupId}
+                baseType={activeGroup?.base_type}
+              />
+            )}
           )}
         </motion.div>
       )}

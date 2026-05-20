@@ -168,7 +168,37 @@ const QuoteGenerator = () => {
     }
     setMatchedCategory(categories);
 
-    // Busca os planos disponíveis para esta faixa FIPE
+    // Verifica o modo de precificação do grupo
+    const group = vehicleGroups.find(g => g.id === groupId);
+    const isFipeTiers = group?.pricing_mode === 'fipe_tiers';
+
+    if (isFipeTiers) {
+      if (categories.mensalidade === null || categories.mensalidade === undefined) {
+        setError('Essa faixa FIPE não tem um preço configurado.');
+        setLoading(false);
+        return;
+      }
+      
+      const mockPlanPrice = {
+        id: categories.id,
+        mensalidade: categories.mensalidade,
+        franquia_percentual: categories.franquia_percentual || 0,
+        cobertura_maxima: categories.fipe_max,
+        ativo: true,
+        plans: {
+          id: categories.id,
+          nome: categories.nome,
+          descricao: '',
+          coberturas: categories.coberturas || []
+        }
+      };
+      setAvailablePlans([mockPlanPrice]);
+      setLoading(false);
+      setStep(3);
+      return;
+    }
+
+    // Modo "plans": Busca os planos disponíveis na tabela de preços
     const { data: prices } = await supabase
       .from('pricing_table')
       .select('*, plans(id, nome, descricao, coberturas)')

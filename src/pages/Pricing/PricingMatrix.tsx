@@ -660,11 +660,18 @@ const PricingPage = () => {
       {/* Plans Manager Tab */}
       {activeTab === 'plans' && associationId && activeGroupId && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <PlansManager 
-            associationId={associationId} 
-            groupId={activeGroupId} 
-            baseType={vehicleGroups.find(g => g.id === activeGroupId)?.base_type} 
-          />
+          {vehicleGroups.find(g => g.id === activeGroupId)?.pricing_mode === 'fipe_tiers' ? (
+            <FipeTiersManager 
+              associationId={associationId} 
+              groupId={activeGroupId} 
+            />
+          ) : (
+            <PlansManager 
+              associationId={associationId} 
+              groupId={activeGroupId} 
+              baseType={vehicleGroups.find(g => g.id === activeGroupId)?.base_type} 
+            />
+          )}
         </motion.div>
       )}
 
