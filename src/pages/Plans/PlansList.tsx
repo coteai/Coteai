@@ -102,7 +102,7 @@ const PlansList = () => {
       ) : (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           {associationId && (
-            {activeGroup?.pricing_mode === 'fipe_tiers' ? (
+            activeGroup?.pricing_mode === 'fipe_tiers' ? (
               <FipeTiersManager
                 associationId={associationId}
                 groupId={activeGroupId}
@@ -113,7 +113,7 @@ const PlansList = () => {
                 groupId={activeGroupId}
                 baseType={activeGroup?.base_type}
               />
-            )}
+            )
           )}
         </motion.div>
       )}
