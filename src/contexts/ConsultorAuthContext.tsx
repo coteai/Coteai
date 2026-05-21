@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAssociation } from './AssociationContext';
 
 export interface ConsultorSession {
   id: string;
@@ -7,6 +8,7 @@ export interface ConsultorSession {
   email: string;
   whatsapp?: string;
   tema_cor?: string;
+  association_id: string;
 }
 
 interface ConsultorAuthContextType {
@@ -24,6 +26,7 @@ const SESSION_KEY = 'consultor_session';
 export const ConsultorAuthProvider = ({ children }: { children: ReactNode }) => {
   const [consultor, setConsultor] = useState<ConsultorSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const { refreshAssociation } = useAssociation();
 
   // Restore session from localStorage on mount
   useEffect(() => {
@@ -44,20 +47,13 @@ export const ConsultorAuthProvider = ({ children }: { children: ReactNode }) => 
       return { error: 'Preencha e-mail e senha.' };
     }
 
-    // Use maybeSingle() - safer than single() (no error if 0 rows)
-    // Fetch only columns guaranteed to exist (tema_cor added via migration may be missing)
     const { data, error } = await supabase
       .from('consultants')
-      .select('id, nome, email, whatsapp, ativo, senha')
+      .select('id, nome, email, whatsapp, ativo, senha, tema_cor, association_id')
       .eq('email', email.trim().toLowerCase())
-      .maybeSingle();
+      .single();
 
-    if (error) {
-      console.error("Erro Supabase no login do consultor:", error);
-      return { error: `Erro de conexão (${error.code}: ${error.message})` };
-    }
-
-    if (!data) {
+    if (error || !data) {
       return { error: 'E-mail não encontrado.' };
     }
 
@@ -74,11 +70,13 @@ export const ConsultorAuthProvider = ({ children }: { children: ReactNode }) => 
       nome: data.nome,
       email: data.email,
       whatsapp: data.whatsapp,
-      tema_cor: undefined, // loaded separately if needed
+      tema_cor: data.tema_cor,
+      association_id: data.association_id,
     };
 
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     setConsultor(session);
+    await refreshAssociation(data.association_id);
     return {};
   };
 

@@ -23,7 +23,7 @@ const SESSION_KEY = 'admin_session';
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const [admin, setAdmin] = useState<AdminSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const { associationData } = useAssociation(); // We need this to ensure they are logging into the right association, or we can just log them in globally based on association_id
+  const { associationData, refreshAssociation } = useAssociation(); // We need this to ensure they are logging into the right association, or we can just log them in globally based on association_id
 
   useEffect(() => {
     try {

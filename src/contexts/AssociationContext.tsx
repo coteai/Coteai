@@ -15,7 +15,7 @@ interface AssociationContextType {
   theme: ThemeConfig;
   proposalTheme: ThemeConfig;
   loading: boolean;
-  refreshAssociation: () => Promise<void>;
+  refreshAssociation: (id?: string) => Promise<void>;
 }
 
 const AssociationContext = createContext<AssociationContextType | undefined>(undefined);
@@ -24,14 +24,32 @@ export const AssociationProvider = ({ children }: { children: ReactNode }) => {
   const [associationData, setAssociationData] = useState<AssociationData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchAssociation = async () => {
+  const fetchAssociation = async (overrideId?: string) => {
     try {
-      const defaultSlug = import.meta.env.VITE_DEFAULT_ASSOCIATION_SLUG || 'protemax';
-      const { data, error } = await supabase
-        .from('associations')
-        .select('*')
-        .eq('slug', defaultSlug)
-        .single();
+      let loggedInAssocId = overrideId;
+      if (!loggedInAssocId) {
+        try {
+          const adminSession = localStorage.getItem('admin_session');
+          if (adminSession) {
+            loggedInAssocId = JSON.parse(adminSession).id;
+          } else {
+            const consultorSession = localStorage.getItem('consultor_session');
+            if (consultorSession) {
+              loggedInAssocId = JSON.parse(consultorSession).association_id;
+            }
+          }
+        } catch (e) {}
+      }
+
+      let query = supabase.from('associations').select('*');
+      if (loggedInAssocId) {
+        query = query.eq('id', loggedInAssocId);
+      } else {
+        const defaultSlug = import.meta.env.VITE_DEFAULT_ASSOCIATION_SLUG || 'protemax';
+        query = query.eq('slug', defaultSlug);
+      }
+
+      const { data, error } = await query.single();
 
       if (error) throw error;
       if (data) {

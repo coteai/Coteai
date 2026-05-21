@@ -22,16 +22,20 @@ const ConsultorVendas = () => {
   const fetchQuotes = async () => {
     if (!consultor) return;
     setLoading(true);
+
     const { data } = await supabase
       .from('quotes')
       .select('*')
       .eq('consultant_id', consultor.id)
       .order('created_at', { ascending: false });
+
     if (data) setQuotes(data);
     setLoading(false);
   };
 
-  useEffect(() => { fetchQuotes(); }, [consultor]);
+  useEffect(() => {
+    fetchQuotes();
+  }, [consultor]);
 
   const filtered = quotes.filter((q) => {
     const matchesSearch =
@@ -39,6 +43,7 @@ const ConsultorVendas = () => {
       q.cliente_nome?.toLowerCase().includes(search.toLowerCase()) ||
       q.placa?.toLowerCase().includes(search.toLowerCase()) ||
       q.modelo?.toLowerCase().includes(search.toLowerCase());
+
     const matchesStatus = filterStatus === 'all' || q.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -47,20 +52,20 @@ const ConsultorVendas = () => {
     switch (status) {
       case 'converted':
         return (
-          <span className="inline-flex items-center text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/30 whitespace-nowrap">
-            <CheckCircle2 size={10} className="mr-1" /> Convertida
+          <span className="inline-flex items-center text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-500/30">
+            <CheckCircle2 size={12} className="mr-1.5" /> CONVERTIDA
           </span>
         );
       case 'rejected':
         return (
-          <span className="inline-flex items-center text-xs font-bold text-red-400 bg-red-500/10 px-2 py-1 rounded-lg border border-red-500/30 whitespace-nowrap">
-            <XCircle size={10} className="mr-1" /> Perdida
+          <span className="inline-flex items-center text-xs font-bold text-red-400 bg-red-500/10 px-2.5 py-1.5 rounded-lg border border-red-500/30">
+            <XCircle size={12} className="mr-1.5" /> PERDIDA
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/30 whitespace-nowrap">
-            <Clock size={10} className="mr-1" /> Pendente
+          <span className="inline-flex items-center text-xs font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1.5 rounded-lg border border-amber-500/30">
+            <Clock size={12} className="mr-1.5" /> PENDENTE
           </span>
         );
     }
@@ -74,21 +79,30 @@ const ConsultorVendas = () => {
   ];
 
   return (
-    <div className="space-y-5 md:space-y-8">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <p className="premium-label mb-1" style={{ color: accentHex }}>Meu Histórico</p>
-          <h1 className="premium-title text-2xl md:text-4xl uppercase tracking-tighter mb-1">Minhas Vendas</h1>
-          <p className="text-slate-400 text-sm">Acompanhe o status de todas as suas cotações.</p>
+          <p className="premium-label mb-2" style={{ color: accentHex }}>
+            Meu Histórico
+          </p>
+          <h1 className="premium-title text-3xl md:text-4xl uppercase tracking-tighter mb-1">
+            Minhas Vendas
+          </h1>
+          <p className="text-slate-400 text-sm">
+            Acompanhe o status de todas as suas cotações geradas.
+          </p>
         </div>
-        <div className="flex items-center space-x-2 shrink-0">
-          <button onClick={fetchQuotes} className="p-2 bg-white/5 border border-white/10 text-zinc-400 hover:text-white rounded-xl hover:bg-white/10 transition-all">
-            <RefreshCw size={16} />
+        <div className="flex items-center space-x-3 shrink-0">
+          <button
+            onClick={fetchQuotes}
+            className="p-2 bg-white/5 border border-white/10 text-zinc-400 hover:text-white rounded-xl hover:bg-white/10 transition-all"
+          >
+            <RefreshCw size={18} />
           </button>
           <button
             onClick={() => navigate('/consultor/cotacao')}
-            className="hidden sm:flex items-center space-x-2 py-2.5 px-5 rounded-xl font-black text-sm text-black uppercase tracking-wide transition-all active:scale-95"
+            className="flex items-center space-x-2 py-2.5 px-5 rounded-xl font-black text-sm text-black uppercase tracking-wide transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-95"
             style={{ backgroundColor: accentHex }}
           >
             <Zap size={15} className="fill-black" />
@@ -98,26 +112,33 @@ const ConsultorVendas = () => {
       </div>
 
       {/* Filters */}
-      <div className="glass-card p-3 rounded-xl flex flex-col sm:flex-row gap-3 items-stretch sm:items-center border border-white/5">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+      <div className="glass-card p-4 rounded-xl flex flex-col sm:flex-row gap-4 items-start sm:items-center border border-white/5">
+        {/* Search */}
+        <div className="relative flex-1 max-w-sm">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar cliente, placa..."
-            className="w-full bg-black/40 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-white placeholder:text-zinc-600 text-sm focus:outline-none focus:border-white/30 transition-all"
+            placeholder="Buscar cliente, placa, modelo..."
+            className="w-full bg-black/40 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder:text-zinc-600 text-sm focus:outline-none focus:border-white/30 transition-all font-medium"
           />
         </div>
+
+        {/* Status tabs */}
         <div className="flex items-center space-x-1 bg-black/40 rounded-lg p-1 border border-white/5">
           {tabs.map((t) => (
             <button
               key={t.value}
               onClick={() => setFilterStatus(t.value)}
-              className="flex-1 px-2 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all"
+              className="px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide transition-all"
               style={
                 filterStatus === t.value
-                  ? { backgroundColor: `${accentHex}18`, color: accentHex, border: `1px solid ${accentHex}40` }
+                  ? {
+                      backgroundColor: `${accentHex}18`,
+                      color: accentHex,
+                      border: `1px solid ${accentHex}40`,
+                    }
                   : { color: '#71717a', border: '1px solid transparent' }
               }
             >
@@ -125,76 +146,51 @@ const ConsultorVendas = () => {
             </button>
           ))}
         </div>
-        <div className="hidden sm:block text-sm text-zinc-500 font-medium">
+
+        <div className="text-sm text-zinc-500 font-medium ml-auto">
           <span className="text-white font-bold">{filtered.length}</span> resultado{filtered.length !== 1 ? 's' : ''}
         </div>
       </div>
 
-      {/* Content */}
+      {/* Table */}
       {loading ? (
-        <div className="flex items-center justify-center h-48">
-          <Loader2 size={36} className="animate-spin text-zinc-500" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="glass-panel p-12 text-center">
-          <FileText size={40} className="text-zinc-700 mx-auto mb-3" />
-          <p className="text-zinc-400 font-bold mb-1">
-            {quotes.length === 0 ? 'Nenhuma cotação gerada ainda.' : 'Nenhum resultado encontrado.'}
-          </p>
-          {quotes.length === 0 && (
-            <button onClick={() => navigate('/consultor/cotacao')} className="mt-4 text-sm font-bold uppercase tracking-wider" style={{ color: accentHex }}>
-              Gerar primeira cotação →
-            </button>
-          )}
+        <div className="flex items-center justify-center h-64">
+          <Loader2 size={40} className="animate-spin text-zinc-500" />
         </div>
       ) : (
-        <>
-          {/* ── Mobile: Cards ── */}
-          <div className="md:hidden space-y-3">
-            {filtered.map((quote, idx) => (
-              <motion.div
-                key={quote.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.04 }}
-                className="glass-card p-4 flex flex-col gap-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-white text-sm truncate">{quote.cliente_nome || '—'}</p>
-                    <p className="text-xs text-zinc-500 font-mono mt-0.5 truncate">
-                      {quote.placa && <span className="mr-2 bg-white/5 px-1 rounded">{quote.placa}</span>}
-                      {quote.modelo}
-                    </p>
-                  </div>
-                  {getStatusBadge(quote.status)}
-                </div>
-                <div className="flex items-end justify-between border-t border-white/5 pt-3">
-                  <div>
-                    <p className="text-[10px] text-zinc-600 uppercase font-bold tracking-wider">Plano</p>
-                    <p className="font-bold text-white text-sm">{quote.plano_selecionado || 'Opções Geradas'}</p>
-                  </div>
-                  <p className="text-xs text-zinc-600 font-mono">
-                    {new Date(quote.created_at).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* ── Desktop: Table ── */}
-          <div className="hidden md:block glass-panel overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-white/5 border-b border-white/5">
+        <div className="glass-panel overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-white/5 border-b border-white/5">
+              <tr>
+                <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Cotação</th>
+                <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Cliente / Veículo</th>
+                <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Plano Escolhido</th>
+                <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
                 <tr>
-                  <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Cotação</th>
-                  <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Cliente / Veículo</th>
-                  <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest">Plano Escolhido</th>
-                  <th className="p-4 text-xs font-black text-zinc-500 uppercase tracking-widest text-right">Status</th>
+                  <td colSpan={4} className="p-16 text-center">
+                    <FileText size={48} className="text-zinc-700 mx-auto mb-4" />
+                    <p className="text-zinc-400 font-bold text-lg mb-1">
+                      {quotes.length === 0
+                        ? 'Nenhuma cotação gerada ainda.'
+                        : 'Nenhum resultado encontrado.'}
+                    </p>
+                    {quotes.length === 0 && (
+                      <button
+                        onClick={() => navigate('/consultor/cotacao')}
+                        className="mt-4 text-sm font-bold uppercase tracking-wider"
+                        style={{ color: accentHex }}
+                      >
+                        Gerar primeira cotação →
+                      </button>
+                    )}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filtered.map((quote, idx) => (
+              ) : (
+                filtered.map((quote, idx) => (
                   <motion.tr
                     key={quote.id}
                     initial={{ opacity: 0, y: 8 }}
@@ -208,7 +204,13 @@ const ConsultorVendas = () => {
                         #{quote.id.substring(0, 8).toUpperCase()}
                       </div>
                       <div className="text-xs text-zinc-600 font-medium mt-1">
-                        {new Date(quote.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(quote.created_at).toLocaleString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </div>
                     </td>
                     <td className="p-4">
@@ -223,13 +225,20 @@ const ConsultorVendas = () => {
                         {quote.plano_selecionado || 'Opções Geradas'}
                       </div>
                     </td>
-                    <td className="p-4 text-right">{getStatusBadge(quote.status)}</td>
+                    <td className="p-4 text-right">
+                      {getStatusBadge(quote.status)}
+                      {quote.status === 'converted' && quote.converted_at && (
+                        <div className="text-xs text-zinc-700 mt-1">
+                          {new Date(quote.converted_at).toLocaleDateString('pt-BR')}
+                        </div>
+                      )}
+                    </td>
                   </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
