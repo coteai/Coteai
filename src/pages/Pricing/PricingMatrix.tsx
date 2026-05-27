@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings2, X, Save, UploadCloud, CheckCircle, ArrowRight, Loader2, Car, Bike, Truck, ShieldCheck, AlertCircle, Plus, Trash2, RefreshCw, ChevronDown, FolderPlus, DollarSign, Edit3 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAssociation } from '../../contexts/AssociationContext';
 import PlansManager from './PlansManager';
 import FipeTiersManager from './FipeTiersManager';
 
@@ -13,7 +14,8 @@ const PricingPage = () => {
   const [categories, setCategories] = useState([]);
   const [data, setData] = useState({});
   const [editing, setEditing] = useState(null);
-  const [associationId, setAssociationId] = useState(null);
+  const { associationData } = useAssociation();
+  const associationId = associationData?.id;
   const [isLoading, setIsLoading] = useState(true);
   
   // Groups State

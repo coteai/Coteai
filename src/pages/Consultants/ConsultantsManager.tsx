@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Plus, Edit3, Trash2, CheckCircle, X, Save, AlertCircle, Loader2, Search, Zap } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAssociation } from '../../contexts/AssociationContext';
 
 type Consultant = {
   id: string;
@@ -15,7 +16,8 @@ type Consultant = {
 };
 
 const ConsultantsManager = () => {
-  const [associationId, setAssociationId] = useState<string | null>(null);
+  const { associationData } = useAssociation();
+  const associationId = associationData?.id;
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingConsultant, setEditingConsultant] = useState<Partial<Consultant> | null>(null);

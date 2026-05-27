@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, CheckCircle2, XCircle, Clock, FileText, User, Loader2, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAssociation } from '../../contexts/AssociationContext';
 
 const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val || 0);
 
@@ -9,7 +10,8 @@ const QuotesManager = () => {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [associationId, setAssociationId] = useState<string | null>(null);
+  const { associationData } = useAssociation();
+  const associationId = associationData?.id;
 
   useEffect(() => {
     const init = async () => {
