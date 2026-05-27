@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building2, Plus, Loader2, Search, Users, FileText, Settings,
-  X, CheckCircle2, AlertTriangle, Edit3, Trash2, Power, Globe
+  X, CheckCircle2, AlertTriangle, Edit3, Trash2, Power, Globe, Database
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { seedDemoData } from '../../utils/seedDemoData';
 
 const DEV_ACCENT = '#6366f1';
 
@@ -13,7 +14,7 @@ const THEMES_OPTIONS = [
   { id: 'violet', name: 'Violeta', hex: '#8B5CF6' },
   { id: 'emerald', name: 'Esmeralda', hex: '#10B981' },
   { id: 'rose', name: 'Rosa', hex: '#F43F5E' },
-  { id: 'amber', name: 'Âmbar', hex: '#F59E0B' },
+  { id: 'amber', name: 'Ã‚mbar', hex: '#F59E0B' },
   { id: 'cyan', name: 'Ciano', hex: '#06B6D4' },
 ];
 
@@ -55,6 +56,7 @@ const DevAssociations = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [consultantCounts, setConsultantCounts] = useState<Record<string, number>>({});
   const [quoteCounts, setQuoteCounts] = useState<Record<string, number>>({});
+  const [seedingId, setSeedingId] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -111,11 +113,11 @@ const DevAssociations = () => {
       if (editTarget) {
         const { error } = await supabase.from('associations').update({ ...form }).eq('id', editTarget.id);
         if (error) throw error;
-        setSuccessMsg('Associação atualizada com sucesso!');
+        setSuccessMsg('AssociaÃ§Ã£o atualizada com sucesso!');
       } else {
         const { error } = await supabase.from('associations').insert([{ ...form }]);
         if (error) throw error;
-        setSuccessMsg('Associação criada com sucesso!');
+        setSuccessMsg('AssociaÃ§Ã£o criada com sucesso!');
       }
       setShowModal(false);
       await fetchData();
@@ -124,6 +126,25 @@ const DevAssociations = () => {
       setErrorMsg(err.message || 'Erro ao salvar.');
     } finally {
       setSaving(false);
+    }
+  };
+
+    const handleSeed = async (associationId: string, nome: string) => {
+    if (!confirm(`Deseja preencher dados de demonstração (planos genéricos) para ${nome}? Isso apagará os planos e preços existentes nesta associação.`)) return;
+    
+    setSeedingId(associationId);
+    try {
+      const res = await seedDemoData(associationId);
+      if (res.success) {
+        alert('Dados genéricos inseridos com sucesso!');
+        await fetchData();
+      } else {
+        alert('Erro ao popular dados: ' + res.error);
+      }
+    } catch (e: any) {
+      alert('Erro inesperado: ' + e.message);
+    } finally {
+      setSeedingId(null);
     }
   };
 
@@ -145,8 +166,8 @@ const DevAssociations = () => {
       {/* Header */}
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] mb-2" style={{ color: `${DEV_ACCENT}90` }}>Gestão de Clientes</p>
-          <h1 className="text-4xl font-black text-white uppercase tracking-tight">Associações</h1>
+          <p className="text-xs font-black uppercase tracking-[0.18em] mb-2" style={{ color: `${DEV_ACCENT}90` }}>GestÃ£o de Clientes</p>
+          <h1 className="text-4xl font-black text-white uppercase tracking-tight">AssociaÃ§Ãµes</h1>
           <p className="text-slate-500 text-sm mt-1">{associations.length} cliente(s) cadastrado(s) na plataforma.</p>
         </div>
         <button
@@ -155,7 +176,7 @@ const DevAssociations = () => {
           style={{ backgroundColor: DEV_ACCENT, borderColor: `${DEV_ACCENT}60`, boxShadow: `0 0 20px ${DEV_ACCENT}30` }}
         >
           <Plus size={16} />
-          <span>Nova Associação</span>
+          <span>Nova AssociaÃ§Ã£o</span>
         </button>
       </div>
 
@@ -193,13 +214,13 @@ const DevAssociations = () => {
           {filtered.length === 0 ? (
             <div className="text-center py-16 text-slate-600">
               <Building2 size={40} className="mx-auto mb-4 opacity-30" />
-              <p className="font-bold">Nenhuma associação encontrada.</p>
+              <p className="font-bold">Nenhuma associaÃ§Ã£o encontrada.</p>
             </div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b" style={{ borderColor: `${DEV_ACCENT}12` }}>
-                  {['Associação', 'Slug', 'Tema', 'Consultores', 'Cotações', 'Status', 'Ações'].map(h => (
+                  {['AssociaÃ§Ã£o', 'Slug', 'Tema', 'Consultores', 'CotaÃ§Ãµes', 'Status', 'AÃ§Ãµes'].map(h => (
                     <th key={h} className="text-left px-5 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">{h}</th>
                   ))}
                 </tr>
@@ -244,6 +265,9 @@ const DevAssociations = () => {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center space-x-2">
+                        <button onClick={() => handleSeed(a.id, a.nome)} className={`p-1.5 rounded-lg transition-all text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10`} title="Popular Dados Demo">
+                          {seedingId === a.id ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
+                        </button>
                         <button onClick={() => openEdit(a)} className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all" title="Editar">
                           <Edit3 size={14} />
                         </button>
@@ -281,7 +305,7 @@ const DevAssociations = () => {
               <div className="h-px w-full" style={{ background: `linear-gradient(to right, transparent, ${DEV_ACCENT}70, transparent)` }} />
               <div className="p-8">
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-xl font-black text-white">{editTarget ? 'Editar Associação' : 'Nova Associação'}</h2>
+                  <h2 className="text-xl font-black text-white">{editTarget ? 'Editar AssociaÃ§Ã£o' : 'Nova AssociaÃ§Ã£o'}</h2>
                   <button onClick={() => setShowModal(false)} className="text-slate-500 hover:text-white transition-colors p-1">
                     <X size={20} />
                   </button>
@@ -355,7 +379,7 @@ const DevAssociations = () => {
                       style={{ backgroundColor: DEV_ACCENT, borderColor: `${DEV_ACCENT}60`, opacity: saving ? 0.6 : 1 }}
                     >
                       {saving ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
-                      <span>{editTarget ? 'Salvar Alterações' : 'Criar Associação'}</span>
+                      <span>{editTarget ? 'Salvar AlteraÃ§Ãµes' : 'Criar AssociaÃ§Ã£o'}</span>
                     </button>
                   </div>
                 </form>
@@ -369,3 +393,5 @@ const DevAssociations = () => {
 };
 
 export default DevAssociations;
+
+
