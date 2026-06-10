@@ -1,34 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as htmlToImage from 'html-to-image';
-import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { CheckCircle2, ArrowRight, Smartphone, Loader2, AlertCircle, Bike, Truck, Zap, Car, FileText, ListTree, Share2, Download, Copy } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Smartphone, Loader2, AlertCircle, Bike, Truck, Zap, Car, FileText, ListTree, Share2, Download, Copy, Pencil, Plus, X, RotateCcw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAssociation } from '../../contexts/AssociationContext';
 import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
 import { getThemeConfig } from '../../utils/themePresets';
 
 const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val || 0);
-const PDF_TIMEOUT_MS = 12000;
-
-const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> => {
-  let timeoutId: number | undefined;
-  const timeout = new Promise((_, reject) => {
-    timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
-  });
-
-  try {
-    return await Promise.race([promise, timeout]);
-  } finally {
-    window.clearTimeout(timeoutId);
-  }
-};
-
-const getPdfFileName = (placa?: string) => {
-  const cleanPlate = (placa || 'Veiculo').replace(/[^A-Za-z0-9_-]/g, '');
-  return `Cotacao_${cleanPlate || 'Veiculo'}.pdf`;
-};
 
 const QuoteGenerator = () => {
   const [step, setStep] = useState(1);
@@ -36,7 +16,7 @@ const QuoteGenerator = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const pdfRef = useRef<HTMLDivElement | null>(null);
+  const pdfRef = useRef(null);
   
   const [formData, setFormData] = useState<any>({ placa: '', tipo_veiculo: 'carro', modelo: '', fipe: 0 });
   const [fipeVariants, setFipeVariants] = useState<any[]>([]);
@@ -55,7 +35,12 @@ const QuoteGenerator = () => {
   const [availablePlans, setAvailablePlans] = useState<any[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
-  const [customAdesao, setCustomAdesao] = useState('');
+
+  // ── Benefit Editing States ──
+  const [editedCoberturas, setEditedCoberturas] = useState<Record<string, { label: string; param?: string }[]>>({});
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+  const [newBenefit, setNewBenefit] = useState<{ label: string; param: string }>({ label: '', param: '' });
+
 
   useEffect(() => {
     const init = async () => {
@@ -77,8 +62,56 @@ const QuoteGenerator = () => {
     setMatchedCategory(null);
     setSelectedPlan(null);
     setSavedQuoteId(null);
-    setCustomAdesao('');
     setError('');
+    setEditedCoberturas({});
+    setEditingPlanId(null);
+    setNewBenefit({ label: '', param: '' });
+  };
+
+  // ── Benefit Editing Helpers ──
+  const getCoberturas = (planId: string, original: any[]) =>
+    editedCoberturas[planId] ?? original ?? [];
+
+  const getPlansWithEdits = () =>
+    availablePlans.map(p => ({
+      ...p,
+      plans: {
+        ...p.plans,
+        coberturas: editedCoberturas[p.id] ?? p.plans?.coberturas ?? []
+      }
+    }));
+
+  const openEditMode = (planId: string, original: any[]) => {
+    setEditedCoberturas(prev => ({ ...prev, [planId]: JSON.parse(JSON.stringify(original ?? [])) }));
+    setEditingPlanId(planId);
+    setNewBenefit({ label: '', param: '' });
+  };
+
+  const closeEditMode = () => setEditingPlanId(null);
+
+  const restoreBenefits = (planId: string, original: any[]) => {
+    setEditedCoberturas(prev => { const next = { ...prev }; delete next[planId]; return next; });
+    setEditingPlanId(null);
+  };
+
+  const removeBenefit = (planId: string, index: number) => {
+    setEditedCoberturas(prev => ({ ...prev, [planId]: prev[planId].filter((_, i) => i !== index) }));
+  };
+
+  const updateBenefit = (planId: string, index: number, field: 'label' | 'param', value: string) => {
+    setEditedCoberturas(prev => ({
+      ...prev,
+      [planId]: prev[planId].map((item, i) => i === index ? { ...item, [field]: value } : item)
+    }));
+  };
+
+  const addBenefit = (planId: string) => {
+    if (!newBenefit.label.trim()) return;
+    setEditedCoberturas(prev => ({
+      ...prev,
+      [planId]: [...(prev[planId] ?? []), { label: newBenefit.label.trim(), param: newBenefit.param.trim() || undefined }]
+    }));
+    setNewBenefit({ label: '', param: '' });
   };
 
   // Step 1 -> Step 2: Fetch FIPE Variants from PlacaFipe
@@ -234,12 +267,9 @@ const QuoteGenerator = () => {
         modelo: formData.modelo,
         categoria_id: matchedCategory.id,
         valor_fipe: formData.fipe,
-        plano_selecionado: availablePlans.length > 1 ? 'Múltiplas Opções' : availablePlans[0]?.plans?.nome,
+        plano_selecionado: getPlansWithEdits().length > 1 ? 'Múltiplas Opções' : getPlansWithEdits()[0]?.plans?.nome,
         mensalidade: minPrice,
-        planos_cotados: availablePlans.map(p => ({
-          ...p,
-          custom_adesao: customAdesao ? parseFloat(customAdesao) : p.mensalidade
-        })),
+        planos_cotados: getPlansWithEdits(),
         status: 'pending'
       })
       .select()
@@ -268,13 +298,14 @@ const QuoteGenerator = () => {
     
     text += `📋 *PLANOS DISPONÍVEIS:*\n\n`;
 
-    availablePlans.forEach(p => {
+    const _plans = getPlansWithEdits();
+    _plans.forEach(p => {
       const isVip = p.plans?.nome?.toLowerCase().includes('vip');
       const icon = isVip ? '🔴✨' : '🔴';
       
       text += `${icon} *Plano ${p.plans?.nome?.toUpperCase()}*\n\n`;
       text += `💰 Mensalidade: ${formatCurrency(p.mensalidade)}\n`;
-      text += `✅ Adesão: ${formatCurrency(customAdesao ? parseFloat(customAdesao) : (p.custom_adesao || p.mensalidade))}\n`; 
+      text += `✅ Adesão: ${formatCurrency(p.mensalidade)}\n`; 
       text += `🎯 Cota Participação: ${p.franquia_percentual}%\n\n`;
       
       text += `📋 *Benefícios:*\n\n`;
@@ -285,19 +316,19 @@ const QuoteGenerator = () => {
       text += `\n`;
     });
 
-    if (availablePlans.length > 1) {
+    if (_plans.length > 1) {
       text += `*DIFERENCIAIS ENTRE OS PLANOS:*\n\n`;
       
-      availablePlans.forEach(p1 => {
+      _plans.forEach(p1 => {
         const isVip = p1.plans?.nome?.toLowerCase().includes('vip');
         const icon = isVip ? '🔴✨' : '🔴';
         
-        let diffs = [];
+        let diffs: string[] = [];
         const myCovs = p1.plans?.coberturas || [];
         
         myCovs.forEach(myC => {
           let isDifferent = false;
-          availablePlans.forEach(p2 => {
+          _plans.forEach(p2 => {
              if(p1.id === p2.id) return;
              const theirCovs = p2.plans?.coberturas || [];
              const match = theirCovs.find(tC => tC.label === myC.label);
@@ -331,122 +362,24 @@ const QuoteGenerator = () => {
     alert("Texto copiado!");
   };
 
-  const getPdfBackgroundColorHex = () => theme.id === 'viptruck' ? '#8a8c8e' : '#080F1E';
-  const getPdfBackgroundColorRgb = () => theme.id === 'viptruck' ? [138, 140, 142] : [8, 15, 30];
-
-  const capturePageAsPng = async (pageElement: HTMLElement) => {
-    const bgColor = getPdfBackgroundColorHex();
-    try {
-      return await withTimeout(
-        htmlToImage.toPng(pageElement, {
-          backgroundColor: bgColor,
-          cacheBust: true,
-          pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
-        }),
-        PDF_TIMEOUT_MS,
-        'A captura visual demorou demais.'
-      );
-    } catch (htmlToImageError) {
-      console.warn('[PDF] html-to-image falhou, tentando html2canvas:', htmlToImageError);
-
-      const canvas = await withTimeout(
-        html2canvas(pageElement, {
-          backgroundColor: bgColor,
-          scale: Math.min(window.devicePixelRatio || 1, 2),
-          useCORS: true,
-          logging: false,
-        }),
-        PDF_TIMEOUT_MS,
-        'A captura alternativa demorou demais.'
-      );
-
-      return canvas.toDataURL('image/png');
-    }
-  };
-
-  const generateTextPdfBlob = () => {
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const margin = 14;
-    let y = 16;
-
-    const addLine = (text, size = 10, isBold = false) => {
-      pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
-      pdf.setFontSize(size);
-      const lines = pdf.splitTextToSize(String(text || ''), pageWidth - margin * 2);
-      lines.forEach((line) => {
-        if (y > 280) {
-          pdf.addPage();
-          y = 16;
-        }
-        pdf.text(line, margin, y);
-        y += size * 0.45 + 2;
-      });
-    };
-
-    addLine(associationData?.nome || 'Cote AI', 18, true);
-    addLine('Proposta de Protecao Veicular', 12, true);
-    y += 4;
-    addLine(`Data: ${new Date().toLocaleDateString('pt-BR')}`);
-    addLine(`Veiculo: ${formData.modelo || '-'}`);
-    addLine(`Placa: ${formData.placa || '-'}`);
-    addLine(`Valor FIPE: ${formatCurrency(formData.fipe)}`);
-    y += 4;
-    addLine('Planos disponiveis', 13, true);
-
-    availablePlans.forEach((planPrice) => {
-      y += 3;
-      addLine(`Plano ${planPrice.plans?.nome || '-'}`, 12, true);
-      addLine(`Mensalidade: ${formatCurrency(planPrice.mensalidade)}`);
-      addLine(`Taxa de adesao: ${formatCurrency(planPrice.custom_adesao || (customAdesao ? parseFloat(customAdesao) : planPrice.mensalidade))}`);
-      addLine(`Cota de participacao: ${planPrice.franquia_percentual || 0}%`);
-      addLine(`Cobertura: ${formatCurrency(planPrice.cobertura_maxima)}`);
-
-      const coverages = planPrice.plans?.coberturas || [];
-      if (coverages.length > 0) {
-        addLine('Beneficios:', 10, true);
-        coverages.forEach((coverage) => {
-          addLine(`- ${coverage.label}${coverage.param ? `: ${coverage.param}` : ''}`);
-        });
-      }
-    });
-
-    y += 4;
-    addLine('Valores sujeitos a analise de perfil e vistoria do veiculo. Validade de 5 dias.', 9);
-
-    return pdf.output('blob');
-  };
-
   const generatePdfBlob = async () => {
     const input = pdfRef.current;
-    if (!input) {
-      alert('Nao encontrei o conteudo da proposta para gerar o PDF.');
-      return null;
-    }
+    if (!input) return null;
     
     setIsGeneratingPDF(true);
     try {
       await new Promise(r => setTimeout(r, 100)); // wait for rendering
-      if (document.fonts?.ready) {
-        await withTimeout(document.fonts.ready, 3000, 'As fontes demoraram demais para carregar.');
-      }
-
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       
-      const childrenNodes = Array.from(input.children) as HTMLElement[];
-      if (childrenNodes.length === 0) {
-        return generateTextPdfBlob();
-      }
-
+      const childrenNodes = Array.from(input.children);
       for (let i = 0; i < childrenNodes.length; i++) {
         const pageElement = childrenNodes[i];
         if (i > 0) pdf.addPage();
         
-        const rgb = getPdfBackgroundColorRgb();
-        pdf.setFillColor(rgb[0], rgb[1], rgb[2]); // Dynamic Theme background
+        pdf.setFillColor(8, 15, 30); // Theme background #080F1E
         pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 'F');
         
-        const imgData = await capturePageAsPng(pageElement);
+        const imgData = await htmlToImage.toPng(pageElement, { backgroundColor: '#080F1E', pixelRatio: 2 });
         
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
@@ -465,8 +398,9 @@ const QuoteGenerator = () => {
       }
       return pdf.output('blob');
     } catch (err) {
-      console.error("Erro gerando PDF visual, usando PDF simples:", err);
-      return generateTextPdfBlob();
+      console.error("Erro gerando PDF:", err);
+      alert(`Houve um erro: ${err.message || err}`);
+      return null;
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -476,7 +410,7 @@ const QuoteGenerator = () => {
     const blob = await generatePdfBlob();
     if (!blob) return;
 
-    const fileName = getPdfFileName(formData.placa);
+    const fileName = `Cotacao_${formData.placa || 'Veiculo'}.pdf`;
     const file = new File([blob], fileName, { type: 'application/pdf' });
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -488,41 +422,13 @@ const QuoteGenerator = () => {
         });
       } catch (err) {
         console.error('Share failed', err);
-        if ((err as { name?: string })?.name !== 'AbortError') {
-          alert('Nao foi possivel abrir o compartilhamento. Vou baixar o PDF para voce enviar manualmente.');
-          handleDownloadPDF(blob);
-        }
       }
     } else {
-      alert("Seu aparelho/navegador nao suporta envio direto de documentos do sistema. O download do PDF comecara agora, anexe manualmente onde preferir.");
+      alert("Seu aparelho/navegador não suporta envio direto de documentos do sistema. O download do PDF começará agora, anexe manualmente onde preferir.");
       handleDownloadPDF(blob); // fallback
     }
   };
 
-  const handleWhatsAppShare = async () => {
-    const blob = await generatePdfBlob();
-    if (!blob) return;
-
-    const fileName = getPdfFileName(formData.placa);
-    const file = new File([blob], fileName, { type: 'application/pdf' });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: `Cotacao ${formData.modelo}`,
-          text: `Segue a proposta em PDF para o ${formData.modelo}.`
-        });
-        return;
-      } catch (err) {
-        console.error('WhatsApp share failed', err);
-        if ((err as { name?: string })?.name === 'AbortError') return;
-      }
-    }
-
-    handleDownloadPDF(blob);
-    window.open(`https://wa.me/?text=${encodeURIComponent(getShareText())}`, '_blank', 'noopener,noreferrer');
-  };
   const handleDownloadPDF = async (preGeneratedBlob = null) => {
     const blob = preGeneratedBlob || await generatePdfBlob();
     if (!blob) return;
@@ -530,7 +436,7 @@ const QuoteGenerator = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = getPdfFileName(formData.placa);
+    link.download = `Cotacao_${formData.placa || 'Veiculo'}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -540,37 +446,37 @@ const QuoteGenerator = () => {
 
   const renderStepIcon = (num, icon, label) => (
     <div className="flex flex-col items-center">
-      <div className={`relative w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-[var(--color-surface)] ${
+      <div className={`relative w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-[var(--color-surface)] ${
         step === num ? 'border-white text-white scale-110 shadow-[0_0_20px_rgba(255,255,255,0.25)]' : 
         step > num ? `${theme.colors.border} ${theme.colors.primary}` : 'border-white/10 text-zinc-600'
       }`} style={step > num ? { boxShadow: `0 0 15px ${theme.colors.shadow}` } : {}}>
         <div className={`absolute inset-0 rounded-full ${step === num ? 'bg-white/5' : ''}`} style={step > num ? { backgroundColor: `${theme.colors.glowHex}1A` } : {}}></div>
-        <div className="relative z-10">{step > num ? <CheckCircle2 size={18} className={theme.colors.primary} /> : icon}</div>
+        <div className="relative z-10">{step > num ? <CheckCircle2 size={22} className={theme.colors.primary} /> : icon}</div>
       </div>
-      <span className={`mt-1.5 text-[9px] font-bold uppercase tracking-widest ${
+      <span className={`mt-2 text-[10px] font-bold uppercase tracking-widest ${
         step === num ? 'text-white' : step > num ? theme.colors.primary : 'text-zinc-600'
       }`}>{label}</span>
     </div>
   );
 
   return (
-    <div className="space-y-4 md:space-y-8 flex flex-col h-full max-w-5xl mx-auto w-full">
+    <div className="space-y-8 flex flex-col h-full max-w-5xl mx-auto w-full">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="premium-title text-2xl md:text-4xl uppercase tracking-tighter mb-1">Máquina de Cotação</h1>
-          <p className="text-slate-400 text-sm">Gere propostas instantâneas. Precisão FIPE total.</p>
+          <h1 className="premium-title text-3xl md:text-4xl uppercase tracking-tighter mb-2">Máquina de Cotação</h1>
+          <p className="text-slate-400">Gere propostas instantâneas. Precisão FIPE total.</p>
         </div>
       </div>
 
-      <div className="bg-[var(--color-surface)]/80 backdrop-blur-xl border border-white/5 rounded-2xl px-4 md:px-8 py-4 md:py-5 relative">
+      <div className="bg-[var(--color-surface)]/80 backdrop-blur-xl border border-white/5 rounded-2xl px-8 py-5 relative">
         {/* Progress track */}
-        <div className="absolute top-[38px] left-[10%] right-[10%] h-px bg-white/10 z-0"></div>
-        <div className="absolute top-[38px] left-[10%] h-px z-0 transition-all duration-500" style={{ backgroundColor: theme.colors.glowHex, width: `${([1,'2b',3,4].indexOf(step)) * (80/3)}%` }}></div>
+        <div className="absolute top-[42px] left-[10%] right-[10%] h-px bg-white/10 z-0"></div>
+        <div className="absolute top-[42px] left-[10%] h-px z-0 transition-all duration-500" style={{ backgroundColor: theme.colors.glowHex, width: `${([1,'2b',3,4].indexOf(step)) * (80/3)}%` }}></div>
         <div className="flex justify-between relative z-10">
-          {renderStepIcon(1, <Car size={16} />, "Placa")}
-          {renderStepIcon(2, <ListTree size={16} />, "Versão")}
-          {renderStepIcon(3, <Zap size={16} />, "Preços")}
-          {renderStepIcon(4, <FileText size={16} />, "Resumo")}
+          {renderStepIcon(1, <Car size={18} />, "Placa")}
+          {renderStepIcon(2, <ListTree size={18} />, "Versão")}
+          {renderStepIcon(3, <Zap size={18} />, "Preços")}
+          {renderStepIcon(4, <FileText size={18} />, "Resumo")}
         </div>
       </div>
 
@@ -579,9 +485,9 @@ const QuoteGenerator = () => {
 
           {/* STEP 1: PLACA E TIPO */}
           {step === 1 && (
-            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-5 md:p-12 flex-1 flex flex-col justify-center max-w-2xl mx-auto w-full text-center">
-              <h2 className="premium-title text-2xl md:text-3xl uppercase tracking-tighter mb-2">Consulta de Veículo</h2>
-              <p className="text-zinc-500 text-sm mb-5 md:mb-8">Selecione o tipo e digite a placa.</p>
+            <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-12 flex-1 flex flex-col justify-center max-w-2xl mx-auto w-full text-center">
+              <h2 className="premium-title text-3xl uppercase tracking-tighter mb-2">Consulta de Veículo</h2>
+              <p className="text-zinc-500 mb-8">Selecione o tipo e digite a placa.</p>
 
               <div className="flex justify-center mb-8 bg-[#141f38]/80 p-1.5 rounded-2xl border border-white/5 mx-auto max-w-sm">
                 <button onClick={() => setFormData({...formData, tipo_veiculo: 'carro'})} className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl transition-all ${
@@ -635,7 +541,7 @@ const QuoteGenerator = () => {
 
           {/* STEP 2: VERSÕES FIPE */}
           {step === 2 && (
-            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-4 md:p-8 flex-1 flex flex-col max-w-3xl mx-auto w-full">
+            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-8 flex-1 flex flex-col max-w-3xl mx-auto w-full max-h-[80vh]">
               <div className="flex justify-between items-end mb-6">
                  <div>
                    <h2 className="premium-title text-3xl uppercase tracking-tighter mb-1">Selecione a versão correta</h2>
@@ -728,107 +634,53 @@ const QuoteGenerator = () => {
 
           {/* STEP 3: PREÇO & PLANO */}
           {step === 3 && (
-            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-4 md:p-8 flex flex-col w-full">
-              <div className="flex justify-between items-center mb-4 md:mb-6">
-                <div>
-                  <h2 className="premium-title text-xl md:text-3xl uppercase tracking-tighter">Planos Disponíveis</h2>
-                  <p className="text-zinc-500 flex flex-wrap items-center mt-1 text-sm">
-                    <CheckCircle2 className="text-white mr-2 w-4 shrink-0"/>
-                    <span className="font-medium mr-2">{formData.modelo}</span> 
-                  <span className="bg-black/40 px-2 py-0.5 rounded text-xs border border-white/5 inline-block mt-1">FIPE: {formatCurrency(formData.fipe)}</span>
+            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="p-4 sm:p-8 flex flex-col w-full">
+              <div className="flex justify-between items-start mb-4 sm:mb-6 gap-2">
+                <div className="min-w-0 flex-1">
+                  <h2 className="premium-title text-2xl sm:text-3xl uppercase tracking-tighter">Planos Disponíveis</h2>
+                  <p className="text-zinc-500 flex flex-wrap items-center mt-1 text-xs sm:text-sm">
+                    <CheckCircle2 className="text-white mr-1.5 w-3.5 shrink-0"/>
+                    <span className="font-medium mr-2 truncate max-w-[160px] sm:max-w-none">{formData.modelo}</span>
+                    <span className="bg-black/40 px-2 py-0.5 rounded text-xs border border-white/5">FIPE: {formatCurrency(formData.fipe)}</span>
                   </p>
                 </div>
-                <button onClick={() => setStep(2)} className="text-zinc-300 text-sm hover:underline font-bold bg-white/5 px-4 py-2 rounded-lg">Trocar Versão</button>
+                <button onClick={() => setStep(2)} className="text-zinc-300 text-xs sm:text-sm hover:underline font-bold bg-white/5 px-3 py-2 rounded-lg shrink-0">Trocar Versão</button>
               </div>
 
-                            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/[0.02] p-4 rounded-2xl border border-white/5">
-                <div>
-                  <h3 className="text-white font-bold uppercase tracking-widest text-sm">Taxa de Adesão (Negociada)</h3>
-                  <p className="text-zinc-500 text-xs">Valor negociado com o associado (opcional)</p>
-                </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <span className="text-zinc-500 font-bold">R$</span>
-                  </div>
-                  <input
-                    type="number"
-                    value={customAdesao}
-                    onChange={(e) => setCustomAdesao(e.target.value)}
-                    placeholder="Padrão do plano"
-                    className="w-full md:w-48 pl-12 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder-zinc-600 focus:outline-none focus:border-white/20 transition-all font-bold"
-                  />
-                </div>
-              </div>
-
-              {/* Mobile: lista compacta (portrait) */}
-              <div className="md:hidden space-y-3 mb-4">
+              {/* Plan cards: single column on mobile with scroll, multi-column on desktop */}
+              <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full pb-4">
                 {availablePlans.map((planPrice) => {
                   const isVip = planPrice.plans?.nome?.toLowerCase().includes('vip');
                   return (
-                    <div key={planPrice.id} className="relative rounded-2xl overflow-hidden border" style={isVip ? { borderColor: theme.colors.glowHex, boxShadow: `0 0 20px ${theme.colors.shadow}` } : { borderColor: '#27272a' }}>
-                      {isVip && <div className="w-full text-center text-white text-[9px] font-black uppercase tracking-widest py-1" style={{ backgroundColor: theme.colors.glowHex }}>⭐ Recomendado</div>}
-                      <div className="bg-[#121212] p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className={`text-base font-black uppercase tracking-wider ${isVip ? theme.colors.primary : 'text-zinc-200'}`}>{planPrice.plans?.nome}</h3>
-                          <div className="text-right">
-                            <span className="text-xl font-black text-white">{formatCurrency(planPrice.mensalidade)}</span>
-                            <span className="text-xs text-zinc-500">/mês</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between bg-black/50 rounded-xl px-3 py-2 mb-2">
-                          <div className="text-center">
-                            <p className="text-[10px] text-zinc-600 font-bold uppercase">Cota Partic.</p>
-                            <p className="text-sm font-black text-white">{planPrice.franquia_percentual}%</p>
-                          </div>
-                          <div className="w-px h-8 bg-white/10" />
-                          <div className="text-center">
-                            <p className="text-[10px] text-zinc-600 font-bold uppercase">Cobertura Máx.</p>
-                            <p className="text-sm font-black text-white">{formatCurrency(planPrice.cobertura_maxima)}</p>
-                          </div>
-                        </div>
-                        {(planPrice.plans?.coberturas || []).length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {(planPrice.plans?.coberturas || []).map((c, i) => (
-                              <span key={i} className="text-[10px] text-zinc-400 bg-white/5 border border-white/5 px-1.5 py-0.5 rounded-md">
-                                {c.label}{c.param ? ` (${c.param})` : ''}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Desktop: grid de cards */}
-              <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 flex-1 overflow-y-auto pb-4 pr-1 min-h-0 items-start content-start">
-                {availablePlans.map((planPrice) => {
-                  const isVip = planPrice.plans?.nome?.toLowerCase().includes('vip');
-                  return (
-                    <div key={planPrice.id} className="relative overflow-hidden flex flex-col p-6 rounded-2xl transition-all border border-zinc-800 bg-[#121212] hover:border-zinc-700" style={isVip ? { borderColor: theme.colors.glowHex, boxShadow: `0 0 40px ${theme.colors.shadow}` } : {}}>
+                    <div key={planPrice.id} className="relative overflow-hidden flex flex-col p-5 sm:p-6 rounded-2xl transition-all border border-zinc-800 bg-[#121212] hover:border-zinc-700" style={isVip ? { borderColor: theme.colors.glowHex, boxShadow: `0 0 40px ${theme.colors.shadow}` } : {}}>
                       {isVip && <div className="absolute top-0 left-1/2 -translate-x-1/2 text-white text-[10px] font-black uppercase tracking-widest px-6 py-1 rounded-b-lg z-20" style={{ backgroundColor: theme.colors.glowHex, boxShadow: `0 0 15px ${theme.colors.shadow}` }}>Recomendado</div>}
                       {isVip && <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full blur-3xl z-0" style={{ backgroundColor: `${theme.colors.glowHex}1A` }}></div>}
-                      <div className="mb-4 relative z-10 border-b border-white/5 pb-4 mt-4 text-center">
-                        <h3 className={`text-2xl font-black uppercase tracking-widest ${isVip ? theme.colors.primary : 'text-zinc-200'}`}>{planPrice.plans?.nome}</h3>
+
+                      <div className="mb-3 sm:mb-4 relative z-10 border-b border-white/5 pb-3 sm:pb-4 mt-4 text-center">
+                        <h3 className={`text-xl sm:text-2xl font-black uppercase tracking-widest ${isVip ? theme.colors.primary : 'text-zinc-200'}`}>
+                          {planPrice.plans?.nome}
+                        </h3>
                       </div>
-                      <div className="mb-6 relative z-10 text-center">
-                        <span className="text-4xl font-black text-white">{formatCurrency(planPrice.mensalidade)}<span className="text-sm text-zinc-500 font-medium">/mês</span></span>
-                        <div className="flex flex-col space-y-2 mt-5 bg-black/60 p-4 rounded-xl border border-white/5 text-left">
+
+                      <div className="mb-4 sm:mb-6 relative z-10 text-center">
+                        <span className="text-3xl sm:text-4xl font-black text-white">{formatCurrency(planPrice.mensalidade)}<span className="text-sm text-zinc-500 font-medium">/mês</span></span>
+                        
+                        <div className="flex flex-col space-y-2 mt-4 bg-black/60 p-3 sm:p-4 rounded-xl border border-white/5 text-left">
                           <div className="flex justify-between items-center">
-                            <span className="text-xs text-zinc-500 font-bold">Cota Participação</span>
-                            <span className="font-bold text-sm text-white">{planPrice.franquia_percentual}%</span>
+                             <span className="text-xs text-zinc-500 font-bold">Cota Participação</span>
+                             <span className="font-bold text-sm text-white">{planPrice.franquia_percentual}%</span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-xs text-zinc-500 font-bold">Cobertura Máx.</span>
-                            <span className="font-bold text-sm text-white">{formatCurrency(planPrice.cobertura_maxima)}</span>
+                             <span className="text-xs text-zinc-500 font-bold">Cobertura Máx.</span>
+                             <span className="font-bold text-sm text-white">{formatCurrency(planPrice.cobertura_maxima)}</span>
                           </div>
                         </div>
                       </div>
-                      <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase mb-4 text-center">BENEFÍCIOS DO PLANO</p>
-                      <ul className="space-y-3 flex-1 text-zinc-300 relative z-10 text-xs font-medium">
-                        {(planPrice.plans?.coberturas || []).map((c, i) => (
-                          <li key={i} className="flex items-center"><CheckCircle2 className={`w-4 mr-2 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
+
+                      <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase mb-3 text-center">BENEFÍCIOS DO PLANO</p>
+                      <ul className="space-y-2.5 flex-1 text-zinc-300 relative z-10 text-xs font-medium">
+                        {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
+                          <li key={i} className="flex items-start"><CheckCircle2 className={`w-3.5 mt-0.5 mr-2 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
                         ))}
                       </ul>
                     </div>
@@ -836,7 +688,7 @@ const QuoteGenerator = () => {
                 })}
               </div>
 
-              <div className="mt-4 pt-6 border-t border-white/10">
+              <div className="mt-2 sm:mt-4 pt-4 sm:pt-6 border-t border-white/10">
                 <button
                   onClick={() => saveQuoteMulti()}
                   disabled={saving}
@@ -870,7 +722,7 @@ const QuoteGenerator = () => {
                      const isLast = index === availablePlans.length - 1;
 
                      return (
-                      <div key={planPrice.id} className="text-[#E2E8F0] w-[800px] h-[1131px] p-8 font-sans relative overflow-hidden flex flex-col pt-12" style={{ backgroundColor: getPdfBackgroundColorHex() }}>
+                      <div key={planPrice.id} className="bg-[#080F1E] text-[#E2E8F0] w-[800px] h-[1131px] p-8 font-sans relative overflow-hidden flex flex-col pt-12">
                         {/* Background effects */}
                         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3"></div>
                         {isLast && <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-white/5 rounded-full blur-[120px] translate-y-1/3 -translate-x-1/4"></div>}
@@ -923,18 +775,80 @@ const QuoteGenerator = () => {
                                   <h3 className={`premium-title text-4xl uppercase tracking-tighter mb-3 ${isVip ? `text-transparent bg-clip-text bg-gradient-to-r ${theme.colors.gradientFrom} to-white` : 'text-white'}`}>{planPrice.plans?.nome}</h3>
                                   <div className="w-12 h-1 mx-auto rounded-full mb-6" style={{ backgroundColor: theme.colors.glowHex, opacity: 0.5 }}></div>
                                   
-                                  <p className="text-[13px] text-zinc-500 font-black tracking-widest uppercase mb-6 text-left border-b border-white/5 pb-2">Benefícios Inclusos</p>
+                                  <div className="flex items-center justify-between mb-6 text-left border-b border-white/5 pb-2">
+                                    <p className="text-[13px] text-zinc-500 font-black tracking-widest uppercase">Benefícios Inclusos</p>
+                                    <div className="flex items-center gap-2">
+                                      {editingPlanId === planPrice.id ? (
+                                        <>
+                                          <button onClick={() => restoreBenefits(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
+                                            <RotateCcw size={11}/> Restaurar
+                                          </button>
+                                          <button onClick={closeEditMode} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white bg-white/10 border border-white/20 px-2 py-1 rounded-lg transition-all">
+                                            Confirmar
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <button onClick={() => openEditMode(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
+                                          <Pencil size={11}/> Editar
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
                               </div>
                               
                                <div className="flex-1 pr-2 mb-6">
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-2.5">
-                                  {(planPrice.plans?.coberturas || []).map((c, i) => (
-                                    <div key={i} className="flex items-start text-[14px] text-zinc-300 leading-tight">
-                                      <CheckCircle2 className={`w-5 h-5 mr-3 shrink-0 mt-0.5 ${isVip ? theme.colors.primary : 'text-white'}`}/> 
-                                      <span className="mt-0.5"><strong className="text-white font-medium">{c.label}</strong>{c.param ? `: ${c.param}` : ''}</span>
+                                {editingPlanId === planPrice.id ? (
+                                  <div className="space-y-2">
+                                    {(editedCoberturas[planPrice.id] ?? []).map((c, i) => (
+                                      <div key={i} className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2">
+                                        <input
+                                          value={c.label}
+                                          onChange={e => updateBenefit(planPrice.id, i, 'label', e.target.value)}
+                                          placeholder="Benefício"
+                                          className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none"
+                                        />
+                                        <span className="text-zinc-600 text-xs">|</span>
+                                        <input
+                                          value={c.param || ''}
+                                          onChange={e => updateBenefit(planPrice.id, i, 'param', e.target.value)}
+                                          placeholder="Detalhe (opcional)"
+                                          className="w-28 bg-transparent text-zinc-400 text-xs placeholder:text-zinc-700 outline-none"
+                                        />
+                                        <button onClick={() => removeBenefit(planPrice.id, i)} className="text-red-500/60 hover:text-red-400 transition-colors shrink-0">
+                                          <X size={14}/>
+                                        </button>
+                                      </div>
+                                    ))}
+                                    <div className="flex items-center gap-2 bg-white/[0.02] border border-dashed border-white/10 rounded-xl px-3 py-2 mt-3">
+                                      <input
+                                        value={newBenefit.label}
+                                        onChange={e => setNewBenefit(prev => ({ ...prev, label: e.target.value }))}
+                                        onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
+                                        placeholder="Novo benefício..."
+                                        className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none"
+                                      />
+                                      <input
+                                        value={newBenefit.param}
+                                        onChange={e => setNewBenefit(prev => ({ ...prev, param: e.target.value }))}
+                                        onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
+                                        placeholder="Detalhe..."
+                                        className="w-28 bg-transparent text-zinc-400 text-xs placeholder:text-zinc-700 outline-none"
+                                      />
+                                      <button onClick={() => addBenefit(planPrice.id)} className="text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
+                                        <Plus size={14}/>
+                                      </button>
                                     </div>
-                                  ))}
-                                </div>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-2 gap-x-8 gap-y-2.5">
+                                    {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
+                                      <div key={i} className="flex items-start text-[14px] text-zinc-300 leading-tight">
+                                        <CheckCircle2 className={`w-5 h-5 mr-3 shrink-0 mt-0.5 ${isVip ? theme.colors.primary : 'text-white'}`}/> 
+                                        <span className="mt-0.5"><strong className="text-white font-medium">{c.label}</strong>{c.param ? `: ${c.param}` : ''}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
 
                                {/* CLOSING / PRICING CARD AT THE BOTTOM */}
@@ -942,7 +856,7 @@ const QuoteGenerator = () => {
                                  <div className="flex justify-between items-center px-4">
                                     <div className="text-left">
                                       <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">Taxa de Adesão</p>
-                                      <p className="text-xl font-black text-white">{formatCurrency(planPrice.custom_adesao || (customAdesao ? parseFloat(customAdesao) : planPrice.mensalidade))}</p>
+                                      <p className="text-xl font-black text-white">{formatCurrency(planPrice.mensalidade)}</p>
                                     </div>
                                     <div className="h-10 w-px bg-white/5 mx-6"></div>
                                     <div className="text-left">
@@ -1007,7 +921,7 @@ const QuoteGenerator = () => {
 
                   {/* COMPARISON PAGE */}
                   {availablePlans.length > 1 && (
-                      <div className="text-[#E2E8F0] w-[800px] min-h-[1131px] p-8 font-sans relative overflow-hidden flex flex-col pt-12 shrink-0" style={{ backgroundColor: getPdfBackgroundColorHex() }}>
+                      <div className="bg-[#080F1E] text-[#E2E8F0] w-[800px] min-h-[1131px] p-8 font-sans relative overflow-hidden flex flex-col pt-12 shrink-0">
                         {/* Background effects */}
                         <div className="absolute top-[20%] right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] translate-x-1/3"></div>
 
@@ -1025,7 +939,7 @@ const QuoteGenerator = () => {
 
                         {/* TABLE */}
                         <div className="relative z-10 flex-col flex bg-[#0E1629]/90 rounded-2xl border border-white/5 shadow-[0_0_50px_rgba(255,255,255,0.02)] overflow-hidden w-full max-w-[700px] mx-auto h-auto">
-                            <div className={`grid bg-[#080F1E]/80 border-b border-white/5 p-5 shrink-0 ${availablePlans.length === 2 ? 'grid-cols-[2fr_1fr_1fr]' : 'grid-cols-[2fr_1fr_1fr_1fr]'} gap-4`}>
+                            <div className={`grid bg-[#080F1E]/80 border-b border-white/5 p-5 shrink-0 ${getPlansWithEdits().length === 2 ? 'grid-cols-[2fr_1fr_1fr]' : 'grid-cols-[2fr_1fr_1fr_1fr]'} gap-4`}>
                                <div className="font-black text-zinc-500 uppercase tracking-widest text-[11px] self-end pb-2">Benefício Estrutural</div>
                                {availablePlans.map((plan, i) => (
                                  <div key={i} className="text-center font-black uppercase text-xl border-l border-white/5 pl-4 flex flex-col justify-end">
@@ -1041,16 +955,17 @@ const QuoteGenerator = () => {
                                {(() => {
                                   // Extract all unique benefits
                                   const allBenefits = new Map();
-                                  availablePlans.forEach(p => {
+                                  const _plans = getPlansWithEdits();
+    _plans.forEach(p => {
                                     (p.plans?.coberturas || []).forEach(c => {
                                        allBenefits.set(c.label, true);
                                     });
                                   });
                                   
                                   return Array.from(allBenefits.keys()).map((benefitLabel, idx) => (
-                                     <div key={idx} className={`grid ${availablePlans.length === 2 ? 'grid-cols-[2fr_1fr_1fr]' : 'grid-cols-[2fr_1fr_1fr_1fr]'} gap-4 py-2 border-b border-white/5 items-center bg-white/[0.01] rounded-lg px-3`}>
+                                     <div key={idx} className={`grid ${getPlansWithEdits().length === 2 ? 'grid-cols-[2fr_1fr_1fr]' : 'grid-cols-[2fr_1fr_1fr_1fr]'} gap-4 py-2 border-b border-white/5 items-center bg-white/[0.01] rounded-lg px-3`}>
                                         <div className="text-zinc-300 font-medium text-xs pr-4">{benefitLabel}</div>
-                                        {availablePlans.map((plan, pIdx) => {
+                                        {getPlansWithEdits().map((plan, pIdx) => {
                                            const hasBenefit = (plan.plans?.coberturas || []).find(c => c.label === benefitLabel);
                                            const isVip = plan.plans?.nome?.toLowerCase().includes('vip');
                                            return (
@@ -1118,7 +1033,7 @@ const QuoteGenerator = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-md mx-auto shrink-0 mb-6">
-                <button onClick={handleWhatsAppShare} disabled={isGeneratingPDF} className={`flex flex-col items-center justify-center bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 py-3 rounded-xl font-bold transition-all group h-20 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_0_15px_rgba(37,211,102,0.15)]'}`}>
+                <button onClick={handleNativeShare} disabled={isGeneratingPDF} className={`flex flex-col items-center justify-center bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 py-3 rounded-xl font-bold transition-all group h-20 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_0_15px_rgba(37,211,102,0.15)]'}`}>
                   {isGeneratingPDF ? <Loader2 className="w-6 h-6 mb-1.5 animate-spin" /> : <Smartphone className="w-6 h-6 mb-1.5" />}
                   <span className="text-[10px] uppercase tracking-wider">WhatsApp</span>
                 </button>
