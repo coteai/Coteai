@@ -14,14 +14,10 @@ const QuotesManager = () => {
   const associationId = associationData?.id;
 
   useEffect(() => {
-    const init = async () => {
-      const defaultSlug = import.meta.env.VITE_DEFAULT_ASSOCIATION_SLUG || 'protemax';
-      const { data: assoc } = await supabase.from('associations').select('id').eq('slug', defaultSlug).single();
-      if (assoc) { setAssociationId(assoc.id); await fetchQuotes(assoc.id); }
-      setLoading(false);
-    };
-    init();
-  }, []);
+    if (associationId) {
+      fetchQuotes(associationId);
+    }
+  }, [associationId]);
 
   const fetchQuotes = async (assocId) => {
     setLoading(true);
