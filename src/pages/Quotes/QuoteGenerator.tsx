@@ -677,12 +677,80 @@ const QuoteGenerator = () => {
                         </div>
                       </div>
 
-                      <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase mb-3 text-center">BENEFÍCIOS DO PLANO</p>
-                      <ul className="space-y-2.5 flex-1 text-zinc-300 relative z-10 text-xs font-medium">
-                        {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
-                          <li key={i} className="flex items-start"><CheckCircle2 className={`w-3.5 mt-0.5 mr-2 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
-                        ))}
-                      </ul>
+                      <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2 relative z-10">
+                        <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase">BENEFÍCIOS DO PLANO</p>
+                        <div className="flex items-center gap-2">
+                          {editingPlanId === planPrice.id ? (
+                            <>
+                              <button onClick={() => restoreBenefits(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
+                                <RotateCcw size={11}/> Restaurar
+                              </button>
+                              <button onClick={closeEditMode} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white bg-white/10 border border-white/20 px-2 py-1 rounded-lg transition-all">
+                                Confirmar
+                              </button>
+                            </>
+                          ) : (
+                            <button onClick={() => openEditMode(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
+                              <Pencil size={11}/> Editar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 relative z-10">
+                        {editingPlanId === planPrice.id ? (
+                          <div className="space-y-2">
+                            {(editedCoberturas[planPrice.id] ?? []).map((c, i) => (
+                              <div key={i} className="flex flex-col gap-1 bg-white/[0.03] border border-white/10 rounded-xl px-2 py-2">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    value={c.label}
+                                    onChange={e => updateBenefit(planPrice.id, i, 'label', e.target.value)}
+                                    placeholder="Benefício"
+                                    className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none w-full"
+                                  />
+                                  <button onClick={() => removeBenefit(planPrice.id, i)} className="text-red-500/60 hover:text-red-400 transition-colors shrink-0">
+                                    <X size={14}/>
+                                  </button>
+                                </div>
+                                <input
+                                  value={c.param || ''}
+                                  onChange={e => updateBenefit(planPrice.id, i, 'param', e.target.value)}
+                                  placeholder="Detalhe (opcional)"
+                                  className="w-full bg-transparent text-zinc-400 text-[10px] placeholder:text-zinc-700 outline-none"
+                                />
+                              </div>
+                            ))}
+                            <div className="flex flex-col gap-1 bg-white/[0.02] border border-dashed border-white/10 rounded-xl px-2 py-2 mt-3">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  value={newBenefit.label}
+                                  onChange={e => setNewBenefit(prev => ({ ...prev, label: e.target.value }))}
+                                  onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
+                                  placeholder="Novo benefício..."
+                                  className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none w-full"
+                                />
+                                <button onClick={() => addBenefit(planPrice.id)} className="text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
+                                  <Plus size={14}/>
+                                </button>
+                              </div>
+                              <input
+                                value={newBenefit.param}
+                                onChange={e => setNewBenefit(prev => ({ ...prev, param: e.target.value }))}
+                                onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
+                                placeholder="Detalhe..."
+                                className="w-full bg-transparent text-zinc-400 text-[10px] placeholder:text-zinc-700 outline-none"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <ul className="space-y-2.5 text-zinc-300 text-xs font-medium">
+                            {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
+                              <li key={i} className="flex items-start"><CheckCircle2 className={`w-3.5 mt-0.5 mr-2 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -775,80 +843,20 @@ const QuoteGenerator = () => {
                                   <h3 className={`premium-title text-4xl uppercase tracking-tighter mb-3 ${isVip ? `text-transparent bg-clip-text bg-gradient-to-r ${theme.colors.gradientFrom} to-white` : 'text-white'}`}>{planPrice.plans?.nome}</h3>
                                   <div className="w-12 h-1 mx-auto rounded-full mb-6" style={{ backgroundColor: theme.colors.glowHex, opacity: 0.5 }}></div>
                                   
-                                  <div className="flex items-center justify-between mb-6 text-left border-b border-white/5 pb-2">
+                                  <div className="mb-6 text-left border-b border-white/5 pb-2">
                                     <p className="text-[13px] text-zinc-500 font-black tracking-widest uppercase">Benefícios Inclusos</p>
-                                    <div className="flex items-center gap-2">
-                                      {editingPlanId === planPrice.id ? (
-                                        <>
-                                          <button onClick={() => restoreBenefits(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
-                                            <RotateCcw size={11}/> Restaurar
-                                          </button>
-                                          <button onClick={closeEditMode} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white bg-white/10 border border-white/20 px-2 py-1 rounded-lg transition-all">
-                                            Confirmar
-                                          </button>
-                                        </>
-                                      ) : (
-                                        <button onClick={() => openEditMode(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
-                                          <Pencil size={11}/> Editar
-                                        </button>
-                                      )}
-                                    </div>
                                   </div>
                               </div>
                               
                                <div className="flex-1 pr-2 mb-6">
-                                {editingPlanId === planPrice.id ? (
-                                  <div className="space-y-2">
-                                    {(editedCoberturas[planPrice.id] ?? []).map((c, i) => (
-                                      <div key={i} className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2">
-                                        <input
-                                          value={c.label}
-                                          onChange={e => updateBenefit(planPrice.id, i, 'label', e.target.value)}
-                                          placeholder="Benefício"
-                                          className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none"
-                                        />
-                                        <span className="text-zinc-600 text-xs">|</span>
-                                        <input
-                                          value={c.param || ''}
-                                          onChange={e => updateBenefit(planPrice.id, i, 'param', e.target.value)}
-                                          placeholder="Detalhe (opcional)"
-                                          className="w-28 bg-transparent text-zinc-400 text-xs placeholder:text-zinc-700 outline-none"
-                                        />
-                                        <button onClick={() => removeBenefit(planPrice.id, i)} className="text-red-500/60 hover:text-red-400 transition-colors shrink-0">
-                                          <X size={14}/>
-                                        </button>
-                                      </div>
-                                    ))}
-                                    <div className="flex items-center gap-2 bg-white/[0.02] border border-dashed border-white/10 rounded-xl px-3 py-2 mt-3">
-                                      <input
-                                        value={newBenefit.label}
-                                        onChange={e => setNewBenefit(prev => ({ ...prev, label: e.target.value }))}
-                                        onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
-                                        placeholder="Novo benefício..."
-                                        className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none"
-                                      />
-                                      <input
-                                        value={newBenefit.param}
-                                        onChange={e => setNewBenefit(prev => ({ ...prev, param: e.target.value }))}
-                                        onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
-                                        placeholder="Detalhe..."
-                                        className="w-28 bg-transparent text-zinc-400 text-xs placeholder:text-zinc-700 outline-none"
-                                      />
-                                      <button onClick={() => addBenefit(planPrice.id)} className="text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
-                                        <Plus size={14}/>
-                                      </button>
+                                <div className="grid grid-cols-2 gap-x-8 gap-y-2.5">
+                                  {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
+                                    <div key={i} className="flex items-start text-[14px] text-zinc-300 leading-tight">
+                                      <CheckCircle2 className={`w-5 h-5 mr-3 shrink-0 mt-0.5 ${isVip ? theme.colors.primary : 'text-white'}`}/> 
+                                      <span className="mt-0.5"><strong className="text-white font-medium">{c.label}</strong>{c.param ? `: ${c.param}` : ''}</span>
                                     </div>
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-2 gap-x-8 gap-y-2.5">
-                                    {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
-                                      <div key={i} className="flex items-start text-[14px] text-zinc-300 leading-tight">
-                                        <CheckCircle2 className={`w-5 h-5 mr-3 shrink-0 mt-0.5 ${isVip ? theme.colors.primary : 'text-white'}`}/> 
-                                        <span className="mt-0.5"><strong className="text-white font-medium">{c.label}</strong>{c.param ? `: ${c.param}` : ''}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
+                                  ))}
+                                </div>
                               </div>
 
                                {/* CLOSING / PRICING CARD AT THE BOTTOM */}
