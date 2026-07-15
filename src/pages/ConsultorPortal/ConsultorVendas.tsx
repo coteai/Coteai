@@ -20,17 +20,30 @@ const ConsultorVendas = () => {
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'converted' | 'rejected'>('all');
 
   const fetchQuotes = async () => {
-    if (!consultor) return;
+    if (!consultor) {
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('*')
+        .eq('consultant_id', consultor.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching quotes:', error);
+        return;
+      }
 
-    const { data } = await supabase
-      .from('quotes')
-      .select('*')
-      .eq('consultant_id', consultor.id)
-      .order('created_at', { ascending: false });
-
-    if (data) setQuotes(data);
-    setLoading(false);
+      if (data) setQuotes(data);
+    } catch (err) {
+      console.error('Unexpected error fetching quotes:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

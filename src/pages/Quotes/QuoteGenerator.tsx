@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { CheckCircle2, ArrowRight, Smartphone, Loader2, AlertCircle, Bike, Truck, Zap, Car, FileText, ListTree, Share2, Download, Copy, Pencil, Plus, X, RotateCcw } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Smartphone, Loader2, AlertCircle, Bike, Truck, Zap, Car, FileText, ListTree, Share2, Download, Copy, Pencil, Plus, X, RotateCcw, FlaskConical, DollarSign } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAssociation } from '../../contexts/AssociationContext';
 import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
@@ -22,6 +22,13 @@ const QuoteGenerator = () => {
   const [fipeVariants, setFipeVariants] = useState<any[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   
+  // Modo manual (teste sem placa real)
+  const [manualMode, setManualMode] = useState(false);
+  const [manualModelo, setManualModelo] = useState('');
+  const [manualFipe, setManualFipe] = useState('');
+
+  // Modo manual (teste sem placa real)
+
   // Vehicle Groups
   const [vehicleGroups, setVehicleGroups] = useState<any[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -112,6 +119,19 @@ const QuoteGenerator = () => {
       [planId]: [...(prev[planId] ?? []), { label: newBenefit.label.trim(), param: newBenefit.param.trim() || undefined }]
     }));
     setNewBenefit({ label: '', param: '' });
+  };
+
+  // Modo manual: gerar cota��o sem buscar placa
+  const handleManualCotacao = () => {
+    const fipeVal = parseFloat(manualFipe.replace(/\./g, '').replace(',', '.'));
+    if (!manualModelo.trim() || isNaN(fipeVal) || fipeVal <= 0) {
+      setError('Preencha o modelo e o valor FIPE corretamente.');
+      return;
+    }
+    const variant = { id: 0, modelo: manualModelo.trim(), fipe: fipeVal, codigo_fipe: 'MANUAL' };
+    setFipeVariants([variant]);
+    setFormData(prev => ({ ...prev, modelo: manualModelo.trim(), fipe: fipeVal, placa: 'TESTE' }));
+    selectVariantAndShowGroups(variant);
   };
 
   // Step 1 -> Step 2: Fetch FIPE Variants from PlacaFipe
@@ -510,26 +530,89 @@ const QuoteGenerator = () => {
                 </button>
               </div>
 
-              <div className="relative mb-8 mx-auto w-full max-w-sm">
-                <div className="absolute top-0 left-0 h-full w-4 bg-blue-700 rounded-l-xl flex flex-col items-center justify-between py-2 overflow-hidden border border-blue-900 border-r-0 z-10">
-                  <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full flex-shrink-0"></div>
+              {!manualMode && (
+                <div className="relative mb-8 mx-auto w-full max-w-sm">
+                  <div className="absolute top-0 left-0 h-full w-4 bg-blue-700 rounded-l-xl flex flex-col items-center justify-between py-2 overflow-hidden border border-blue-900 border-r-0 z-10">
+                    <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full flex-shrink-0"></div>
+                  </div>
+                  <input type="text"
+                    value={formData.placa}
+                    onChange={e => setFormData({...formData, placa: e.target.value.toUpperCase()})}
+                    className="w-full bg-[#141f38] border-2 border-white/10 rounded-xl px-8 py-6 text-4xl text-center text-white focus:outline-none focus:border-blue-400 font-bold tracking-[0.2em] shadow-[0_0_30px_rgba(59,130,246,0.05)] font-mono uppercase"
+                    placeholder="AAA0A00"
+                    maxLength={7}
+                  />
                 </div>
-                <input type="text"
-                  value={formData.placa}
-                  onChange={e => setFormData({...formData, placa: e.target.value.toUpperCase()})}
-                  className="w-full bg-[#141f38] border-2 border-white/10 rounded-xl px-8 py-6 text-4xl text-center text-white focus:outline-none focus:border-blue-400 font-bold tracking-[0.2em] shadow-[0_0_30px_rgba(59,130,246,0.05)] font-mono uppercase"
-                  placeholder="AAA0A00"
-                  maxLength={7}
-                />
-              </div>
+              )}
 
-              <div className="flex justify-center w-full max-w-sm mx-auto">
-                <button onClick={handleFipeSearch} disabled={formData.placa.length < 7 || loading} className={`w-full flex justify-center items-center py-4 rounded-xl text-white font-black uppercase tracking-widest transition-all ${
-                  formData.placa.length >= 7 ? theme.colors.bg : 'bg-white/5 text-zinc-600 cursor-not-allowed'
-                }`} style={formData.placa.length >= 7 ? { boxShadow: `0 0 20px ${theme.colors.shadow}` } : {}}>
-                  {loading ? <Loader2 className="animate-spin" /> : <span>Buscar Variantes FIPE <ArrowRight className="inline-block ml-2 w-4" /></span>}
+              {!manualMode && (
+                <div className="flex justify-center w-full max-w-sm mx-auto">
+                  <button onClick={handleFipeSearch} disabled={formData.placa.length < 7 || loading} className={`w-full flex justify-center items-center py-4 rounded-xl text-white font-black uppercase tracking-widest transition-all ${
+                    formData.placa.length >= 7 ? theme.colors.bg : 'bg-white/5 text-zinc-600 cursor-not-allowed'
+                  }`} style={formData.placa.length >= 7 ? { boxShadow: `0 0 20px ${theme.colors.shadow}` } : {}}>
+                    {loading ? <Loader2 className="animate-spin" /> : <span>Buscar Variantes FIPE <ArrowRight className="inline-block ml-2 w-4" /></span>}
+                  </button>
+                </div>
+              )}
+
+              {/* Toggle modo manual de teste */}
+              <div className="flex justify-center mt-4">
+                <button
+                  onClick={() => { setManualMode(!manualMode); setError(''); }}
+                  className={`flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full border transition-all ${
+                    manualMode
+                      ? 'bg-amber-500/15 border-amber-500/50 text-amber-400'
+                      : 'bg-white/5 border-white/10 text-zinc-500 hover:text-zinc-300 hover:border-white/20'
+                  }`}
+                >
+                  <FlaskConical size={13} />
+                  {manualMode ? 'Modo Teste Ativo — Clique para voltar à placa' : 'Inserir valor manualmente (teste)'}
                 </button>
               </div>
+
+              {/* Formulario de entrada manual */}
+              {manualMode && (
+                <div className="mt-5 mx-auto w-full max-w-sm space-y-3 bg-amber-500/5 border border-amber-500/20 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FlaskConical size={14} className="text-amber-400" />
+                    <p className="text-xs text-amber-300 font-bold uppercase tracking-widest">Cotação de Teste — Sem Placa Real</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-1.5">Modelo / Descrição</label>
+                    <input
+                      type="text"
+                      value={manualModelo}
+                      onChange={e => setManualModelo(e.target.value)}
+                      placeholder="Ex: Toyota Corolla 2023"
+                      className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-amber-400 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-1.5">Valor FIPE (R$)</label>
+                    <div className="relative">
+                      <DollarSign size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                      <input
+                        type="number"
+                        min={1000}
+                        max={1000000}
+                        step={1000}
+                        value={manualFipe}
+                        onChange={e => setManualFipe(e.target.value)}
+                        placeholder="Ex: 85000"
+                        className="w-full bg-black/60 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-white font-mono font-bold focus:outline-none focus:border-amber-400 transition-colors"
+                      />
+                    </div>
+                    <p className="text-[10px] text-zinc-600 mt-1">Suporta valores até R$ 1.000.000</p>
+                  </div>
+                  <button
+                    onClick={handleManualCotacao}
+                    disabled={!manualModelo.trim() || !manualFipe || loading}
+                    className="w-full flex justify-center items-center gap-2 py-3 rounded-xl text-black font-black uppercase tracking-widest transition-all bg-amber-400 hover:bg-amber-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                  >
+                    {loading ? <Loader2 size={18} className="animate-spin" /> : <><ArrowRight size={16} /><span>Gerar Cotação de Teste</span></>}
+                  </button>
+                </div>
+              )}
               
               {error && (
                 <div className="mt-6 flex items-center justify-center space-x-2 text-red-400 text-sm font-medium">
@@ -677,80 +760,12 @@ const QuoteGenerator = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2 relative z-10">
-                        <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase">BENEFÍCIOS DO PLANO</p>
-                        <div className="flex items-center gap-2">
-                          {editingPlanId === planPrice.id ? (
-                            <>
-                              <button onClick={() => restoreBenefits(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
-                                <RotateCcw size={11}/> Restaurar
-                              </button>
-                              <button onClick={closeEditMode} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white bg-white/10 border border-white/20 px-2 py-1 rounded-lg transition-all">
-                                Confirmar
-                              </button>
-                            </>
-                          ) : (
-                            <button onClick={() => openEditMode(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
-                              <Pencil size={11}/> Editar
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex-1 relative z-10">
-                        {editingPlanId === planPrice.id ? (
-                          <div className="space-y-2">
-                            {(editedCoberturas[planPrice.id] ?? []).map((c, i) => (
-                              <div key={i} className="flex flex-col gap-1 bg-white/[0.03] border border-white/10 rounded-xl px-2 py-2">
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    value={c.label}
-                                    onChange={e => updateBenefit(planPrice.id, i, 'label', e.target.value)}
-                                    placeholder="Benefício"
-                                    className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none w-full"
-                                  />
-                                  <button onClick={() => removeBenefit(planPrice.id, i)} className="text-red-500/60 hover:text-red-400 transition-colors shrink-0">
-                                    <X size={14}/>
-                                  </button>
-                                </div>
-                                <input
-                                  value={c.param || ''}
-                                  onChange={e => updateBenefit(planPrice.id, i, 'param', e.target.value)}
-                                  placeholder="Detalhe (opcional)"
-                                  className="w-full bg-transparent text-zinc-400 text-[10px] placeholder:text-zinc-700 outline-none"
-                                />
-                              </div>
-                            ))}
-                            <div className="flex flex-col gap-1 bg-white/[0.02] border border-dashed border-white/10 rounded-xl px-2 py-2 mt-3">
-                              <div className="flex items-center gap-2">
-                                <input
-                                  value={newBenefit.label}
-                                  onChange={e => setNewBenefit(prev => ({ ...prev, label: e.target.value }))}
-                                  onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
-                                  placeholder="Novo benefício..."
-                                  className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none w-full"
-                                />
-                                <button onClick={() => addBenefit(planPrice.id)} className="text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
-                                  <Plus size={14}/>
-                                </button>
-                              </div>
-                              <input
-                                value={newBenefit.param}
-                                onChange={e => setNewBenefit(prev => ({ ...prev, param: e.target.value }))}
-                                onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
-                                placeholder="Detalhe..."
-                                className="w-full bg-transparent text-zinc-400 text-[10px] placeholder:text-zinc-700 outline-none"
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <ul className="space-y-2.5 text-zinc-300 text-xs font-medium">
-                            {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
-                              <li key={i} className="flex items-start"><CheckCircle2 className={`w-3.5 mt-0.5 mr-2 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
+                      <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase mb-3 text-center">BENEFÍCIOS DO PLANO</p>
+                      <ul className="space-y-2.5 flex-1 text-zinc-300 relative z-10 text-xs font-medium">
+                        {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
+                          <li key={i} className="flex items-start"><CheckCircle2 className={`w-3.5 mt-0.5 mr-2 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
+                        ))}
+                      </ul>
                     </div>
                   );
                 })}
@@ -843,20 +858,80 @@ const QuoteGenerator = () => {
                                   <h3 className={`premium-title text-4xl uppercase tracking-tighter mb-3 ${isVip ? `text-transparent bg-clip-text bg-gradient-to-r ${theme.colors.gradientFrom} to-white` : 'text-white'}`}>{planPrice.plans?.nome}</h3>
                                   <div className="w-12 h-1 mx-auto rounded-full mb-6" style={{ backgroundColor: theme.colors.glowHex, opacity: 0.5 }}></div>
                                   
-                                  <div className="mb-6 text-left border-b border-white/5 pb-2">
+                                  <div className="flex items-center justify-between mb-6 text-left border-b border-white/5 pb-2">
                                     <p className="text-[13px] text-zinc-500 font-black tracking-widest uppercase">Benefícios Inclusos</p>
+                                    <div className="flex items-center gap-2">
+                                      {editingPlanId === planPrice.id ? (
+                                        <>
+                                          <button onClick={() => restoreBenefits(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
+                                            <RotateCcw size={11}/> Restaurar
+                                          </button>
+                                          <button onClick={closeEditMode} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white bg-white/10 border border-white/20 px-2 py-1 rounded-lg transition-all">
+                                            Confirmar
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <button onClick={() => openEditMode(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
+                                          <Pencil size={11}/> Editar
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                               </div>
                               
                                <div className="flex-1 pr-2 mb-6">
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-2.5">
-                                  {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
-                                    <div key={i} className="flex items-start text-[14px] text-zinc-300 leading-tight">
-                                      <CheckCircle2 className={`w-5 h-5 mr-3 shrink-0 mt-0.5 ${isVip ? theme.colors.primary : 'text-white'}`}/> 
-                                      <span className="mt-0.5"><strong className="text-white font-medium">{c.label}</strong>{c.param ? `: ${c.param}` : ''}</span>
+                                {editingPlanId === planPrice.id ? (
+                                  <div className="space-y-2">
+                                    {(editedCoberturas[planPrice.id] ?? []).map((c, i) => (
+                                      <div key={i} className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2">
+                                        <input
+                                          value={c.label}
+                                          onChange={e => updateBenefit(planPrice.id, i, 'label', e.target.value)}
+                                          placeholder="Benefício"
+                                          className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none"
+                                        />
+                                        <span className="text-zinc-600 text-xs">|</span>
+                                        <input
+                                          value={c.param || ''}
+                                          onChange={e => updateBenefit(planPrice.id, i, 'param', e.target.value)}
+                                          placeholder="Detalhe (opcional)"
+                                          className="w-28 bg-transparent text-zinc-400 text-xs placeholder:text-zinc-700 outline-none"
+                                        />
+                                        <button onClick={() => removeBenefit(planPrice.id, i)} className="text-red-500/60 hover:text-red-400 transition-colors shrink-0">
+                                          <X size={14}/>
+                                        </button>
+                                      </div>
+                                    ))}
+                                    <div className="flex items-center gap-2 bg-white/[0.02] border border-dashed border-white/10 rounded-xl px-3 py-2 mt-3">
+                                      <input
+                                        value={newBenefit.label}
+                                        onChange={e => setNewBenefit(prev => ({ ...prev, label: e.target.value }))}
+                                        onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
+                                        placeholder="Novo benefício..."
+                                        className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none"
+                                      />
+                                      <input
+                                        value={newBenefit.param}
+                                        onChange={e => setNewBenefit(prev => ({ ...prev, param: e.target.value }))}
+                                        onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
+                                        placeholder="Detalhe..."
+                                        className="w-28 bg-transparent text-zinc-400 text-xs placeholder:text-zinc-700 outline-none"
+                                      />
+                                      <button onClick={() => addBenefit(planPrice.id)} className="text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
+                                        <Plus size={14}/>
+                                      </button>
                                     </div>
-                                  ))}
-                                </div>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-2 gap-x-8 gap-y-2.5">
+                                    {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
+                                      <div key={i} className="flex items-start text-[14px] text-zinc-300 leading-tight">
+                                        <CheckCircle2 className={`w-5 h-5 mr-3 shrink-0 mt-0.5 ${isVip ? theme.colors.primary : 'text-white'}`}/> 
+                                        <span className="mt-0.5"><strong className="text-white font-medium">{c.label}</strong>{c.param ? `: ${c.param}` : ''}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
 
                                {/* CLOSING / PRICING CARD AT THE BOTTOM */}
