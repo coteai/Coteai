@@ -75,6 +75,7 @@ const QuoteGenerator = () => {
     setEditingPlanId(null);
     setNewBenefit({ label: '', param: '' });
     setEditedAdesao({});
+    setEditedMensalidade({});
   };
 
   // ── Benefit Editing Helpers ──
@@ -93,6 +94,14 @@ const QuoteGenerator = () => {
   const getAdesao = (planId: string, original: number) => {
     if (editedAdesao[planId] !== undefined) {
       const parsed = parseFloat(editedAdesao[planId].replace(/\./g, '').replace(',', '.'));
+      return isNaN(parsed) ? original : parsed;
+    }
+    return original;
+  };
+
+  const getMensalidade = (planId: string, original: number) => {
+    if (editedMensalidade[planId] !== undefined) {
+      const parsed = parseFloat(editedMensalidade[planId].replace(/\./g, '').replace(',', '.'));
       return isNaN(parsed) ? original : parsed;
     }
     return original;
@@ -756,7 +765,21 @@ const QuoteGenerator = () => {
                       </div>
 
                       <div className="mb-4 sm:mb-6 relative z-10 text-center">
-                        <span className="text-3xl sm:text-4xl font-black text-white">{formatCurrency(planPrice.mensalidade)}<span className="text-sm text-zinc-500 font-medium">/mês</span></span>
+                        {editingPlanId === planPrice.id ? (
+                          <div className="flex items-baseline justify-center gap-1">
+                            <span className="text-zinc-500 text-lg font-bold">R$</span>
+                            <input
+                              type="text"
+                              value={editedMensalidade[planPrice.id] ?? String(planPrice.mensalidade)}
+                              onChange={e => setEditedMensalidade(prev => ({ ...prev, [planPrice.id]: e.target.value }))}
+                              className="w-36 bg-black/60 border-b-2 border-white/30 text-white text-3xl sm:text-4xl font-black text-center outline-none focus:border-white transition-colors"
+                              placeholder="0"
+                            />
+                            <span className="text-sm text-zinc-500 font-medium">/mês</span>
+                          </div>
+                        ) : (
+                          <span className="text-3xl sm:text-4xl font-black text-white">{formatCurrency(getMensalidade(planPrice.id, planPrice.mensalidade))}<span className="text-sm text-zinc-500 font-medium">/mês</span></span>
+                        )}
                         
                         <div className="flex flex-col space-y-2 mt-4 bg-black/60 p-3 sm:p-4 rounded-xl border border-white/5 text-left">
                           <div className="flex justify-between items-center">
@@ -1199,7 +1222,7 @@ const QuoteGenerator = () => {
                         <p className={`font-black uppercase mb-1 flex items-center ${isVip ? 'text-blue-400' : 'text-white'}`}>
                           {isVip && <Zap size={14} className="mr-1 inline" />} {planPrice.plans?.nome}
                         </p>
-                        <p className="text-xl text-white font-black mb-2">{formatCurrency(planPrice.mensalidade)}<span className="text-[10px] font-normal text-zinc-500">/mês</span></p>
+                        <p className="text-xl text-white font-black mb-2">{formatCurrency(getMensalidade(planPrice.id, planPrice.mensalidade))}<span className="text-[10px] font-normal text-zinc-500">/mês</span></p>
                         <div className="space-y-1 mt-2">
                           <p className="text-[11px] text-zinc-400"><span className="text-zinc-500">Franquia:</span> {planPrice.franquia_percentual}%</p>
                           <p className="text-[11px] text-zinc-400"><span className="text-zinc-500">Cobertura:</span> {formatCurrency(planPrice.cobertura_maxima)}</p>
@@ -1244,6 +1267,9 @@ const QuoteGenerator = () => {
 };
 
 export default QuoteGenerator;
+
+
+
 
 
 
