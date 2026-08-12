@@ -47,6 +47,7 @@ const QuoteGenerator = () => {
   const [editedCoberturas, setEditedCoberturas] = useState<Record<string, { label: string; param?: string }[]>>({});
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [editedAdesao, setEditedAdesao] = useState<Record<string, string>>({});
+  const [editedMensalidade, setEditedMensalidade] = useState<Record<string, string>>({});
   const [newBenefit, setNewBenefit] = useState<{ label: string; param: string }>({ label: '', param: '' });
 
 
@@ -1267,6 +1268,7 @@ const QuoteGenerator = () => {
 };
 
 export default QuoteGenerator;
+
 
 
 
