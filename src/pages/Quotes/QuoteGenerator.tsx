@@ -866,7 +866,7 @@ const QuoteGenerator = () => {
                 })}
               </div>
 
-              <div className="mt-2 sm:mt-4 pt-4 sm:pt-6 border-t border-white/10">
+              <div className="sticky bottom-0 mt-2 sm:mt-4 pt-4 sm:pt-6 border-t border-white/10 bg-[var(--color-surface)] pb-3 z-20">
                 <button
                   onClick={() => saveQuoteMulti()}
                   disabled={saving}
@@ -1244,6 +1244,7 @@ const QuoteGenerator = () => {
 };
 
 export default QuoteGenerator;
+
 
 
 
