@@ -46,6 +46,7 @@ const QuoteGenerator = () => {
   // ── Benefit Editing States ──
   const [editedCoberturas, setEditedCoberturas] = useState<Record<string, { label: string; param?: string }[]>>({});
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+  const [editedAdesao, setEditedAdesao] = useState<Record<string, string>>({});
   const [newBenefit, setNewBenefit] = useState<{ label: string; param: string }>({ label: '', param: '' });
 
 
@@ -73,6 +74,7 @@ const QuoteGenerator = () => {
     setEditedCoberturas({});
     setEditingPlanId(null);
     setNewBenefit({ label: '', param: '' });
+    setEditedAdesao({});
   };
 
   // ── Benefit Editing Helpers ──
@@ -87,6 +89,14 @@ const QuoteGenerator = () => {
         coberturas: editedCoberturas[p.id] ?? p.plans?.coberturas ?? []
       }
     }));
+
+  const getAdesao = (planId: string, original: number) => {
+    if (editedAdesao[planId] !== undefined) {
+      const parsed = parseFloat(editedAdesao[planId].replace(/\./g, '').replace(',', '.'));
+      return isNaN(parsed) ? original : parsed;
+    }
+    return original;
+  };
 
   const openEditMode = (planId: string, original: any[]) => {
     setEditedCoberturas(prev => ({ ...prev, [planId]: JSON.parse(JSON.stringify(original ?? [])) }));
@@ -761,11 +771,96 @@ const QuoteGenerator = () => {
                       </div>
 
                       <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase mb-3 text-center">BENEFÍCIOS DO PLANO</p>
-                      <ul className="space-y-2.5 flex-1 text-zinc-300 relative z-10 text-xs font-medium">
-                        {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
-                          <li key={i} className="flex items-start"><CheckCircle2 className={`w-3.5 mt-0.5 mr-2 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
-                        ))}
-                      </ul>
+                      
+                      {/* Adesão editável */}
+                      <div className="mb-3 bg-black/40 border border-white/5 rounded-xl p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Taxa de Adesão</span>
+                          {editingPlanId === planPrice.id ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-zinc-500 text-xs font-bold">R$</span>
+                              <input
+                                type="text"
+                                value={editedAdesao[planPrice.id] ?? String(planPrice.mensalidade)}
+                                onChange={e => setEditedAdesao(prev => ({ ...prev, [planPrice.id]: e.target.value }))}
+                                className="w-24 bg-black/60 border border-white/20 rounded-lg px-2 py-1 text-white text-xs font-bold text-right outline-none focus:border-white/40 transition-colors"
+                                placeholder="0"
+                              />
+                            </div>
+                          ) : (
+                            <span className="text-white font-black text-sm">{formatCurrency(getAdesao(planPrice.id, planPrice.mensalidade))}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Benefícios header with edit toggle */}
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] text-zinc-600 font-black tracking-widest uppercase">Benefícios</p>
+                        {editingPlanId === planPrice.id ? (
+                          <div className="flex items-center gap-1.5">
+                            <button onClick={() => restoreBenefits(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-0.5 rounded-lg transition-all">
+                              <RotateCcw size={9}/> Restaurar
+                            </button>
+                            <button onClick={closeEditMode} className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg transition-all">
+                              Confirmar
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => openEditMode(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-0.5 rounded-lg transition-all">
+                            <Pencil size={9}/> Editar
+                          </button>
+                        )}
+                      </div>
+
+                      {editingPlanId === planPrice.id ? (
+                        <div className="space-y-1.5 flex-1 relative z-10">
+                          {(editedCoberturas[planPrice.id] ?? []).map((c, i) => (
+                            <div key={i} className="flex items-center gap-1.5 bg-white/[0.03] border border-white/10 rounded-lg px-2.5 py-1.5">
+                              <input
+                                value={c.label}
+                                onChange={e => updateBenefit(planPrice.id, i, 'label', e.target.value)}
+                                placeholder="Benefício"
+                                className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none"
+                              />
+                              <span className="text-zinc-600 text-xs">|</span>
+                              <input
+                                value={c.param || ''}
+                                onChange={e => updateBenefit(planPrice.id, i, 'param', e.target.value)}
+                                placeholder="Detalhe"
+                                className="w-20 bg-transparent text-zinc-400 text-xs placeholder:text-zinc-700 outline-none"
+                              />
+                              <button onClick={() => removeBenefit(planPrice.id, i)} className="text-red-500/60 hover:text-red-400 transition-colors shrink-0">
+                                <X size={12}/>
+                              </button>
+                            </div>
+                          ))}
+                          <div className="flex items-center gap-1.5 bg-white/[0.02] border border-dashed border-white/10 rounded-lg px-2.5 py-1.5 mt-2">
+                            <input
+                              value={newBenefit.label}
+                              onChange={e => setNewBenefit(prev => ({ ...prev, label: e.target.value }))}
+                              onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
+                              placeholder="Novo benefício..."
+                              className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none"
+                            />
+                            <input
+                              value={newBenefit.param}
+                              onChange={e => setNewBenefit(prev => ({ ...prev, param: e.target.value }))}
+                              onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
+                              placeholder="Detalhe..."
+                              className="w-20 bg-transparent text-zinc-400 text-xs placeholder:text-zinc-700 outline-none"
+                            />
+                            <button onClick={() => addBenefit(planPrice.id)} className="text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
+                              <Plus size={12}/>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <ul className="space-y-2.5 flex-1 text-zinc-300 relative z-10 text-xs font-medium">
+                          {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
+                            <li key={i} className="flex items-start"><CheckCircle2 className={`w-3.5 mt-0.5 mr-2 shrink-0 ${isVip ? theme.colors.primary : 'text-cyan-500'}`}/> {c.label}{c.param ? `: ${c.param}` : ''}</li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   );
                 })}
@@ -1149,5 +1244,8 @@ const QuoteGenerator = () => {
 };
 
 export default QuoteGenerator;
+
+
+
 
 
