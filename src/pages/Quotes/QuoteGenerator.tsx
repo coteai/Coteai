@@ -953,9 +953,9 @@ const QuoteGenerator = () => {
                           </div>
 
                           {/* Slogan */}
-                          <div style={{ zIndex:2, display:'flex', alignItems:'center', gap:'14px', marginRight:'6px' }}>
+                          <div style={{ zIndex:2, display:'flex', alignItems:'center', gap:'14px', marginRight:'125px' }}>
                             <div style={{ width:'1px', height:'46px', background:'#ccc', flexShrink:0 }}/>
-                            <div style={{ fontSize:'10px', fontWeight:'700', letterSpacing:'2.5px', color:'#1a1a1a', textTransform:'uppercase', lineHeight:'1.75', textAlign:'right' }}>
+                            <div style={{ fontSize:'10px', fontWeight:'700', letterSpacing:'2px', color:'#1a1a1a', textTransform:'uppercase', lineHeight:'1.75', textAlign:'right' }}>
                               MAIS QUE PROTEÇÃO,<br/>É TRANQUILIDADE<br/>PARA VOCÊ SEGUIR.
                             </div>
                           </div>
