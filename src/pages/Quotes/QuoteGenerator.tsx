@@ -942,21 +942,14 @@ const QuoteGenerator = () => {
                           {/* diagonal preto interno */}
                           <div style={{ position:'absolute', top:0, right:0, width:0, height:0, borderStyle:'solid', borderWidth:'0 82px 82px 0', borderColor:'transparent #1a1a1a transparent transparent', zIndex:1 }}/>
 
-                          {/* Logo */}
-                          <div style={{ zIndex:2 }}>
-                            {logoUrl ? (
-                              <img src={logoUrl} alt="Logo" style={{ height:'68px', width:'auto', display:'block' }} crossOrigin="anonymous" />
-                            ) : (
-                              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-                                <div style={{ width:'54px', height:'60px', background:'#c0000e', clipPath:'polygon(50% 0%,100% 18%,100% 60%,50% 100%,0% 60%,0% 18%)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                                  <span style={{ color:'#fff', fontSize:'26px', fontWeight:'900' }}>V</span>
-                                </div>
-                                <div>
-                                  <div style={{ fontSize:'26px', fontWeight:'900', color:'#1a1a1a', lineHeight:1 }}>{associationData?.nome || 'VIPCAR BRASIL'}</div>
-                                  <div style={{ fontSize:'10px', fontWeight:'600', color:'#888', textTransform:'uppercase', letterSpacing:'1.5px', marginTop:'3px' }}>Proteção Veicular</div>
-                                </div>
-                              </div>
-                            )}
+                          {/* Nome da Associação */}
+                          <div style={{ zIndex: 2 }}>
+                            <div style={{ fontSize: '28px', fontWeight: '900', color: '#1a1a1a', lineHeight: 1.05, textTransform: 'uppercase', letterSpacing: '-0.5px' }}>
+                              {associationData?.nome || 'VIPCAR BRASIL'}
+                            </div>
+                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#888', textTransform: 'uppercase', letterSpacing: '2px', marginTop: '3px' }}>
+                              PROTEÇÃO VEICULAR
+                            </div>
                           </div>
 
                           {/* Slogan */}
@@ -1072,14 +1065,14 @@ const QuoteGenerator = () => {
                             <div style={{ fontSize:'22px', fontWeight:'900', color:'#fff', textTransform:'uppercase', letterSpacing:'0.5px', lineHeight:'1.05' }}>Mais Conquistas!</div>
                             <div style={{ width:'40px', height:'3px', background:'#c0000e', marginTop:'6px', borderRadius:'2px' }}/>
                           </div>
-                          {logoUrl ? (
-                            <img src={logoUrl} alt="Logo" style={{ height:'52px', width:'auto', display:'block' }} crossOrigin="anonymous" />
-                          ) : (
-                            <div style={{ fontSize:'18px', fontWeight:'900', color:'#fff', textAlign:'right' }}>
-                              {associationData?.nome || 'VIPCAR BRASIL'}<br/>
-                              <span style={{ fontSize:'10px', fontWeight:'400', color:'#888', letterSpacing:'1.5px' }}>PROTEÇÃO VEICULAR</span>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '20px', fontWeight: '900', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: 1.1 }}>
+                              {associationData?.nome || 'VIPCAR BRASIL'}
                             </div>
-                          )}
+                            <div style={{ fontSize: '10px', fontWeight: '600', color: '#888', letterSpacing: '2px', textTransform: 'uppercase', marginTop: '3px' }}>
+                              PROTEÇÃO VEICULAR
+                            </div>
+                          </div>
                         </div>
 
                       </div>
