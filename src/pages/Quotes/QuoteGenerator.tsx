@@ -27,7 +27,8 @@ const QuoteGenerator = () => {
   const [manualModelo, setManualModelo] = useState('');
   const [manualFipe, setManualFipe] = useState('');
 
-  // Modo manual (teste sem placa real)
+  // Modo manual (teste sem placa real)
+
 
   // Vehicle Groups
   const [vehicleGroups, setVehicleGroups] = useState<any[]>([]);
@@ -419,7 +420,7 @@ const QuoteGenerator = () => {
         pdf.setFillColor(8, 15, 30); // Theme background #080F1E
         pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 'F');
         
-        const imgData = await htmlToImage.toPng(pageElement, { backgroundColor: '#080F1E', pixelRatio: 2 });
+        const imgData = await htmlToImage.toPng(pageElement, { backgroundColor: '#ffffff', pixelRatio: 2 });
         
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
@@ -919,227 +920,185 @@ const QuoteGenerator = () => {
               <div className="absolute left-[-9999px] top-[-9999px]">
                 <div ref={pdfRef}>
                   {availablePlans.map((planPrice, index) => {
-                     const isVip = planPrice.plans?.nome?.toLowerCase().includes('vip');
-                     const isFirst = index === 0;
-                     const isLast = index === availablePlans.length - 1;
+                    const isFirst = index === 0;
+                    const coberturas = getCoberturas(planPrice.id, planPrice.plans?.coberturas || []);
+                    const anoMatch = formData.modelo?.match(/\(([^)]+)\)/);
+                    const anoModelo = anoMatch ? anoMatch[1] : '—';
+                    const modeloNome = formData.modelo?.replace(/\s*\([^)]+\)\s*/, '').trim() || formData.modelo;
+                    const mensalidade = getMensalidade(planPrice.id, planPrice.mensalidade);
+                    const adesao = getAdesao(planPrice.id, planPrice.mensalidade);
+                    const halfLen = Math.ceil(coberturas.length / 2);
+                    const colA = coberturas.slice(0, halfLen);
+                    const colB = coberturas.slice(halfLen);
+                    const logoUrl = associationData?.logo_url || associationData?.logo || null;
 
-                     return (
-                      <div key={planPrice.id} className="bg-[#080F1E] text-[#E2E8F0] w-[800px] h-[1131px] p-8 font-sans relative overflow-hidden flex flex-col pt-12">
-                        {/* Background effects */}
-                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3"></div>
-                        {isLast && <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-white/5 rounded-full blur-[120px] translate-y-1/3 -translate-x-1/4"></div>}
+                    return (
+                      <div key={planPrice.id} style={{ width:'800px', minHeight:'1131px', backgroundColor:'#ffffff', fontFamily:'Arial,sans-serif', display:'flex', flexDirection:'column', overflow:'hidden', position:'relative' }}>
 
-                        {/* HEADERS & VEHICLE INFO (ONLY ON FIRST PAGE) */}
-                        {isFirst && (
-                          <div className="shrink-0 mb-6">
-                            <div className="flex justify-between items-start border-b border-white/10 pb-4 mb-6 relative z-10">
-                              <div>
-                                <h1 className={`premium-title text-4xl uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r ${isVip ? `${theme.colors.gradientFrom} to-white` : 'from-zinc-100 to-zinc-400'}`}>
-                                  {associationData?.nome ? associationData.nome : 'VIPCAR BRASIL'}
-                                </h1>
-                                <p className="text-zinc-400 mt-1 uppercase tracking-widest text-[12px] font-bold">Proposta de Proteção Veicular</p>
-                              </div>
-                              <div className="text-right">
-                                <p className={`font-bold text-sm ${theme.colors.primary}`}>Data da Cotação</p>
-                                <p className="text-zinc-400 text-sm">{new Date().toLocaleDateString('pt-BR')}</p>
-                              </div>
-                            </div>
+                        {/* ── 1. HEADER ── */}
+                        <div style={{ position:'relative', backgroundColor:'#ffffff', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 28px 14px 22px', borderBottom:'1px solid #e4e4e4', overflow:'hidden' }}>
+                          {/* diagonal vermelho externo */}
+                          <div style={{ position:'absolute', top:0, right:0, width:0, height:0, borderStyle:'solid', borderWidth:'0 115px 115px 0', borderColor:'transparent #c0000e transparent transparent' }}/>
+                          {/* diagonal preto interno */}
+                          <div style={{ position:'absolute', top:0, right:0, width:0, height:0, borderStyle:'solid', borderWidth:'0 82px 82px 0', borderColor:'transparent #1a1a1a transparent transparent', zIndex:1 }}/>
 
-                            <div className="bg-[#0E1629] border border-white/5 rounded-2xl p-6 relative z-10 flex justify-between items-center shadow-[0_0_20px_rgba(37,99,235,0.05)]">
-                              <div>
-                                <p className={`text-[12px] font-black tracking-widest uppercase mb-1 ${theme.colors.primary}`}>Veículo Selecionado</p>
-                                <p className="text-xl font-bold text-white uppercase">{formData.modelo}</p>
-                                <div className="flex space-x-4 mt-2 text-sm text-zinc-400">
-                                  <span><strong className="text-zinc-300">Placa:</strong> {formData.placa || 'Não informada'}</span>
+                          {/* Logo */}
+                          <div style={{ zIndex:2 }}>
+                            {logoUrl ? (
+                              <img src={logoUrl} alt="Logo" style={{ height:'68px', width:'auto', display:'block' }} crossOrigin="anonymous" />
+                            ) : (
+                              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                                <div style={{ width:'54px', height:'60px', background:'#c0000e', clipPath:'polygon(50% 0%,100% 18%,100% 60%,50% 100%,0% 60%,0% 18%)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                  <span style={{ color:'#fff', fontSize:'26px', fontWeight:'900' }}>V</span>
+                                </div>
+                                <div>
+                                  <div style={{ fontSize:'26px', fontWeight:'900', color:'#1a1a1a', lineHeight:1 }}>{associationData?.nome || 'VIPCAR BRASIL'}</div>
+                                  <div style={{ fontSize:'10px', fontWeight:'600', color:'#888', textTransform:'uppercase', letterSpacing:'1.5px', marginTop:'3px' }}>Proteção Veicular</div>
                                 </div>
                               </div>
-                              <div className="text-right bg-[#080F1E]/80 border border-white/5 px-6 py-4 rounded-xl">
-                                <p className={`text-[12px] font-black tracking-widest uppercase mb-1 ${theme.colors.primary}`}>Valor FIPE</p>
-                                <p className="text-3xl font-black text-white">{formatCurrency(formData.fipe)}</p>
-                              </div>
+                            )}
+                          </div>
+
+                          {/* Slogan */}
+                          <div style={{ zIndex:2, display:'flex', alignItems:'center', gap:'14px', marginRight:'6px' }}>
+                            <div style={{ width:'1px', height:'46px', background:'#ccc', flexShrink:0 }}/>
+                            <div style={{ fontSize:'10px', fontWeight:'700', letterSpacing:'2.5px', color:'#1a1a1a', textTransform:'uppercase', lineHeight:'1.75', textAlign:'right' }}>
+                              MAIS QUE PROTEÇÃO,<br/>É TRANQUILIDADE<br/>PARA VOCÊ SEGUIR.
                             </div>
                           </div>
-                        )}
-
-                        {/* MINI HEADER FOR CONTINUATION PAGES */}
-                        {!isFirst && (
-                          <div className="flex justify-between items-center border-b border-white/10 pb-4 mb-4 shrink-0 relative z-10">
-                            <h2 className="premium-title text-xl uppercase tracking-tighter text-zinc-300">{associationData?.nome ? associationData.nome : 'VIPCAR BRASIL'}</h2>
-                            <p className="text-xs font-bold text-zinc-600 uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-full border border-white/5">Continuação - Opções de Plano</p>
-                          </div>
-                        )}
-
-                        {/* PLAN DETAILS (Only This Plan) - Content Area */}
-                         <div className="relative z-10 flex-1 flex flex-col min-h-0 items-center mt-4">
-                             <div className={`pt-10 pb-6 px-10 rounded-3xl w-full max-w-[720px] mx-auto border flex flex-col h-auto max-h-max bg-[#0E1629]/90 shadow-2xl`} style={isVip ? { borderColor: theme.colors.glowHex, backgroundColor: '#0B101E', boxShadow: `0 0 50px ${theme.colors.shadow}` } : { borderColor: 'rgba(255,255,255,0.1)' }}>
-                              <div className="shrink-0 text-center mb-8">
-                                  {isVip && <div className={`inline-block text-white text-[11px] font-black uppercase tracking-widest px-3 py-1 rounded-full mb-3 ${theme.colors.bg}`} style={{ boxShadow: `0 0 15px ${theme.colors.shadow}` }}>Plano Recomendado</div>}
-                                  <h3 className={`premium-title text-4xl uppercase tracking-tighter mb-3 ${isVip ? `text-transparent bg-clip-text bg-gradient-to-r ${theme.colors.gradientFrom} to-white` : 'text-white'}`}>{planPrice.plans?.nome}</h3>
-                                  <div className="w-12 h-1 mx-auto rounded-full mb-6" style={{ backgroundColor: theme.colors.glowHex, opacity: 0.5 }}></div>
-                                  
-                                  <div className="flex items-center justify-between mb-6 text-left border-b border-white/5 pb-2">
-                                    <p className="text-[13px] text-zinc-500 font-black tracking-widest uppercase">Benefícios Inclusos</p>
-                                    <div className="flex items-center gap-2">
-                                      {editingPlanId === planPrice.id ? (
-                                        <>
-                                          <button onClick={() => restoreBenefits(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
-                                            <RotateCcw size={11}/> Restaurar
-                                          </button>
-                                          <button onClick={closeEditMode} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white bg-white/10 border border-white/20 px-2 py-1 rounded-lg transition-all">
-                                            Confirmar
-                                          </button>
-                                        </>
-                                      ) : (
-                                        <button onClick={() => openEditMode(planPrice.id, planPrice.plans?.coberturas || [])} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 border border-white/10 px-2 py-1 rounded-lg transition-all">
-                                          <Pencil size={11}/> Editar
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                              </div>
-                              
-                               <div className="flex-1 pr-2 mb-6">
-                                {editingPlanId === planPrice.id ? (
-                                  <div className="space-y-2">
-                                    {(editedCoberturas[planPrice.id] ?? []).map((c, i) => (
-                                      <div key={i} className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2">
-                                        <input
-                                          value={c.label}
-                                          onChange={e => updateBenefit(planPrice.id, i, 'label', e.target.value)}
-                                          placeholder="Benefício"
-                                          className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none"
-                                        />
-                                        <span className="text-zinc-600 text-xs">|</span>
-                                        <input
-                                          value={c.param || ''}
-                                          onChange={e => updateBenefit(planPrice.id, i, 'param', e.target.value)}
-                                          placeholder="Detalhe (opcional)"
-                                          className="w-28 bg-transparent text-zinc-400 text-xs placeholder:text-zinc-700 outline-none"
-                                        />
-                                        <button onClick={() => removeBenefit(planPrice.id, i)} className="text-red-500/60 hover:text-red-400 transition-colors shrink-0">
-                                          <X size={14}/>
-                                        </button>
-                                      </div>
-                                    ))}
-                                    <div className="flex items-center gap-2 bg-white/[0.02] border border-dashed border-white/10 rounded-xl px-3 py-2 mt-3">
-                                      <input
-                                        value={newBenefit.label}
-                                        onChange={e => setNewBenefit(prev => ({ ...prev, label: e.target.value }))}
-                                        onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
-                                        placeholder="Novo benefício..."
-                                        className="flex-1 bg-transparent text-white text-xs font-medium placeholder:text-zinc-600 outline-none"
-                                      />
-                                      <input
-                                        value={newBenefit.param}
-                                        onChange={e => setNewBenefit(prev => ({ ...prev, param: e.target.value }))}
-                                        onKeyDown={e => e.key === 'Enter' && addBenefit(planPrice.id)}
-                                        placeholder="Detalhe..."
-                                        className="w-28 bg-transparent text-zinc-400 text-xs placeholder:text-zinc-700 outline-none"
-                                      />
-                                      <button onClick={() => addBenefit(planPrice.id)} className="text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
-                                        <Plus size={14}/>
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-2 gap-x-8 gap-y-2.5">
-                                    {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
-                                      <div key={i} className="flex items-start text-[14px] text-zinc-300 leading-tight">
-                                        <CheckCircle2 className={`w-5 h-5 mr-3 shrink-0 mt-0.5 ${isVip ? theme.colors.primary : 'text-white'}`}/> 
-                                        <span className="mt-0.5"><strong className="text-white font-medium">{c.label}</strong>{c.param ? `: ${c.param}` : ''}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-
-                               {/* CLOSING / PRICING CARD AT THE BOTTOM */}
-                              <div className="mt-auto space-y-3 p-6 bg-[#080F1E]/60 rounded-3xl border border-white/5 shadow-inner">
-                                 <div className="flex justify-between items-center px-4">
-                                    <div className="text-left">
-                                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">Taxa de Adesão</p>
-                                      <p className="text-xl font-black text-white">{formatCurrency(planPrice.mensalidade)}</p>
-                                    </div>
-                                    <div className="h-10 w-px bg-white/5 mx-6"></div>
-                                    <div className="text-left">
-                                      <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1">Cota de Participação</p>
-                                      <p className={`text-xl font-black ${isVip ? theme.colors.primary : 'text-white'}`}>{planPrice.franquia_percentual}%</p>
-                                    </div>
-                                    <div className="flex-1"></div>
-                                    <div className="text-right">
-                                      <p className={`text-[11px] font-black uppercase tracking-widest mb-0.5 ${theme.colors.primary}`}>Investimento Mensal</p>
-                                      <div className="flex items-baseline justify-end space-x-2">
-                                        <span className="text-4xl font-black text-white">{formatCurrency(planPrice.mensalidade)}</span>
-                                        <span className="text-base text-zinc-500 font-medium">/mês</span>
-                                      </div>
-                                    </div>
-                                 </div>
-                              </div>
-                            </div>
                         </div>
 
-                        {/* SALES PITCH SECTION (ONLY ON LAST PAGE) */}
-                        {isLast && (
-                          <div className="mt-6 pt-4 border-t border-indigo-500/20 shrink-0 relative z-10">
-                            <h3 className="text-[12px] font-black text-zinc-300 uppercase tracking-widest mb-5">Por que escolher a {associationData?.nome ? associationData.nome.split(' ')[0] : 'Nossa Associação'}?</h3>
-                            <div className="grid grid-cols-3 gap-6">
-                              <div className="bg-gradient-to-r from-cyan-500/10 to-transparent p-5 rounded-2xl border border-cyan-500/20 flex items-center space-x-4">
-                                 <div className="w-12 h-12 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
-                                   <Smartphone size={24} />
-                                 </div>
-                                 <div>
-                                   <p className="text-base font-black text-white mb-1 leading-tight">Digital 24h</p>
-                                   <p className="text-[10px] text-zinc-400 leading-snug">Assistência e guincho direto pelo celular na hora que precisar.</p>
-                                 </div>
+                        {/* ── 2. TITLE BLOCK ── */}
+                        <div style={{ backgroundColor:'#ffffff', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'24px 0 0 28px', minHeight:'150px' }}>
+                          <div style={{ maxWidth:'240px', flexShrink:0 }}>
+                            <div style={{ fontSize:'12px', fontWeight:'600', letterSpacing:'3px', color:'#555', textTransform:'uppercase' }}>Cotação</div>
+                            <div style={{ fontSize:'46px', fontWeight:'900', color:'#1a1a1a', textTransform:'uppercase', lineHeight:'0.95', letterSpacing:'-1px' }}>
+                              PROTEÇÃO<br/><span style={{ color:'#c0000e' }}>VEICULAR</span>
+                            </div>
+                            <div style={{ fontSize:'13px', fontWeight:'500', color:'#444', marginTop:'10px', lineHeight:'1.5' }}>
+                              Seu veículo seguro,<br/>você tranquilo.
+                            </div>
+                            <div style={{ width:'48px', height:'3px', background:'#c0000e', marginTop:'10px', borderRadius:'2px' }}/>
+                          </div>
+                          <div style={{ flex:1, display:'flex', justifyContent:'flex-end', alignItems:'flex-end', padding:'16px 28px 0 0' }}>
+                            <div style={{ textAlign:'right' }}>
+                              <div style={{ fontSize:'10px', fontWeight:'700', color:'#c0000e', letterSpacing:'2px', textTransform:'uppercase' }}>Veículo Cotado</div>
+                              <div style={{ fontSize:'20px', fontWeight:'900', color:'#1a1a1a', textTransform:'uppercase', lineHeight:1.1, maxWidth:'320px' }}>{modeloNome}</div>
+                              <div style={{ fontSize:'12px', color:'#888', marginTop:'4px' }}>Valor FIPE: {formatCurrency(formData.fipe)}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ── 3. CARD DADOS DO VEÍCULO ── */}
+                        <div style={{ margin:'14px 20px 0', backgroundColor:'#f5f5f5', borderRadius:'12px', padding:'16px 20px' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'12px' }}>
+                            <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'#fff', border:'2px solid #e0e0e0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 17H3V12L5.5 6H18.5L21 12V17H19M5 17H19M5 17a2 2 0 1 0 4 0m10 0a2 2 0 1 0-4 0m-6 0h6" stroke="#c0000e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </div>
+                            <div>
+                              <div style={{ fontSize:'10px', fontWeight:'800', letterSpacing:'2px', color:'#c0000e', textTransform:'uppercase' }}>Dados do Veículo</div>
+                              <div style={{ fontSize:'15px', fontWeight:'800', color:'#1a1a1a', textTransform:'uppercase', marginTop:'2px' }}>{modeloNome}</div>
+                            </div>
+                          </div>
+                          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', borderTop:'1px solid #ddd', paddingTop:'12px' }}>
+                            {[
+                              { label:'Ano Modelo', value: anoModelo },
+                              { label:'Placa', value: formData.placa !== 'TESTE' ? formData.placa : '—' },
+                              { label:'Valor FIPE', value: formatCurrency(formData.fipe) },
+                              { label:'Plano', value: planPrice.plans?.nome }
+                            ].map((col, ci) => (
+                              <div key={ci} style={{ paddingLeft: ci===0?'0':'12px', paddingRight:'12px', borderRight: ci<3?'1px solid #ccc':'none' }}>
+                                <div style={{ fontSize:'8px', fontWeight:'700', letterSpacing:'1.5px', color:'#999', textTransform:'uppercase' }}>{col.label}</div>
+                                <div style={{ fontSize:'14px', fontWeight:'800', color:'#1a1a1a', marginTop:'3px', textTransform:'uppercase' }}>{col.value}</div>
                               </div>
-                              <div className="bg-gradient-to-r from-indigo-500/10 to-transparent p-5 rounded-2xl border border-indigo-500/20 flex items-center space-x-4">
-                                 <div className="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                                   <CheckCircle2 size={24} /> 
-                                 </div>
-                                 <div>
-                                   <p className="text-base font-black text-white mb-1 leading-tight">Zero Burocracia</p>
-                                   <p className="text-[10px] text-zinc-400 leading-snug">Sinistros resolvidos com agilidade, sem letrinhas miúdas.</p>
-                                 </div>
-                              </div>
-                              <div className="bg-gradient-to-r from-emerald-500/10 to-transparent p-5 rounded-2xl border border-emerald-500/20 flex items-center space-x-4">
-                                 <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(52,211,153,0.2)]">
-                                   <Car size={24} /> 
-                                 </div>
-                                 <div>
-                                   <p className="text-base font-black text-white mb-1 leading-tight">Garantia 100%</p>
-                                   <p className="text-[10px] text-zinc-400 leading-snug">Indenização integral assegurada conforme tabela FIPE nacional.</p>
-                                 </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* ── 4. CARD COBERTURAS ── */}
+                        <div style={{ margin:'12px 20px 0', backgroundColor:'#f5f5f5', borderRadius:'12px', padding:'16px 20px', flex:1 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'12px' }}>
+                            <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'#fff', border:'2px solid #e0e0e0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 6V12c0 4.97 4.02 9.66 9 10 4.98-.34 9-5.03 9-10V6L12 2Z" stroke="#c0000e" strokeWidth="2" strokeLinejoin="round"/><path d="M9 12l2 2 4-4" stroke="#c0000e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </div>
+                            <div>
+                              <div style={{ fontSize:'10px', fontWeight:'800', letterSpacing:'2px', color:'#c0000e', textTransform:'uppercase' }}>Coberturas</div>
+                              <div style={{ fontSize:'9px', fontWeight:'500', color:'#888', textTransform:'uppercase', letterSpacing:'1px', marginTop:'2px' }}>Proteção completa para o seu veículo</div>
+                            </div>
+                          </div>
+                          {/* Grid 2 colunas */}
+                          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr' }}>
+                            {coberturas.map((c: any, i: number) => {
+                              const isOdd = i % 2 === 0;
+                              const isLast = i >= coberturas.length - 2;
+                              return (
+                                <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'8px', padding: isOdd ? '8px 14px 8px 0' : '8px 0 8px 14px', borderBottom: isLast ? 'none' : '1px solid #e0e0e0', borderRight: isOdd ? '1px solid #e0e0e0' : 'none' }}>
+                                  <div style={{ width:'18px', height:'18px', borderRadius:'50%', background:'#c0000e', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:'1px' }}>
+                                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                  </div>
+                                  <div style={{ fontSize:'9px', fontWeight:'600', color:'#1a1a1a', textTransform:'uppercase', letterSpacing:'0.3px', lineHeight:'1.45' }}>
+                                    <strong style={{ fontWeight:'900' }}>{c.label}</strong>{c.param ? `: ${c.param}` : ''}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* ── PRICING ROW ── */}
+                        <div style={{ margin:'12px 20px 0', backgroundColor:'#f0f0f0', borderRadius:'12px', padding:'14px 20px' }}>
+                          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1.4fr', gap:'0' }}>
+                            <div style={{ paddingRight:'12px', borderRight:'1px solid #ddd' }}>
+                              <div style={{ fontSize:'8px', fontWeight:'700', letterSpacing:'1.5px', color:'#999', textTransform:'uppercase' }}>Taxa de Adesão</div>
+                              <div style={{ fontSize:'18px', fontWeight:'900', color:'#1a1a1a', marginTop:'2px' }}>{formatCurrency(adesao)}</div>
+                            </div>
+                            <div style={{ paddingLeft:'12px', paddingRight:'12px', borderRight:'1px solid #ddd' }}>
+                              <div style={{ fontSize:'8px', fontWeight:'700', letterSpacing:'1.5px', color:'#999', textTransform:'uppercase' }}>Cota de Participação</div>
+                              <div style={{ fontSize:'18px', fontWeight:'900', color:'#1a1a1a', marginTop:'2px' }}>{planPrice.franquia_percentual}%</div>
+                            </div>
+                            <div style={{ paddingLeft:'12px' }}>
+                              <div style={{ fontSize:'8px', fontWeight:'700', letterSpacing:'1.5px', color:'#c0000e', textTransform:'uppercase' }}>Investimento Mensal</div>
+                              <div style={{ fontSize:'24px', fontWeight:'900', color:'#1a1a1a', marginTop:'2px', lineHeight:1 }}>
+                                {formatCurrency(mensalidade)}<span style={{ fontSize:'12px', color:'#888', fontWeight:'500' }}>/mês</span>
                               </div>
                             </div>
                           </div>
-                        )}
-
-                        <div className="text-center text-zinc-600 text-[11px] mt-6 relative z-10 border-t border-indigo-500/10 pt-4 shrink-0">
-                          Proposta gerada através do sistema inteligente Cote.ai. Valores sujeitos a análise de perfil e vistoria do veículo. Validade de 5 dias.
                         </div>
+
+                        {/* ── 5. FOOTER ── */}
+                        <div style={{ backgroundColor:'#1a1a1a', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 28px', marginTop:'14px' }}>
+                          <div>
+                            <div style={{ fontSize:'11px', fontWeight:'600', letterSpacing:'3px', color:'#aaa', textTransform:'uppercase' }}>Juntos por</div>
+                            <div style={{ fontSize:'22px', fontWeight:'900', color:'#fff', textTransform:'uppercase', letterSpacing:'0.5px', lineHeight:'1.05' }}>Mais Conquistas!</div>
+                            <div style={{ width:'40px', height:'3px', background:'#c0000e', marginTop:'6px', borderRadius:'2px' }}/>
+                          </div>
+                          {logoUrl ? (
+                            <img src={logoUrl} alt="Logo" style={{ height:'52px', width:'auto', display:'block' }} crossOrigin="anonymous" />
+                          ) : (
+                            <div style={{ fontSize:'18px', fontWeight:'900', color:'#fff', textAlign:'right' }}>
+                              {associationData?.nome || 'VIPCAR BRASIL'}<br/>
+                              <span style={{ fontSize:'10px', fontWeight:'400', color:'#888', letterSpacing:'1.5px' }}>PROTEÇÃO VEICULAR</span>
+                            </div>
+                          )}
+                        </div>
+
                       </div>
-                     );
+                    );
                   })}
 
-                  {/* COMPARISON PAGE */}
+                  {/* COMPARISON PAGE – mantida sem alteração */}
                   {availablePlans.length > 1 && (
                       <div className="bg-[#080F1E] text-[#E2E8F0] w-[800px] min-h-[1131px] p-8 font-sans relative overflow-hidden flex flex-col pt-12 shrink-0">
-                        {/* Background effects */}
                         <div className="absolute top-[20%] right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] translate-x-1/3"></div>
-
-                        {/* HEADERS */}
                         <div className="flex justify-between items-center border-b border-white/10 pb-4 mb-6 shrink-0 relative z-10 w-full">
                           <h2 className="premium-title text-xl uppercase tracking-tighter text-zinc-300">{associationData?.nome ? associationData.nome : 'VIPCAR BRASIL'}</h2>
                           <p className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border flex items-center ${theme.colors.primary}`} style={{ backgroundColor: `${theme.colors.glowHex}1A`, borderColor: `${theme.colors.glowHex}33` }}>
                             <Zap className="w-3 h-3 mr-1.5 inline" /> Comparativo de Planos
                           </p>
                         </div>
-
                         <p className="text-sm font-medium text-zinc-400 mb-8 shrink-0">
                           Entenda abaixo, de forma transparente, as diferenças exatas entre as coberturas de cada plano oferecido para o <strong className="text-white">{formData.modelo}</strong>.
                         </p>
-
-                        {/* TABLE */}
                         <div className="relative z-10 flex-col flex bg-[#0E1629]/90 rounded-2xl border border-white/5 shadow-[0_0_50px_rgba(255,255,255,0.02)] overflow-hidden w-full max-w-[700px] mx-auto h-auto">
                             <div className={`grid bg-[#080F1E]/80 border-b border-white/5 p-5 shrink-0 ${getPlansWithEdits().length === 2 ? 'grid-cols-[2fr_1fr_1fr]' : 'grid-cols-[2fr_1fr_1fr_1fr]'} gap-4`}>
                                <div className="font-black text-zinc-500 uppercase tracking-widest text-[11px] self-end pb-2">Benefício Estrutural</div>
@@ -1152,24 +1111,16 @@ const QuoteGenerator = () => {
                                  </div>
                                ))}
                             </div>
-                            
                             <div className="p-5 flex flex-col space-y-2.5">
                                {(() => {
-                                  // Extract all unique benefits
                                   const allBenefits = new Map();
                                   const _plans = getPlansWithEdits();
-    _plans.forEach(p => {
-                                    (p.plans?.coberturas || []).forEach(c => {
-                                       allBenefits.set(c.label, true);
-                                    });
-                                  });
-                                  
+                                  _plans.forEach(p => { (p.plans?.coberturas || []).forEach(c => { allBenefits.set(c.label, true); }); });
                                   return Array.from(allBenefits.keys()).map((benefitLabel, idx) => (
                                      <div key={idx} className={`grid ${getPlansWithEdits().length === 2 ? 'grid-cols-[2fr_1fr_1fr]' : 'grid-cols-[2fr_1fr_1fr_1fr]'} gap-4 py-2 border-b border-white/5 items-center bg-white/[0.01] rounded-lg px-3`}>
                                         <div className="text-zinc-300 font-medium text-xs pr-4">{benefitLabel}</div>
                                         {getPlansWithEdits().map((plan, pIdx) => {
                                            const hasBenefit = (plan.plans?.coberturas || []).find(c => c.label === benefitLabel);
-                                           const isVip = plan.plans?.nome?.toLowerCase().includes('vip');
                                            return (
                                               <div key={pIdx} className="flex justify-center text-[11px] font-bold text-zinc-400 border-l border-white/5 pl-4 text-center">
                                                  {hasBenefit ? (
@@ -1184,14 +1135,12 @@ const QuoteGenerator = () => {
                                   ));
                                })()}
                             </div>
-                            
                             <div className="bg-[#080F1E]/80 border-t border-white/5 p-4 text-center">
                                <p className="text-[10px] text-zinc-500 font-medium tracking-wide">
                                   Franquia base de {availablePlans[0]?.franquia_percentual}% para todos os planos padrão listados acima.
                                </p>
                             </div>
                         </div>
-                        
                         <div className="text-center text-zinc-600 text-[10px] mt-8 relative z-10 border-t border-indigo-500/10 pt-5 shrink-0 flex-1 flex items-end justify-center pb-4">
                           Resumo comparativo autogerado. Em caso de discrepância, prevalecem as condições gerais regulamentares da Associação.
                         </div>
@@ -1268,7 +1217,6 @@ const QuoteGenerator = () => {
 };
 
 export default QuoteGenerator;
-
 
 
 
