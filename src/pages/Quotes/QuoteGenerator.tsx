@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase';
 import { useAssociation } from '../../contexts/AssociationContext';
 import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
 import { getThemeConfig } from '../../utils/themePresets';
+import { useVehicleIntelligence } from '../../hooks/useVehicleIntelligence';
+import { VehicleIntelligenceSection, VehicleIntelligencePdfPage } from '../../components/VehicleIntelligenceSection';
 
 const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val || 0);
 
@@ -48,6 +50,9 @@ const QuoteGenerator = () => {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
 
+  // Vehicle Intelligence
+  const intelligence = useVehicleIntelligence();
+
   // ── Benefit Editing States ──
   const [editedCoberturas, setEditedCoberturas] = useState<Record<string, { label: string; param?: string }[]>>({});
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
@@ -82,6 +87,7 @@ const QuoteGenerator = () => {
     setNewBenefit({ label: '', param: '' });
     setEditedAdesao({});
     setEditedMensalidade({});
+    intelligence.reset();
   };
 
   // ── Benefit Editing Helpers ──
@@ -326,6 +332,25 @@ const QuoteGenerator = () => {
 
     setSaving(false);
     setStep(4);
+
+    // Trigger vehicle intelligence fetch
+    if (selectedVariant && formData.uf) {
+      const modelParts = selectedVariant.modelo ? selectedVariant.modelo.split(' ') : [];
+      const marca = modelParts[0] || '';
+      const modelRest = modelParts.slice(1).join(' ');
+      // Extract year from modelo string like "MARCA MODEL (ANO)"
+      const anoMatch = selectedVariant.modelo?.match(/\(([^)]+)\)/);
+      const ano = anoMatch ? anoMatch[1] : (selectedVariant.ano || '');
+      const versao = modelRest.replace(/\s*\([^)]*\)\s*/, '').trim();
+      intelligence.fetchIntelligence({
+        marca,
+        modelo: versao,
+        versao: '',
+        ano: String(ano),
+        uf: formData.uf,
+        fipe_code: selectedVariant.codigo_fipe || 'MANUAL',
+      });
+    }
   };
 
   const getShareText = () => {
@@ -570,9 +595,26 @@ const QuoteGenerator = () => {
                 </div>
               )}
 
+
+              {/* UF Dropdown */}
+              {!manualMode && (
+                <div className="mx-auto w-full max-w-sm mb-4">
+                  <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-1.5">Estado (UF)</label>
+                  <select
+                    value={formData.uf || ''}
+                    onChange={e => setFormData({ ...formData, uf: e.target.value })}
+                    className="w-full bg-[#141f38] border-2 border-white/10 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-blue-400 transition-colors appearance-none"
+                  >
+                    <option value="">Selecione o estado...</option>
+                    {['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'].map(uf => (
+                      <option key={uf} value={uf}>{uf}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {!manualMode && (
                 <div className="flex justify-center w-full max-w-sm mx-auto">
-                  <button onClick={handleFipeSearch} disabled={formData.placa.length < 7 || loading} className={`w-full flex justify-center items-center py-4 rounded-xl text-white font-black uppercase tracking-widest transition-all ${
+                  <button onClick={handleFipeSearch} disabled={formData.placa.length < 7 || !formData.uf || loading} className={`w-full flex justify-center items-center py-4 rounded-xl text-white font-black uppercase tracking-widest transition-all ${
                     formData.placa.length >= 7 ? theme.colors.bg : 'bg-white/5 text-zinc-600 cursor-not-allowed'
                   }`} style={formData.placa.length >= 7 ? { boxShadow: `0 0 20px ${theme.colors.shadow}` } : {}}>
                     {loading ? <Loader2 className="animate-spin" /> : <span>Buscar Variantes FIPE <ArrowRight className="inline-block ml-2 w-4" /></span>}
@@ -1142,6 +1184,11 @@ const QuoteGenerator = () => {
                         </div>
                       </div>
                   )}
+
+                {/* Intelligence PDF Page - rendered only when data is available */}
+                {intelligence.status === 'success' && intelligence.data && (
+                  <VehicleIntelligencePdfPage data={intelligence.data} />
+                )}
                 </div>
               </div>
 
@@ -1178,6 +1225,9 @@ const QuoteGenerator = () => {
                   })}
                 </div>
               </div>
+
+              {/* Vehicle Intelligence Section */}
+              <VehicleIntelligenceSection status={intelligence.status} data={intelligence.data} />
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-md mx-auto shrink-0 mb-6">
                 <button onClick={handleNativeShare} disabled={isGeneratingPDF} className={`flex flex-col items-center justify-center bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 py-3 rounded-xl font-bold transition-all group h-20 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_0_15px_rgba(37,211,102,0.15)]'}`}>
