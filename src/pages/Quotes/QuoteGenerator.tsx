@@ -187,9 +187,12 @@ const QuoteGenerator = () => {
       // IMPORTANTE: Mapeamos o array inteiro (LIMITLESS) que a API da PlacaFipe envia.
       const variants = data.fipe.map((v, idx) => ({
         id: idx,
-        modelo: `${v.marca} ${v.modelo} (${v.ano_modelo})`,
+        modelo: ${v.marca}  (),
         fipe: parseFloat(v.valor), 
-        codigo_fipe: v.codigo_fipe
+        codigo_fipe: v.codigo_fipe,
+        marca: v.marca,
+        modelo_nome: v.modelo,
+        ano_modelo: v.ano_modelo
       }));
 
       setFipeVariants(variants);
@@ -335,16 +338,13 @@ const QuoteGenerator = () => {
 
     // Trigger vehicle intelligence fetch
     if (selectedVariant && formData.uf) {
-      const modelParts = selectedVariant.modelo ? selectedVariant.modelo.split(' ') : [];
-      const marca = modelParts[0] || '';
-      const modelRest = modelParts.slice(1).join(' ');
-      // Extract year from modelo string like "MARCA MODEL (ANO)"
+      const marca = selectedVariant.marca || (selectedVariant.modelo ? selectedVariant.modelo.split(' ')[0] : '');
       const anoMatch = selectedVariant.modelo?.match(/\(([^)]+)\)/);
-      const ano = anoMatch ? anoMatch[1] : (selectedVariant.ano || '');
-      const versao = modelRest.replace(/\s*\([^)]*\)\s*/, '').trim();
+      const ano = selectedVariant.ano_modelo || (anoMatch ? anoMatch[1] : (selectedVariant.ano || ''));
+      const versao = selectedVariant.modelo_nome || (selectedVariant.modelo ? selectedVariant.modelo.replace(marca, '').replace(/\s*\([^)]*\)\s*/, '').trim() : '');
       intelligence.fetchIntelligence({
         marca,
-        modelo: versao,
+        modelo: versao || selectedVariant.modelo,
         versao: '',
         ano: String(ano),
         uf: formData.uf,
@@ -449,7 +449,10 @@ const QuoteGenerator = () => {
         pdf.setFillColor(8, 15, 30); // Theme background #080F1E
         pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 'F');
         
-        const imgData = await htmlToImage.toPng(pageElement, { backgroundColor: '#ffffff', pixelRatio: 2 });
+                const isDark = (pageElement as HTMLElement)?.getAttribute?.('data-theme') === 'dark' || 
+                       (pageElement as HTMLElement)?.classList?.contains?.('dark-pdf-page');
+        const canvasBg = isDark ? '#080F1E' : '#ffffff';
+        const imgData = await htmlToImage.toPng(pageElement, { backgroundColor: canvasBg, pixelRatio: 2 });
         
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
@@ -1187,7 +1190,7 @@ const QuoteGenerator = () => {
 
                 {/* Intelligence PDF Page - rendered only when data is available */}
                 {intelligence.status === 'success' && intelligence.data && (
-                  <VehicleIntelligencePdfPage data={intelligence.data} />
+                  <VehicleIntelligencePdfPage data={intelligence.data} veiculoInfo={{ modelo: formData.modelo, placa: formData.placa, ano: selectedVariant?.ano_modelo || selectedVariant?.ano }} consultor={consultor} associationName={associationData?.nome_fantasia || associationData?.razao_social} />
                 )}
                 </div>
               </div>
@@ -1227,7 +1230,7 @@ const QuoteGenerator = () => {
               </div>
 
               {/* Vehicle Intelligence Section */}
-              <VehicleIntelligenceSection status={intelligence.status} data={intelligence.data} />
+              <VehicleIntelligenceSection status={intelligence.status} data={intelligence.data} consultor={consultor} />
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-md mx-auto shrink-0 mb-6">
                 <button onClick={handleNativeShare} disabled={isGeneratingPDF} className={`flex flex-col items-center justify-center bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 py-3 rounded-xl font-bold transition-all group h-20 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_0_15px_rgba(37,211,102,0.15)]'}`}>

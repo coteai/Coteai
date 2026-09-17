@@ -2,20 +2,23 @@
 import { supabase } from '@/lib/supabase';
 
 export interface RouboFurto {
-  nivel: 'baixo' | 'medio' | 'alto';
+  nivel: 'baixo' | 'medio' | 'médio' | 'alto' | 'BAIXO' | 'MÉDIO' | 'ALTO' | string;
   recuperacao_pct: number;
   nunca_recuperados_pct: number;
   ranking_nacional: number | null;
+  ranking_nacional_texto?: string;
   justificativa: string;
 }
 
 export interface ColisaoPeca {
   peca: string;
+  emoji?: string;
   valor_estimado: number;
 }
 
 export interface ProblemasMecanico {
   problema: string;
+  km_faixa?: string;
   km_inicio: number;
   km_fim: number;
   valor_estimado: number;
@@ -23,7 +26,7 @@ export interface ProblemasMecanico {
 
 export interface Revenda {
   score: number;
-  demanda: 'baixa' | 'media' | 'alta';
+  demanda: 'baixa' | 'media' | 'média' | 'alta' | 'muito alta' | 'Alta' | 'Muito Alta' | string;
   dias_para_vender: number;
   depreciacao_anual_pct: number;
   justificativa: string;
