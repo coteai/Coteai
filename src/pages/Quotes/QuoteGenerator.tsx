@@ -187,7 +187,7 @@ const QuoteGenerator = () => {
       // IMPORTANTE: Mapeamos o array inteiro (LIMITLESS) que a API da PlacaFipe envia.
       const variants = data.fipe.map((v, idx) => ({
         id: idx,
-        modelo: ${v.marca}  (),
+        modelo: `${v.marca} ${v.modelo} (${v.ano_modelo})`,
         fipe: parseFloat(v.valor), 
         codigo_fipe: v.codigo_fipe,
         marca: v.marca,
