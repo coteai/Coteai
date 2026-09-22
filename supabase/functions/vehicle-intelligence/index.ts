@@ -6,76 +6,116 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const buildPrompt = (marca: string, modelo: string, versao: string, ano: string, uf: string) => `
-Você é o principal especialista e analista de inteligência de risco, colisão e mercado automotivo do Brasil, com dados consolidados de SINESP, FENSEG, CNseg, ITURAN, TRACKER, CESVI Brasil, FIPE e KBB (Kelley Blue Book).
-
-Analise o seguinte veículo com rigor técnico absoluto e total aderência à realidade do mercado brasileiro em 2024-2026:
-Veículo: ${marca} ${modelo} ${versao}
-Ano Modelo: ${ano}
-Estado (UF): ${uf}
-
-DIRETRIZES OBRIGATÓRIAS DE MERCADO:
-
-1. ROUBO E FURTO:
-- NÃO invente que carros populares líderes de vendas têm risco baixo! Carros como Chevrolet Onix, Hyundai HB20, VW Gol, Ford Ka, Fiat Palio/Uno, Fiat Strada, Toyota Hilux, Jeep Renegade/Compass têm risco ALTO ou MÉDIO-ALTO de roubo/furto no Brasil (especialmente em SP, RJ, PR, MG, BA, RS, GO, PE).
-- Para o Chevrolet Onix especificamente: é historicamente e atualmente um dos TOP 3 a 5 carros mais roubados/furtados do Brasil (ranking #1 a #5 nacional). O risco é estritamente "ALTO". A justificativa deve citar o grande volume de frota circulante e a forte demanda por autopeças no mercado paralelo/clandestino e desmanches ilegais.
-- Para picapes diesel (Hilux, Toro, Ranger, S10, Amarok) e SUVs (Compass, Creta, Renegade, Kicks): visados para clonagem, desmanche especializado e transporte interestadual/fronteiras.
-- Taxa de recuperação no Brasil: estatisticamente entre 42% e 52%. Logo, "recuperacao_pct" deve estar entre 42 e 52, e "nunca_recuperados_pct" deve ser exatamente (100 - recuperacao_pct), ou seja, entre 48 e 58. JAMAIS coloque 20% de nunca recuperados!
-- "ranking_nacional_texto": texto com o ranking real aproximado, ex: "#3º no ranking dos mais roubados no Brasil" ou "#38º no ranking dos mais roubados no Brasil".
-
-2. COLISÃO E PEÇAS:
-- Liste de 7 a 8 peças reais que tipicamente sofrem avarias em colisão frontal/lateral urbana.
-- Use a nomenclatura técnica exata condizente com a versão do veículo! Se for versão com farol Full LED ou projetor, coloque "Farol Full LED" com valor compatível (R$ 2.500 a R$ 5.500). Se tiver ADAS/sensor de chuva, coloque "Para-brisa com sensor de chuva/ADAS".
-- Inclua emojis representativos para cada peça (ex: 💡 para Farol, 🔧 para Capô, 🪟 para Para-brisa, 🚧 para Para-choque, 🪞 para Retrovisor, 💧 para Radiador, 🏁 para Grade frontal, 🛡️ para Para-lama).
-- Valores realistas de peças originais/OEM no mercado de reposição brasileiro em Reais (R$).
-
-3. PROBLEMAS MECÂNICOS CRÔNICOS:
-- NUNCA liste manutenções preventivas rotineiras como "Troca de óleo" ou "Troca de pastilha"!
-- Liste de 4 a 6 DEFEITOS MECÂNICOS CRÔNICOS OU VULNERABILIDADES CONHECIDAS do motor/câmbio/suspensão deste modelo e motorização específicos:
-  * Exemplo Onix 1.0 3 cil / Turbo: Desgaste da correia dentada banhada a óleo (40.000 - 70.000 km, R$ 2.800 a R$ 4.500), Falha na bomba de vácuo do freio (40.000 - 80.000 km, R$ 1.800), Carbonização de válvulas / injeção direta (50.000 - 90.000 km, R$ 1.500), Trocador de calor de óleo (60.000 - 100.000 km, R$ 1.600), Buchas e bieletas da suspensão dianteira (30.000 - 60.000 km, R$ 900).
-  * Exemplo Compass / Toro Diesel: Falha na bomba de alta pressão CP4 (80.000 - 140.000 km, R$ 8.500), Saturação do Filtro DPF e carbonização da EGR (70.000 - 120.000 km, R$ 6.500), Desgaste de coxins de motor e câmbio (60.000 - 100.000 km, R$ 2.800), Sensor de NOx / Sonda Lambda (50.000 - 90.000 km, R$ 3.200), Vazamento na tampa de válvulas (70.000 - 110.000 km, R$ 1.400).
-  * Adapte sempre para o motor e modelo exatos do veículo recebido.
-- Para cada problema inclua:
-  - "problema": Nome técnico claro do defeito
-  - "km_faixa": String formatada da faixa de KM, ex: "40.000 - 70.000 km"
-  - "km_inicio": número inteiro (ex: 40000)
-  - "km_fim": número inteiro (ex: 70000)
-  - "valor_estimado": custo médio estimado de reparo (peça + mão de obra) em reais
-
-4. REVENDA E LIQUIDEZ:
-- "score": número com 1 casa decimal de 0.0 a 10.0 (ex: 8.8 para Onix, 8.5 para Compass, 9.2 para Corolla, 5.5 para importado de nicho).
-- "demanda": "Alta", "Muito Alta", "Média" ou "Baixa"
-- "dias_para_vender": número realista de dias para giro no mercado (ex: 20 a 35 dias para populares de alta liquidez, 40 a 60 para SUVs médios, 75 a 120 para carros de nicho/difíceis)
-- "depreciacao_anual_pct": taxa de depreciação média anual realista (ex: 7.0% a 11.5% ao ano)
-- "justificativa": texto analítico e comercial explicando a liquidez, aceitação em concessionárias e facilidade de venda desse modelo específico no Brasil.
-
-Gere exatamente este JSON válido (sem markdown, sem texto antes ou depois):
-{
-  "roubo_furto": {
-    "nivel": "ALTO | MÉDIO | BAIXO",
-    "recuperacao_pct": 48,
-    "nunca_recuperados_pct": 52,
-    "ranking_nacional_texto": "#3º no ranking dos mais roubados no Brasil",
-    "ranking_nacional": 3,
-    "justificativa": "Texto analítico realista..."
-  },
-  "colisao_pecas": [
-    { "peca": "Farol Full LED", "emoji": "💡", "valor_estimado": 2800 }
-  ],
-  "problemas_mecanicos": [
-    { "problema": "Nome do defeito crônico", "km_faixa": "40.000 - 70.000 km", "km_inicio": 40000, "km_fim": 70000, "valor_estimado": 3200 }
-  ],
-  "revenda": {
-    "score": 8.8,
-    "demanda": "Alta",
-    "dias_para_vender": 28,
-    "depreciacao_anual_pct": 7.5,
-    "justificativa": "Texto analítico realista..."
-  }
+// Cache key: model-level (not FIPE variant), for web-search results
+function buildModelCacheKey(marca: string, modelo: string): string {
+  const n = (s: string) => s.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  return 'WS-' + n(marca) + '-' + n(modelo);
 }
-`.trim();
 
-async function callOpenAI(prompt: string) {
+// Web Search prompt — asks the model to research the web before answering
+const buildWebSearchPrompt = (marca: string, modelo: string, versao: string, ano: string, uf: string) => [
+  `Você tem acesso à busca na web. Pesquise informações reais e atuais sobre o veículo ${marca} ${modelo} ${versao} no Brasil para preencher os 4 blocos do relatório abaixo.`,
+  '',
+  `INSTRUÇÃO CRÍTICA: Faça buscas reais antes de cada bloco. Baseie a resposta APENAS no que encontrar. NÃO invente dados.`,
+  '',
+  `Pesquise sobre:`,
+  `1. Ranking e estatísticas de roubo/furto do ${marca} ${modelo} no Brasil (SINESP, SSP-SP, SENATRAN, Fenabrave, ITURAN 2024-2026)`,
+  `2. Preços reais de peças de reposição do ${marca} ${modelo} no mercado brasileiro (lojas online, distribuidoras, peças OEM/originais 2024-2026)`,
+  `3. Problemas mecânicos crônicos e defeitos conhecidos do ${marca} ${modelo} relatados em fóruns, oficinas e recalls no Brasil`,
+  `4. Dados de revenda: preço médio de usados, tempo médio de venda, liquidez e depreciação do ${marca} ${modelo} (Webmotors, OLX, iCarros 2024-2026)`,
+  '',
+  `Estado: ${uf} | Ano do modelo: ${ano}`,
+  '',
+  `Retorne APENAS este JSON válido (sem markdown, sem texto fora do JSON):`,
+  `{`,
+  `  "roubo_furto": {`,
+  `    "nivel": "ALTO",`,
+  `    "recuperacao_pct": 48,`,
+  `    "nunca_recuperados_pct": 52,`,
+  `    "ranking_nacional_texto": "#3° no ranking dos mais roubados no Brasil",`,
+  `    "ranking_nacional": 3,`,
+  `    "justificativa": "Texto baseado nas buscas."`,
+  `  },`,
+  `  "colisao_pecas": [`,
+  `    { "peca": "Farol Full LED", "emoji": "💡", "valor_estimado": 3200 }`,
+  `  ],`,
+  `  "problemas_mecanicos": [`,
+  `    { "problema": "Defeito crônico real", "km_faixa": "40.000 - 80.000 km", "km_inicio": 40000, "km_fim": 80000, "valor_estimado": 2800 }`,
+  `  ],`,
+  `  "revenda": {`,
+  `    "score": 8.8,`,
+  `    "demanda": "Alta",`,
+  `    "dias_para_vender": 28,`,
+  `    "depreciacao_anual_pct": 7.5,`,
+  `    "justificativa": "Texto baseado nos dados encontrados."`,
+  `  }`,
+  `}`,
+  '',
+  `Regras obrigatórias:`,
+  `- colisao_pecas: mínimo 7 peças com valores pesquisados`,
+  `- problemas_mecanicos: mínimo 4 defeitos crônicos reais (NUNCA troca de óleo ou pastilhas)`,
+  `- recuperacao_pct + nunca_recuperados_pct = exatamente 100`,
+  `- nivel: "ALTO", "MÉDIO" ou "BAIXO" (baseie-se no ranking real encontrado)`,
+  `- score de revenda: 0.0 a 10.0`,
+].join('\n');
+
+// Fallback prompt — used when web search is unavailable (grounded statistical knowledge)
+const buildFallbackPrompt = (marca: string, modelo: string, versao: string, ano: string, uf: string) => [
+  `Você é especialista em risco e mercado automotivo do Brasil (SINESP, FENSEG, CESVI, FIPE, KBB).`,
+  `Veículo: ${marca} ${modelo} ${versao}, Ano ${ano}, Estado ${uf}`,
+  '',
+  `DIRETRIZES CRÍTICAS DE MERCADO:`,
+  `- Chevrolet Onix, HB20, VW Gol: RISCO ALTO, top 3-5 ranking nacional`,
+  `- Toyota Hilux, Jeep Compass Diesel, Renegade: RISCO MÉDIO-ALTO (clonagem e desmanche)`,
+  `- recuperacao_pct entre 42-52; nunca_recuperados_pct = 100 - recuperacao_pct`,
+  `- NUNCA liste troca de óleo ou pastilhas — liste DEFEITOS CRÔNICOS REAIS do modelo`,
+  `- colisao_pecas: use preços reais OEM (farol LED = R$2.500-5.500, capô = R$1.500-3.000)`,
+  '',
+  `Retorne APENAS JSON válido sem markdown:`,
+  `{`,
+  `  "roubo_furto": { "nivel": "ALTO|MÉDIO|BAIXO", "recuperacao_pct": 48, "nunca_recuperados_pct": 52, "ranking_nacional_texto": "#3° no ranking dos mais roubados no Brasil", "ranking_nacional": 3, "justificativa": "texto" },`,
+  `  "colisao_pecas": [{ "peca": "Farol Full LED", "emoji": "💡", "valor_estimado": 3200 }],`,
+  `  "problemas_mecanicos": [{ "problema": "defeito crônico", "km_faixa": "40.000 - 70.000 km", "km_inicio": 40000, "km_fim": 70000, "valor_estimado": 3200 }],`,
+  `  "revenda": { "score": 8.8, "demanda": "Alta", "dias_para_vender": 28, "depreciacao_anual_pct": 7.5, "justificativa": "texto" }`,
+  `}`,
+].join('\n');
+
+// ─── OpenAI: Responses API with web_search (primary) ────────────────────────
+
+async function callWithWebSearch(prompt: string): Promise<string | null> {
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
+
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      input: prompt,
+      tools: [{ type: 'web_search' }],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`OpenAI Responses API ${response.status}: ${err.slice(0, 400)}`);
+  }
+
+  const data = await response.json();
+  // Extract text from message output items
+  const messages = (data.output ?? []).filter((o: any) => o.type === 'message');
+  const text = messages
+    .flatMap((m: any) => (m.content ?? []).filter((c: any) => c.type === 'output_text').map((c: any) => c.text))
+    .join('');
+  return text || null;
+}
+
+// ─── OpenAI: Chat Completions (fallback, no web search) ─────────────────────
+
+async function callChatCompletions(prompt: string): Promise<string | null> {
   const apiKey = Deno.env.get('OPENAI_API_KEY');
   if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
@@ -89,10 +129,7 @@ async function callOpenAI(prompt: string) {
       model: 'gpt-4o-mini',
       response_format: { type: 'json_object' },
       messages: [
-        {
-          role: 'system',
-          content: 'Você é um analista de risco e mercado automotivo brasileiro altamente técnico e preciso. Responda estritamente com JSON válido sem markdown.',
-        },
+        { role: 'system', content: 'Você é analista de risco automotivo brasileiro. Responda estritamente com JSON válido.' },
         { role: 'user', content: prompt },
       ],
       temperature: 0.3,
@@ -102,24 +139,77 @@ async function callOpenAI(prompt: string) {
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`OpenAI ${response.status}: ${err}`);
+    throw new Error(`OpenAI Chat ${response.status}: ${err.slice(0, 400)}`);
   }
 
   const data = await response.json();
   return data?.choices?.[0]?.message?.content ?? null;
 }
 
-function isValidPayload(p: any) {
+// ─── Extract JSON from text (web search may embed JSON in prose) ─────────────
+
+function extractJson(text: string): any {
+  try {
+    return JSON.parse(text.trim());
+  } catch (_) {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw new Error('No valid JSON found in response');
+  }
+}
+
+// ─── Payload validation ──────────────────────────────────────────────────────
+
+function isValidPayload(p: any): boolean {
   return (
-    p &&
+    p != null &&
     p.roubo_furto &&
+    typeof p.roubo_furto.nivel === 'string' &&
     Array.isArray(p.colisao_pecas) &&
     p.colisao_pecas.length >= 5 &&
     Array.isArray(p.problemas_mecanicos) &&
     p.problemas_mecanicos.length >= 3 &&
-    p.revenda
+    p.revenda &&
+    typeof p.revenda.score !== 'undefined'
   );
 }
+
+// ─── Generate with web search primary, chat completions fallback ─────────────
+
+async function generatePayload(
+  marca: string, modelo: string, versao: string, ano: string, uf: string
+): Promise<any> {
+  const wsPrompt = buildWebSearchPrompt(marca, modelo, versao, ano, uf);
+  const fbPrompt = buildFallbackPrompt(marca, modelo, versao, ano, uf);
+
+  // Attempts: web search x2, then chat completions x1
+  const attempts: Array<{ label: string; fn: () => Promise<string | null> }> = [
+    { label: 'web_search_1', fn: () => callWithWebSearch(wsPrompt) },
+    { label: 'web_search_2', fn: async () => { await new Promise(r => setTimeout(r, 1000)); return callWithWebSearch(wsPrompt); } },
+    { label: 'chat_completions_fallback', fn: () => callChatCompletions(fbPrompt) },
+  ];
+
+  for (const { label, fn } of attempts) {
+    try {
+      console.log(`Attempting: ${label}`);
+      const raw = await fn();
+      if (!raw) { console.warn(`${label}: empty response`); continue; }
+      const parsed = extractJson(raw);
+      if (isValidPayload(parsed)) {
+        console.log(`Success via: ${label}`);
+        parsed._source = label;
+        return parsed;
+      }
+      console.warn(`${label}: invalid payload structure`);
+    } catch (err: any) {
+      console.error(`${label} failed:`, err.message);
+    }
+  }
+
+  return null;
+}
+
+// ─── Serve ───────────────────────────────────────────────────────────────────
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -147,8 +237,26 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    // Check cache
-    const { data: cached } = await supabase
+    // ── Cache Layer 1: Model-level web-search cache (30 days, reused across all variants) ──
+    const modelKey = buildModelCacheKey(marca, modelo);
+    const { data: wsCache } = await supabase
+      .from('vehicle_intelligence_cache')
+      .select('payload')
+      .eq('fipe_code', modelKey)
+      .eq('uf', 'WS')
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (wsCache?.payload && isValidPayload(wsCache.payload)) {
+      console.log('Cache HIT (model-level):', modelKey);
+      return new Response(JSON.stringify(wsCache.payload), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Cache': 'HIT-MODEL' },
+        status: 200,
+      });
+    }
+
+    // ── Cache Layer 2: FIPE-variant cache (90 days, legacy) ─────────────────
+    const { data: fipeCache } = await supabase
       .from('vehicle_intelligence_cache')
       .select('payload')
       .eq('fipe_code', fipe_code)
@@ -156,41 +264,29 @@ serve(async (req) => {
       .gt('expires_at', new Date().toISOString())
       .maybeSingle();
 
-    // Only return cache if it matches the new complete schema (has ranking_nacional_texto)
-    if (cached?.payload && cached.payload.roubo_furto?.ranking_nacional_texto) {
-      return new Response(JSON.stringify(cached.payload), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Cache': 'HIT' },
+    if (fipeCache?.payload && isValidPayload(fipeCache.payload) && fipeCache.payload.roubo_furto?.ranking_nacional_texto) {
+      console.log('Cache HIT (fipe-level):', fipe_code, uf);
+      return new Response(JSON.stringify(fipeCache.payload), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Cache': 'HIT-FIPE' },
         status: 200,
       });
     }
 
-    const prompt = buildPrompt(marca, modelo, versao ?? '', String(ano), uf);
-    let payload = null;
-
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const raw = await callOpenAI(prompt);
-        if (!raw) throw new Error('Empty response');
-        const parsed = JSON.parse(raw);
-        if (isValidPayload(parsed)) {
-          payload = parsed;
-          break;
-        }
-        throw new Error('Invalid payload structure');
-      } catch (err: any) {
-        console.error(`Attempt ${attempt + 1} failed:`, err.message);
-        if (attempt === 0) await new Promise((r) => setTimeout(r, 1200));
-      }
-    }
-
+    // ── Generate ─────────────────────────────────────────────────────────────
+    const payload = await generatePayload(marca, modelo, versao ?? '', String(ano), uf);
     if (!payload) return unavailable();
 
-    // Cache for 90 days
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 90);
-
+    // ── Persist: model-level (30 days) ──────────────────────────────────────
+    const exp30 = new Date(); exp30.setDate(exp30.getDate() + 30);
     await supabase.from('vehicle_intelligence_cache').upsert(
-      { fipe_code, uf, payload, expires_at: expiresAt.toISOString() },
+      { fipe_code: modelKey, uf: 'WS', payload, expires_at: exp30.toISOString() },
+      { onConflict: 'fipe_code,uf' }
+    );
+
+    // ── Persist: fipe-level (90 days) ───────────────────────────────────────
+    const exp90 = new Date(); exp90.setDate(exp90.getDate() + 90);
+    await supabase.from('vehicle_intelligence_cache').upsert(
+      { fipe_code, uf, payload, expires_at: exp90.toISOString() },
       { onConflict: 'fipe_code,uf' }
     );
 

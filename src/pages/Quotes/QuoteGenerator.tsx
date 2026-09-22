@@ -354,44 +354,51 @@ const QuoteGenerator = () => {
   };
 
   const getShareText = () => {
-    let assocName = associationData?.nome ? associationData.nome.toUpperCase() : 'VIPCAR BRASIL';
+    const assocName = associationData?.nome ? associationData.nome.toUpperCase() : 'VIPCAR BRASIL';
     
-    let anoMatch = formData.modelo.match(/\(([^)]+)\)/);
-    let ano = anoMatch ? anoMatch[1] : 'N/A';
-    let modeloNome = formData.modelo.replace(/\s*\([^)]+\)\s*/, '');
+    const anoMatch = formData.modelo ? formData.modelo.match(/\(([^)]+)\)/) : null;
+    const ano = anoMatch ? anoMatch[1] : (selectedVariant?.ano_modelo || selectedVariant?.ano || 'N/A');
+    const modeloNome = formData.modelo ? formData.modelo.replace(/\s*\([^)]+\)\s*/, '') : 'Veículo';
 
-    let text = `🚗 *COTAÇÃO PARA SEU VEÍCULO*\n\n`;
-    text += `📊 *Dados do Veículo:*\n\n`;
-    text += `Modelo: ${modeloNome}\n`;
-    text += `Ano: ${ano}\n`;
-    text += `Valor FIPE: ${formatCurrency(formData.fipe)}\n\n`;
+    let text = `🚗 *COTAÇÃO DE PROTEÇÃO VEICULAR*\n`;
+    text += `🏢 *${assocName}*\n\n`;
+    text += `📋 *Dados do Veículo:*\n`;
+    text += `• Modelo: ${modeloNome}\n`;
+    text += `• Ano: ${ano}\n`;
+    if (formData.placa) {
+      text += `• Placa: ${formData.placa.toUpperCase()}\n`;
+    }
+    text += `• Valor FIPE: ${formatCurrency(formData.fipe)}\n\n`;
     
-    text += `📋 *PLANOS DISPONÍVEIS:*\n\n`;
+    text += `🛡️ *PLANOS DISPONÍVEIS:*\n\n`;
 
     const _plans = getPlansWithEdits();
     _plans.forEach(p => {
       const isVip = p.plans?.nome?.toLowerCase().includes('vip');
-      const icon = isVip ? '🔴✨' : '🔴';
+      const icon = isVip ? '⭐' : '🔹';
+      const mensalidadeVal = getMensalidade(p.id, p.mensalidade);
       
-      text += `${icon} *Plano ${p.plans?.nome?.toUpperCase()}*\n\n`;
-      text += `💰 Mensalidade: ${formatCurrency(p.mensalidade)}\n`;
-      text += `✅ Adesão: ${formatCurrency(p.mensalidade)}\n`; 
-      text += `🎯 Cota Participação: ${p.franquia_percentual}%\n\n`;
+      text += `${icon} *Plano ${p.plans?.nome?.toUpperCase()}*\n`;
+      text += `💰 Mensalidade: ${formatCurrency(mensalidadeVal)}/mês\n`;
+      text += `🎯 Franquia: ${p.franquia_percentual}%\n`;
+      text += `🛡️ Cobertura: ${formatCurrency(p.cobertura_maxima)}\n`;
       
-      text += `📋 *Benefícios:*\n\n`;
       const coberturas = p.plans?.coberturas || [];
-      coberturas.forEach(c => {
-        text += `• ${c.label}${c.param ? `: ${c.param}` : ''}\n`;
-      });
+      if (coberturas.length > 0) {
+        text += `✨ *Benefícios inclusos:*\n`;
+        coberturas.forEach(c => {
+          text += `  ✓ ${c.label}${c.param ? `: ${c.param}` : ''}\n`;
+        });
+      }
       text += `\n`;
     });
 
     if (_plans.length > 1) {
-      text += `*DIFERENCIAIS ENTRE OS PLANOS:*\n\n`;
+      text += `⚖️ *DIFERENCIAIS ENTRE OS PLANOS:*\n\n`;
       
       _plans.forEach(p1 => {
         const isVip = p1.plans?.nome?.toLowerCase().includes('vip');
-        const icon = isVip ? '🔴✨' : '🔴';
+        const icon = isVip ? '⭐' : '🔹';
         
         let diffs: string[] = [];
         const myCovs = p1.plans?.coberturas || [];
@@ -399,22 +406,20 @@ const QuoteGenerator = () => {
         myCovs.forEach(myC => {
           let isDifferent = false;
           _plans.forEach(p2 => {
-             if(p1.id === p2.id) return;
+             if (p1.id === p2.id) return;
              const theirCovs = p2.plans?.coberturas || [];
              const match = theirCovs.find(tC => tC.label === myC.label);
-             if (!match) {
-                 isDifferent = true; 
-             } else if (match.param !== myC.param) {
+             if (!match || match.param !== myC.param) {
                  isDifferent = true; 
              }
           });
           if (isDifferent) {
-            diffs.push(`• ${myC.label}${myC.param ? `: ${myC.param}` : ''}`);
+            diffs.push(`  ✓ ${myC.label}${myC.param ? `: ${myC.param}` : ''}`);
           }
         });
 
         if (diffs.length > 0) {
-          text += `${icon} *PLANO ${p1.plans?.nome?.toUpperCase()}*\n\n`;
+          text += `${icon} *Plano ${p1.plans?.nome?.toUpperCase()} conta exclusivamente com:*\n`;
           diffs.forEach(d => {
             text += `${d}\n`;
           });
@@ -423,13 +428,46 @@ const QuoteGenerator = () => {
       });
     }
 
-    text += `Qualquer dúvida, é só me chamar!`;
+    text += `💬 Ficou com alguma dúvida ou deseja ativar a proteção? É só me responder por aqui!`;
     return text;
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(getShareText());
-    alert("Texto copiado!");
+    const text = getShareText();
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('Texto copiado com sucesso!');
+    } catch {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Texto copiado com sucesso!');
+    }
+  };
+
+  const handleWhatsAppShare = () => {
+    const text = getShareText();
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
+  };
+
+  const handleNativeShare = async () => {
+    const text = getShareText();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Cotação ${formData.modelo}`,
+          text: text,
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+    await handleCopy();
   };
 
   const generatePdfBlob = async () => {
@@ -438,7 +476,7 @@ const QuoteGenerator = () => {
     
     setIsGeneratingPDF(true);
     try {
-      await new Promise(r => setTimeout(r, 100)); // wait for rendering
+      await new Promise(r => setTimeout(r, 100));
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       
       const childrenNodes = Array.from(input.children);
@@ -446,18 +484,23 @@ const QuoteGenerator = () => {
         const pageElement = childrenNodes[i];
         if (i > 0) pdf.addPage();
         
-        pdf.setFillColor(8, 15, 30); // Theme background #080F1E
+        pdf.setFillColor(8, 15, 30);
         pdf.rect(0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight(), 'F');
         
-                const isDark = (pageElement as HTMLElement)?.getAttribute?.('data-theme') === 'dark' || 
+        const isDark = (pageElement as HTMLElement)?.getAttribute?.('data-theme') === 'dark' || 
                        (pageElement as HTMLElement)?.classList?.contains?.('dark-pdf-page');
         const canvasBg = isDark ? '#080F1E' : '#ffffff';
-        const imgData = await htmlToImage.toPng(pageElement, { backgroundColor: canvasBg, pixelRatio: 2 });
+        
+        // Timeout de seguranca de 10s no html-to-image para nunca travar
+        const renderPromise = htmlToImage.toPng(pageElement, { backgroundColor: canvasBg, pixelRatio: 2 });
+        const timeoutPromise = new Promise<string>((_, reject) => 
+          setTimeout(() => reject(new Error('Tempo limite de renderização visual excedido')), 10000)
+        );
+        const imgData = await Promise.race([renderPromise, timeoutPromise]);
         
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
         const imgProps = pdf.getImageProperties(imgData);
-        // Map perfectly to A4
         const rawPdfHeight = (imgProps.height * pageWidth) / imgProps.width;
         
         if (rawPdfHeight <= pageHeight) {
@@ -470,81 +513,12 @@ const QuoteGenerator = () => {
         }
       }
       return pdf.output('blob');
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro gerando PDF:", err);
-      alert(`Houve um erro: ${err.message || err}`);
+      alert(`Não foi possível gerar o PDF: ${err?.message || err}`);
       return null;
     } finally {
       setIsGeneratingPDF(false);
-    }
-  };
-
-
-  const handleWhatsAppShare = async () => {
-    // 1. Gera e baixa o PDF automaticamente
-    const blob = await generatePdfBlob();
-    if (!blob) return;
-
-    const fileName = `Cotacao_${formData.placa || 'Veiculo'}.pdf`;
-    const file = new File([blob], fileName, { type: 'application/pdf' });
-
-    // Tenta native share em dispositivos moveis que suportam compartilhamento de arquivos
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: `Cotacao ${formData.modelo}`,
-          text: `Segue a proposta em PDF para o ${formData.modelo}.`
-        });
-        return;
-      } catch (err: any) {
-        if (err?.name === 'AbortError') return;
-        // Continua para fallback
-      }
-    }
-
-    // 2. Fallback: baixa o PDF e abre o WhatsApp com mensagem pre-preenchida
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    // 3. Abre WhatsApp com mensagem automatica
-    const phone = consultor?.whatsapp
-      ? consultor.whatsapp.replace(/\D/g, '')
-      : '';
-    const msg = encodeURIComponent(
-      `Ola! Segue em anexo a proposta de protecao veicular para o ${formData.modelo}${formData.placa ? ' (Placa: ' + formData.placa + ')' : ''}. O PDF foi baixado automaticamente.`
-    );
-    const waUrl = phone
-      ? `https://wa.me/${phone}?text=${msg}`
-      : `https://wa.me/?text=${msg}`;
-    window.open(waUrl, '_blank');
-  };
-
-  const handleNativeShare = async () => {
-    const blob = await generatePdfBlob();
-    if (!blob) return;
-
-    const fileName = `Cotacao_${formData.placa || 'Veiculo'}.pdf`;
-    const file = new File([blob], fileName, { type: 'application/pdf' });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: `Cotacao ${formData.modelo}`,
-          text: `Segue a proposta em PDF para o ${formData.modelo}.`
-        });
-      } catch (err) {
-        console.error('Share failed', err);
-      }
-    } else {
-      handleDownloadPDF(blob); // fallback: baixa o PDF
     }
   };
 
@@ -561,8 +535,6 @@ const QuoteGenerator = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-
-
   const renderStepIcon = (num, icon, label) => (
     <div className="flex flex-col items-center">
       <div className={`relative w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-[var(--color-surface)] ${
@@ -1279,17 +1251,30 @@ const QuoteGenerator = () => {
               <VehicleIntelligenceSection status={intelligence.status} data={intelligence.data} consultor={consultor} />
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-md mx-auto shrink-0 mb-6">
-                <button onClick={handleWhatsAppShare} disabled={isGeneratingPDF} className={`flex flex-col items-center justify-center bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 py-3 rounded-xl font-bold transition-all group h-20 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_0_15px_rgba(37,211,102,0.15)]'}`}>
-                  {isGeneratingPDF ? <Loader2 className="w-6 h-6 mb-1.5 animate-spin" /> : <Smartphone className="w-6 h-6 mb-1.5" />}
+                <button
+                  type="button"
+                  onClick={handleWhatsAppShare}
+                  className="flex flex-col items-center justify-center bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 py-3 rounded-xl font-bold transition-all group h-20 shadow-[0_0_15px_rgba(37,211,102,0.15)] active:scale-95 cursor-pointer"
+                >
+                  <Smartphone className="w-6 h-6 mb-1.5" />
                   <span className="text-[10px] uppercase tracking-wider">WhatsApp</span>
                 </button>
-                <button onClick={handleNativeShare} disabled={isGeneratingPDF} className={`flex flex-col items-center justify-center bg-white/5 hover:bg-blue-600 hover:border-blue-600 hover:text-white text-zinc-300 border border-white/10 py-3 rounded-xl font-bold transition-all group h-20 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  {isGeneratingPDF ? <Loader2 className="w-6 h-6 mb-1.5 animate-spin" /> : <Share2 className="w-6 h-6 mb-1.5 text-zinc-400 group-hover:text-white" />}
+                <button
+                  type="button"
+                  onClick={handleNativeShare}
+                  className="flex flex-col items-center justify-center bg-white/5 hover:bg-blue-600 hover:border-blue-600 hover:text-white text-zinc-300 border border-white/10 py-3 rounded-xl font-bold transition-all group h-20 active:scale-95 cursor-pointer"
+                >
+                  <Share2 className="w-6 h-6 mb-1.5 text-zinc-400 group-hover:text-white" />
                   <span className="text-[10px] uppercase tracking-wider">Compartilhar</span>
                 </button>
-                <button onClick={() => handleDownloadPDF()} disabled={isGeneratingPDF} className={`flex flex-col items-center justify-center bg-white/5 hover:bg-white hover:text-black hover:border-white text-zinc-300 border border-white/10 py-3 rounded-xl font-bold transition-all group h-20 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPDF()}
+                  disabled={isGeneratingPDF}
+                  className={`flex flex-col items-center justify-center bg-white/5 hover:bg-white hover:text-black hover:border-white text-zinc-300 border border-white/10 py-3 rounded-xl font-bold transition-all group h-20 active:scale-95 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
                   {isGeneratingPDF ? <Loader2 className="w-6 h-6 mb-1.5 animate-spin" /> : <Download className="w-6 h-6 mb-1.5 text-zinc-400 group-hover:text-black" />}
-                  <span className="text-[10px] uppercase tracking-wider">PDF Direto</span>
+                  <span className="text-[10px] uppercase tracking-wider">{isGeneratingPDF ? 'Gerando...' : 'PDF Direto'}</span>
                 </button>
               </div>
 
