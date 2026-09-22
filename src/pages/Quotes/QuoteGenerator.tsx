@@ -479,6 +479,53 @@ const QuoteGenerator = () => {
     }
   };
 
+
+  const handleWhatsAppShare = async () => {
+    // 1. Gera e baixa o PDF automaticamente
+    const blob = await generatePdfBlob();
+    if (!blob) return;
+
+    const fileName = `Cotacao_${formData.placa || 'Veiculo'}.pdf`;
+    const file = new File([blob], fileName, { type: 'application/pdf' });
+
+    // Tenta native share em dispositivos moveis que suportam compartilhamento de arquivos
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: `Cotacao ${formData.modelo}`,
+          text: `Segue a proposta em PDF para o ${formData.modelo}.`
+        });
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+        // Continua para fallback
+      }
+    }
+
+    // 2. Fallback: baixa o PDF e abre o WhatsApp com mensagem pre-preenchida
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    // 3. Abre WhatsApp com mensagem automatica
+    const phone = consultor?.whatsapp
+      ? consultor.whatsapp.replace(/\D/g, '')
+      : '';
+    const msg = encodeURIComponent(
+      `Ola! Segue em anexo a proposta de protecao veicular para o ${formData.modelo}${formData.placa ? ' (Placa: ' + formData.placa + ')' : ''}. O PDF foi baixado automaticamente.`
+    );
+    const waUrl = phone
+      ? `https://wa.me/${phone}?text=${msg}`
+      : `https://wa.me/?text=${msg}`;
+    window.open(waUrl, '_blank');
+  };
+
   const handleNativeShare = async () => {
     const blob = await generatePdfBlob();
     if (!blob) return;
@@ -490,15 +537,14 @@ const QuoteGenerator = () => {
       try {
         await navigator.share({
           files: [file],
-          title: `Cotação ${formData.modelo}`,
+          title: `Cotacao ${formData.modelo}`,
           text: `Segue a proposta em PDF para o ${formData.modelo}.`
         });
       } catch (err) {
         console.error('Share failed', err);
       }
     } else {
-      alert("Seu aparelho/navegador não suporta envio direto de documentos do sistema. O download do PDF começará agora, anexe manualmente onde preferir.");
-      handleDownloadPDF(blob); // fallback
+      handleDownloadPDF(blob); // fallback: baixa o PDF
     }
   };
 
@@ -1233,7 +1279,7 @@ const QuoteGenerator = () => {
               <VehicleIntelligenceSection status={intelligence.status} data={intelligence.data} consultor={consultor} />
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-md mx-auto shrink-0 mb-6">
-                <button onClick={handleNativeShare} disabled={isGeneratingPDF} className={`flex flex-col items-center justify-center bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 py-3 rounded-xl font-bold transition-all group h-20 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_0_15px_rgba(37,211,102,0.15)]'}`}>
+                <button onClick={handleWhatsAppShare} disabled={isGeneratingPDF} className={`flex flex-col items-center justify-center bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 py-3 rounded-xl font-bold transition-all group h-20 ${isGeneratingPDF ? 'opacity-50 cursor-not-allowed' : 'shadow-[0_0_15px_rgba(37,211,102,0.15)]'}`}>
                   {isGeneratingPDF ? <Loader2 className="w-6 h-6 mb-1.5 animate-spin" /> : <Smartphone className="w-6 h-6 mb-1.5" />}
                   <span className="text-[10px] uppercase tracking-wider">WhatsApp</span>
                 </button>
