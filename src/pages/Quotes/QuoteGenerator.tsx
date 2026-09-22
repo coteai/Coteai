@@ -92,7 +92,6 @@ const QuoteGenerator = () => {
     setEditedMensalidade({});
     setEditedFranquia({});
     setEditedCobertura({});
-    setEditingModalPlanId(null);
     intelligence.reset();
   };
 
@@ -161,7 +160,6 @@ const QuoteGenerator = () => {
     setEditedMensalidade(prev => { const next = { ...prev }; delete next[planId]; return next; });
     setEditedFranquia(prev => { const next = { ...prev }; delete next[planId]; return next; });
     setEditedCobertura(prev => { const next = { ...prev }; delete next[planId]; return next; });
-    setEditingPlanId(null);
   };
 
   const removeBenefit = (planId: string, index: number) => {
@@ -1184,6 +1182,22 @@ const QuoteGenerator = () => {
                     const targetCoberturas = getCoberturas(targetPlan.id, targetPlan.plans?.coberturas || []);
                     const planName = targetPlan.plans?.nome || 'Plano';
 
+                    const currentMensalidade = editedMensalidade[targetPlan.id] !== undefined 
+                      ? editedMensalidade[targetPlan.id] 
+                      : (targetPlan.mensalidade ?? targetPlan.valor_mensal ?? '');
+
+                    const currentAdesao = editedAdesao[targetPlan.id] !== undefined
+                      ? editedAdesao[targetPlan.id]
+                      : (targetPlan.plans?.taxa_adesao ?? targetPlan.mensalidade ?? '');
+
+                    const currentFranquia = editedFranquia[targetPlan.id] !== undefined
+                      ? editedFranquia[targetPlan.id]
+                      : (targetPlan.franquia_percentual ?? targetPlan.plans?.franquia_percentual ?? '');
+
+                    const currentCobertura = editedCobertura[targetPlan.id] !== undefined
+                      ? editedCobertura[targetPlan.id]
+                      : (targetPlan.cobertura_maxima ?? targetPlan.plans?.cobertura_maxima ?? '');
+
                     return (
                       <motion.div
                         key="edit-modal-backdrop"
@@ -1238,10 +1252,10 @@ const QuoteGenerator = () => {
                                 </label>
                                 <div className="relative">
                                   <input
-                                    type="number"
-                                    step="0.01"
-                                    value={planEdits[targetPlan.id]?.mensalidade ?? targetPlan.valor_mensal}
-                                    onChange={(e) => updatePlanField(targetPlan.id, 'mensalidade', parseFloat(e.target.value) || 0)}
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={currentMensalidade}
+                                    onChange={(e) => setEditedMensalidade(prev => ({ ...prev, [targetPlan.id]: e.target.value }))}
                                     className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-blue-500 transition-colors pr-10"
                                   />
                                   <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500">/mês</span>
@@ -1254,10 +1268,10 @@ const QuoteGenerator = () => {
                                   Taxa de Adesão (R$)
                                 </label>
                                 <input
-                                  type="number"
-                                  step="0.01"
-                                  value={planEdits[targetPlan.id]?.adesao ?? (targetPlan.plans?.taxa_adesao || 0)}
-                                  onChange={(e) => updatePlanField(targetPlan.id, 'adesao', parseFloat(e.target.value) || 0)}
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={currentAdesao}
+                                  onChange={(e) => setEditedAdesao(prev => ({ ...prev, [targetPlan.id]: e.target.value }))}
                                   className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-blue-500 transition-colors"
                                 />
                               </div>
@@ -1269,10 +1283,10 @@ const QuoteGenerator = () => {
                                 </label>
                                 <div className="relative">
                                   <input
-                                    type="number"
-                                    step="0.1"
-                                    value={planEdits[targetPlan.id]?.franquia_percentual ?? (targetPlan.plans?.franquia_percentual || 0)}
-                                    onChange={(e) => updatePlanField(targetPlan.id, 'franquia_percentual', parseFloat(e.target.value) || 0)}
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={currentFranquia}
+                                    onChange={(e) => setEditedFranquia(prev => ({ ...prev, [targetPlan.id]: e.target.value }))}
                                     className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-blue-500 transition-colors pr-7"
                                   />
                                   <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500">%</span>
@@ -1285,10 +1299,10 @@ const QuoteGenerator = () => {
                                   Cobertura Máxima (R$)
                                 </label>
                                 <input
-                                  type="number"
-                                  step="500"
-                                  value={planEdits[targetPlan.id]?.cobertura_maxima ?? (targetPlan.plans?.cobertura_maxima || 0)}
-                                  onChange={(e) => updatePlanField(targetPlan.id, 'cobertura_maxima', parseFloat(e.target.value) || 0)}
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={currentCobertura}
+                                  onChange={(e) => setEditedCobertura(prev => ({ ...prev, [targetPlan.id]: e.target.value }))}
                                   className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-blue-500 transition-colors"
                                 />
                               </div>
@@ -1321,12 +1335,12 @@ const QuoteGenerator = () => {
                                     type="text"
                                     placeholder="Detalhes (ex: 500km, R$ 50k, 100% FIPE)"
                                     value={cob.param || ''}
-                                    onChange={(e) => updateCustomCoverageParam(targetPlan.id, idx, e.target.value, targetPlan.plans?.coberturas || [])}
+                                    onChange={(e) => updateBenefit(targetPlan.id, idx, 'param', e.target.value)}
                                     className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-blue-500"
                                   />
                                   <button
                                     type="button"
-                                    onClick={() => removeCoverage(targetPlan.id, idx, targetPlan.plans?.coberturas || [])}
+                                    onClick={() => removeBenefit(targetPlan.id, idx)}
                                     className="p-1 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
                                     title="Remover cobertura"
                                   >
@@ -1346,12 +1360,12 @@ const QuoteGenerator = () => {
                                 <input
                                   type="text"
                                   placeholder="Nome do Benefício"
-                                  value={newCoverageLabel}
-                                  onChange={(e) => setNewCoverageLabel(e.target.value)}
+                                  value={newBenefit.label}
+                                  onChange={(e) => setNewBenefit(prev => ({ ...prev, label: e.target.value }))}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
-                                      addNewCoverage(targetPlan.id, targetPlan.plans?.coberturas || []);
+                                      addBenefit(targetPlan.id);
                                     }
                                   }}
                                   className="flex-1 bg-zinc-900 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
@@ -1359,19 +1373,19 @@ const QuoteGenerator = () => {
                                 <input
                                   type="text"
                                   placeholder="Detalhe (opcional)"
-                                  value={newCoverageParam}
-                                  onChange={(e) => setNewCoverageParam(e.target.value)}
+                                  value={newBenefit.param}
+                                  onChange={(e) => setNewBenefit(prev => ({ ...prev, param: e.target.value }))}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
-                                      addNewCoverage(targetPlan.id, targetPlan.plans?.coberturas || []);
+                                      addBenefit(targetPlan.id);
                                     }
                                   }}
                                   className="w-1/3 bg-zinc-900 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
                                 />
                                 <button
                                   type="button"
-                                  onClick={() => addNewCoverage(targetPlan.id, targetPlan.plans?.coberturas || [])}
+                                  onClick={() => addBenefit(targetPlan.id)}
                                   className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors shrink-0 flex items-center gap-1"
                                 >
                                   <Plus size={13} />
@@ -1385,7 +1399,7 @@ const QuoteGenerator = () => {
                           <div className="px-5 py-3.5 border-t border-white/10 bg-[#0E1629] shrink-0 flex items-center justify-between gap-3">
                             <button
                               type="button"
-                              onClick={() => resetPlanEdits(targetPlan.id)}
+                              onClick={() => restoreBenefits(targetPlan.id, targetPlan.plans?.coberturas || [])}
                               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
                             >
                               <RotateCcw size={12} />
@@ -1408,7 +1422,6 @@ const QuoteGenerator = () => {
                 </AnimatePresence>,
                 document.body
               )}
-
               {/* Botão de Ação: Sticky na base sem forçar corte nos cards */}
               <div className="sticky bottom-0 z-20 pt-3 pb-2 bg-[var(--color-surface)]/95 backdrop-blur-xl border-t border-white/10 mt-auto">
                 <button
