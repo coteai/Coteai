@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { CheckCircle2, ArrowRight, Smartphone, Loader2, AlertCircle, Bike, Truck, Zap, Car, FileText, ListTree, Share2, Download, Copy, Pencil, Plus, X, RotateCcw, FlaskConical, DollarSign } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Smartphone, Loader2, AlertCircle, Bike, Truck, Zap, Car, FileText, ListTree, Share2, Download, Copy, Pencil, Plus, X, RotateCcw, FlaskConical, DollarSign, Sliders } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAssociation } from '../../contexts/AssociationContext';
 import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
@@ -58,6 +58,9 @@ const QuoteGenerator = () => {
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [editedAdesao, setEditedAdesao] = useState<Record<string, string>>({});
   const [editedMensalidade, setEditedMensalidade] = useState<Record<string, string>>({});
+  const [editedFranquia, setEditedFranquia] = useState<Record<string, string>>({});
+  const [editedCobertura, setEditedCobertura] = useState<Record<string, string>>({});
+  const [editingModalPlanId, setEditingModalPlanId] = useState<string | null>(null);
   const [newBenefit, setNewBenefit] = useState<{ label: string; param: string }>({ label: '', param: '' });
 
 
@@ -87,21 +90,15 @@ const QuoteGenerator = () => {
     setNewBenefit({ label: '', param: '' });
     setEditedAdesao({});
     setEditedMensalidade({});
+    setEditedFranquia({});
+    setEditedCobertura({});
+    setEditingModalPlanId(null);
     intelligence.reset();
   };
 
   // ── Benefit Editing Helpers ──
   const getCoberturas = (planId: string, original: any[]) =>
     editedCoberturas[planId] ?? original ?? [];
-
-  const getPlansWithEdits = () =>
-    availablePlans.map(p => ({
-      ...p,
-      plans: {
-        ...p.plans,
-        coberturas: editedCoberturas[p.id] ?? p.plans?.coberturas ?? []
-      }
-    }));
 
   const getAdesao = (planId: string, original: number) => {
     if (editedAdesao[planId] !== undefined) {
@@ -119,6 +116,35 @@ const QuoteGenerator = () => {
     return original;
   };
 
+  const getFranquia = (planId: string, original: number) => {
+    if (editedFranquia[planId] !== undefined) {
+      const parsed = parseFloat(editedFranquia[planId].replace(/\./g, '').replace(',', '.'));
+      return isNaN(parsed) ? original : parsed;
+    }
+    return original;
+  };
+
+  const getCoberturaMaxima = (planId: string, original: number) => {
+    if (editedCobertura[planId] !== undefined) {
+      const parsed = parseFloat(editedCobertura[planId].replace(/\./g, '').replace(',', '.'));
+      return isNaN(parsed) ? original : parsed;
+    }
+    return original;
+  };
+
+  const getPlansWithEdits = () =>
+    availablePlans.map(p => ({
+      ...p,
+      mensalidade: getMensalidade(p.id, p.mensalidade),
+      adesao: getAdesao(p.id, p.mensalidade),
+      franquia_percentual: getFranquia(p.id, p.franquia_percentual),
+      cobertura_maxima: getCoberturaMaxima(p.id, p.cobertura_maxima),
+      plans: {
+        ...p.plans,
+        coberturas: editedCoberturas[p.id] ?? p.plans?.coberturas ?? []
+      }
+    }));
+
   const openEditMode = (planId: string, original: any[]) => {
     setEditedCoberturas(prev => ({ ...prev, [planId]: JSON.parse(JSON.stringify(original ?? [])) }));
     setEditingPlanId(planId);
@@ -129,6 +155,10 @@ const QuoteGenerator = () => {
 
   const restoreBenefits = (planId: string, original: any[]) => {
     setEditedCoberturas(prev => { const next = { ...prev }; delete next[planId]; return next; });
+    setEditedAdesao(prev => { const next = { ...prev }; delete next[planId]; return next; });
+    setEditedMensalidade(prev => { const next = { ...prev }; delete next[planId]; return next; });
+    setEditedFranquia(prev => { const next = { ...prev }; delete next[planId]; return next; });
+    setEditedCobertura(prev => { const next = { ...prev }; delete next[planId]; return next; });
     setEditingPlanId(null);
   };
 
@@ -996,16 +1026,17 @@ const QuoteGenerator = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="p-3 sm:p-5 md:p-6 flex-1 flex flex-col w-full min-h-0"
+              className="p-3 sm:p-5 md:p-6 w-full flex flex-col flex-1"
             >
-              <div className="flex justify-between items-center mb-3 pb-2 border-b border-white/5 shrink-0 gap-2">
+              {/* Header com dados do ve�culo */}
+              <div className="flex justify-between items-center mb-4 pb-3 border-b border-white/5 shrink-0 gap-2">
                 <div className="min-w-0 flex-1">
                   <h2 className="premium-title text-lg sm:text-2xl uppercase tracking-tighter">
                     Planos Dispon�veis
                   </h2>
                   <p className="text-zinc-400 flex flex-wrap items-center mt-0.5 text-xs sm:text-sm">
                     <CheckCircle2 className="text-white mr-1.5 w-3.5 h-3.5 shrink-0" />
-                    <span className="font-medium mr-2 truncate max-w-[200px] sm:max-w-none">
+                    <span className="font-medium mr-2 truncate max-w-[220px] sm:max-w-none">
                       {formData.modelo}
                     </span>
                     <span className="bg-black/40 px-2 py-0.5 rounded text-xs border border-white/5">
@@ -1016,90 +1047,165 @@ const QuoteGenerator = () => {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="text-zinc-300 text-xs sm:text-sm hover:underline font-bold bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shrink-0"
+                  className="text-zinc-300 text-xs sm:text-sm hover:underline font-bold bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shrink-0 transition-colors"
                 >
                   Trocar Vers�o
                 </button>
               </div>
 
-              {/* Grid Responsivo de Planos: 1 col mobile, 2 tablet, 3 desktop */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar pb-2">
+              {/* Grid Responsivo de Planos � Altura Livre (h-auto), Sem Corte Inferior */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 w-full items-start pb-6">
                 {availablePlans.map((planPrice) => {
                   const isVip = planPrice.plans?.nome?.toLowerCase().includes('vip');
+                  const isEditing = editingPlanId === planPrice.id;
+                  const mensalidadeVal = getMensalidade(planPrice.id, planPrice.mensalidade);
+                  const adesaoVal = getAdesao(planPrice.id, planPrice.mensalidade);
+                  const franquiaVal = getFranquia(planPrice.id, planPrice.franquia_percentual);
+                  const coberturaVal = getCoberturaMaxima(planPrice.id, planPrice.cobertura_maxima);
+                  const coberturas = getCoberturas(planPrice.id, planPrice.plans?.coberturas || []);
+
                   return (
                     <div
                       key={planPrice.id}
-                      className="relative overflow-hidden flex flex-col p-3.5 sm:p-4 rounded-xl sm:rounded-2xl transition-all border border-zinc-800 bg-[#121212] hover:border-zinc-700"
+                      className="relative flex flex-col h-auto min-h-fit p-4 sm:p-5 rounded-2xl transition-all border border-zinc-800 bg-[#121212] hover:border-zinc-700 shadow-xl"
                       style={
                         isVip
                           ? { borderColor: theme.colors.glowHex, boxShadow: `0 0 30px ${theme.colors.shadow}` }
                           : {}
                       }
                     >
-                      {isVip && (
-                        <div
-                          className="absolute top-0 left-1/2 -translate-x-1/2 text-white text-[9px] font-black uppercase tracking-widest px-4 py-0.5 rounded-b-lg z-20"
-                          style={{ backgroundColor: theme.colors.glowHex, boxShadow: `0 0 10px ${theme.colors.shadow}` }}
-                        >
-                          Recomendado
+                      {/* Top Header com Nome, Tag e Bot�o de Edi��o Imediato */}
+                      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3 mb-3 relative z-10">
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                          <h3
+                            className={`text-lg sm:text-xl font-black uppercase tracking-wider truncate ${
+                              isVip ? theme.colors.primary : 'text-white'
+                            }`}
+                          >
+                            {planPrice.plans?.nome}
+                          </h3>
+                          {isVip && (
+                            <span
+                              className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full text-white"
+                              style={{ backgroundColor: theme.colors.glowHex, boxShadow: `0 0 10px ${theme.colors.shadow}` }}
+                            >
+                              Recomendado
+                            </span>
+                          )}
                         </div>
-                      )}
 
-                      <div className="mb-2 relative z-10 border-b border-white/5 pb-2 mt-1 text-center">
-                        <h3
-                          className={`text-base sm:text-lg font-black uppercase tracking-wider ${
-                            isVip ? theme.colors.primary : 'text-zinc-200'
+                        {/* Bot�o de Edi��o no Topo */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isEditing) {
+                              closeEditMode();
+                            } else {
+                              openEditMode(planPrice.id, planPrice.plans?.coberturas || []);
+                            }
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                            isEditing
+                              ? 'bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+                              : 'bg-white/5 hover:bg-white/15 text-zinc-300 hover:text-white border border-white/10'
                           }`}
+                          title={isEditing ? 'Concluir edi��o' : 'Editar valores deste plano'}
                         >
-                          {planPrice.plans?.nome}
-                        </h3>
+                          {isEditing ? (
+                            <>
+                              <CheckCircle2 size={13} className="text-black" />
+                              <span>Concluir</span>
+                            </>
+                          ) : (
+                            <>
+                              <Pencil size={12} className="text-zinc-400 group-hover:text-white" />
+                              <span>Editar</span>
+                            </>
+                          )}
+                        </button>
                       </div>
 
-                      {/* Pre�o Mensal */}
+                      {/* Valor Mensal (Inline Edit�vel) */}
                       <div className="mb-3 relative z-10 text-center">
-                        {editingPlanId === planPrice.id ? (
-                          <div className="flex items-baseline justify-center gap-1">
-                            <span className="text-zinc-500 text-base font-bold">R$</span>
-                            <input
-                              type="text"
-                              value={editedMensalidade[planPrice.id] ?? String(planPrice.mensalidade)}
-                              onChange={(e) =>
-                                setEditedMensalidade((prev) => ({ ...prev, [planPrice.id]: e.target.value }))
-                              }
-                              className="w-28 bg-black/60 border-b-2 border-white/30 text-white text-2xl font-black text-center outline-none focus:border-white transition-colors"
-                              placeholder="0"
-                            />
-                            <span className="text-xs text-zinc-500 font-medium">/m�s</span>
+                        {isEditing ? (
+                          <div className="flex flex-col items-center bg-blue-500/10 border border-blue-500/30 rounded-xl p-2.5">
+                            <span className="text-[10px] font-bold text-blue-300 uppercase tracking-wider mb-1">
+                              Mensalidade
+                            </span>
+                            <div className="flex items-baseline justify-center gap-1">
+                              <span className="text-zinc-400 text-sm font-bold">R$</span>
+                              <input
+                                type="text"
+                                value={editedMensalidade[planPrice.id] ?? String(planPrice.mensalidade)}
+                                onChange={(e) =>
+                                  setEditedMensalidade((prev) => ({ ...prev, [planPrice.id]: e.target.value }))
+                                }
+                                className="w-28 bg-black/70 border border-white/20 rounded-lg px-2 py-1 text-white text-2xl font-black text-center outline-none focus:border-blue-400 transition-colors"
+                                placeholder="0"
+                              />
+                              <span className="text-xs text-zinc-400 font-medium">/m�s</span>
+                            </div>
                           </div>
                         ) : (
-                          <span className="text-2xl sm:text-3xl font-black text-white">
-                            {formatCurrency(getMensalidade(planPrice.id, planPrice.mensalidade))}
-                            <span className="text-xs text-zinc-500 font-medium">/m�s</span>
-                          </span>
-                        )}
-
-                        {/* Franquia e Cobertura Compactas */}
-                        <div className="grid grid-cols-2 gap-2 mt-2.5 bg-black/60 p-2 sm:p-2.5 rounded-xl border border-white/5 text-left">
-                          <div>
-                            <span className="text-[10px] text-zinc-500 font-bold block uppercase">Franquia</span>
-                            <span className="font-bold text-xs sm:text-sm text-white">
-                              {planPrice.franquia_percentual}%
+                          <div className="py-1">
+                            <span className="text-3xl sm:text-4xl font-black text-white">
+                              {formatCurrency(mensalidadeVal)}
+                              <span className="text-xs text-zinc-500 font-medium">/m�s</span>
                             </span>
                           </div>
+                        )}
+
+                        {/* Franquia & Cobertura (Inline Edit�vel) */}
+                        <div className="grid grid-cols-2 gap-2 mt-2.5 bg-black/60 p-2.5 rounded-xl border border-white/5 text-left">
+                          <div>
+                            <span className="text-[10px] text-zinc-400 font-bold block uppercase mb-0.5">Franquia (%)</span>
+                            {isEditing ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  value={editedFranquia[planPrice.id] ?? String(planPrice.franquia_percentual)}
+                                  onChange={(e) =>
+                                    setEditedFranquia((prev) => ({ ...prev, [planPrice.id]: e.target.value }))
+                                  }
+                                  className="w-14 bg-black/80 border border-white/20 rounded px-1.5 py-0.5 text-white text-xs font-bold text-center outline-none focus:border-blue-400"
+                                  placeholder="10"
+                                />
+                                <span className="text-xs text-zinc-400 font-bold">%</span>
+                              </div>
+                            ) : (
+                              <span className="font-bold text-xs sm:text-sm text-white">{franquiaVal}%</span>
+                            )}
+                          </div>
+
                           <div className="text-right">
-                            <span className="text-[10px] text-zinc-500 font-bold block uppercase">Cobertura</span>
-                            <span className="font-bold text-xs sm:text-sm text-white">
-                              {formatCurrency(planPrice.cobertura_maxima)}
-                            </span>
+                            <span className="text-[10px] text-zinc-400 font-bold block uppercase mb-0.5">Cobertura M�x.</span>
+                            {isEditing ? (
+                              <div className="flex items-center justify-end gap-1">
+                                <span className="text-zinc-500 text-[10px]">R$</span>
+                                <input
+                                  type="text"
+                                  value={editedCobertura[planPrice.id] ?? String(planPrice.cobertura_maxima)}
+                                  onChange={(e) =>
+                                    setEditedCobertura((prev) => ({ ...prev, [planPrice.id]: e.target.value }))
+                                  }
+                                  className="w-20 bg-black/80 border border-white/20 rounded px-1.5 py-0.5 text-white text-xs font-bold text-right outline-none focus:border-blue-400 font-mono"
+                                  placeholder="80000"
+                                />
+                              </div>
+                            ) : (
+                              <span className="font-bold text-xs sm:text-sm text-white">
+                                {formatCurrency(coberturaVal)}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Ades�o Edit�vel Compacta */}
-                      <div className="mb-2.5 bg-black/40 border border-white/5 rounded-xl p-2 sm:p-2.5">
+                      {/* Ades�o (Inline Edit�vel) */}
+                      <div className="mb-3 bg-black/40 border border-white/5 rounded-xl p-2.5">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-[10px] text-zinc-400 font-bold uppercase">Ades�o</span>
-                          {editingPlanId === planPrice.id ? (
+                          <span className="text-[10px] text-zinc-400 font-bold uppercase">Taxa de Ades�o</span>
+                          {isEditing ? (
                             <div className="flex items-center gap-1">
                               <span className="text-zinc-500 text-xs">R$</span>
                               <input
@@ -1108,122 +1214,177 @@ const QuoteGenerator = () => {
                                 onChange={(e) =>
                                   setEditedAdesao((prev) => ({ ...prev, [planPrice.id]: e.target.value }))
                                 }
-                                className="w-16 bg-black/60 border-b border-white/30 text-white text-xs font-bold text-right outline-none focus:border-white px-1 py-0.5"
+                                className="w-20 bg-black/60 border border-white/20 rounded px-1.5 py-0.5 text-white text-xs font-bold text-right outline-none focus:border-blue-400"
+                                placeholder="0"
                               />
                             </div>
                           ) : (
-                            <span className="font-bold text-white text-xs">
-                              {formatCurrency(getAdesao(planPrice.id, planPrice.mensalidade))}
-                            </span>
+                            <span className="font-bold text-white text-xs">{formatCurrency(adesaoVal)}</span>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center mb-1.5">
-                        <p className="text-[9px] text-zinc-500 font-black tracking-widest uppercase">
-                          BENEF�CIOS DO PLANO
+                      {/* Se��o de Benef�cios com Bot�o de Gerenciamento da Lista */}
+                      <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-white/5">
+                        <p className="text-[9px] text-zinc-400 font-black tracking-widest uppercase">
+                          BENEF�CIOS ({coberturas.length})
                         </p>
-                        {editingPlanId === planPrice.id ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => restoreBenefits(planPrice.id, planPrice.plans?.coberturas || [])}
-                              className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
-                              title="Restaurar originais"
-                            >
-                              <RotateCcw size={10} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={closeEditMode}
-                              className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20"
-                            >
-                              Pronto
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => openEditMode(planPrice.id, planPrice.plans?.coberturas || [])}
-                            className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-white transition-colors"
-                          >
-                            <Pencil size={9} />
-                            <span>Editar</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            openEditMode(planPrice.id, planPrice.plans?.coberturas || []);
+                            setEditingModalPlanId(planPrice.id);
+                          }}
+                          className="flex items-center gap-1 text-[10px] font-bold text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-2 py-0.5 rounded-md border border-sky-500/20 transition-colors"
+                        >
+                          <Sliders size={10} />
+                          <span>Editar Lista</span>
+                        </button>
                       </div>
 
-                      {/* Lista de Benef�cios com Altura M�xima Fluida */}
-                      {editingPlanId === planPrice.id ? (
-                        <div className="space-y-1.5 flex-1 max-h-[140px] sm:max-h-[160px] overflow-y-auto styled-scrollbar pr-1 relative z-10">
-                          {(editedCoberturas[planPrice.id] ?? []).map((c, i) => (
-                            <div
-                              key={i}
-                              className="flex items-center gap-1.5 bg-white/[0.03] border border-white/10 rounded-lg px-2 py-1"
-                            >
-                              <input
-                                value={c.label}
-                                onChange={(e) => updateBenefit(planPrice.id, i, 'label', e.target.value)}
-                                placeholder="Benef�cio"
-                                className="flex-1 bg-transparent text-white text-[11px] font-medium outline-none"
-                              />
-                              <span className="text-zinc-600 text-xs">|</span>
-                              <input
-                                value={c.param || ''}
-                                onChange={(e) => updateBenefit(planPrice.id, i, 'param', e.target.value)}
-                                placeholder="Detalhe"
-                                className="w-16 bg-transparent text-zinc-400 text-[11px] outline-none"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeBenefit(planPrice.id, i)}
-                                className="text-red-500/60 hover:text-red-400 shrink-0"
-                              >
-                                <X size={11} />
-                              </button>
-                            </div>
-                          ))}
-                          <div className="flex items-center gap-1.5 bg-white/[0.02] border border-dashed border-white/10 rounded-lg px-2 py-1 mt-1.5">
-                            <input
-                              value={newBenefit.label}
-                              onChange={(e) => setNewBenefit((prev) => ({ ...prev, label: e.target.value }))}
-                              onKeyDown={(e) => e.key === 'Enter' && addBenefit(planPrice.id)}
-                              placeholder="Novo benef�cio..."
-                              className="flex-1 bg-transparent text-white text-[11px] outline-none"
+                      {/* Lista de Benef�cios com altura natural (sem corte inferior) */}
+                      <ul className="space-y-1.5 text-zinc-300 relative z-10 text-[11px] font-medium flex-1">
+                        {coberturas.map((c, i) => (
+                          <li key={i} className="flex items-start">
+                            <CheckCircle2
+                              className={`w-3.5 h-3.5 mt-0.5 mr-2 shrink-0 ${
+                                isVip ? theme.colors.primary : 'text-cyan-500'
+                              }`}
                             />
-                            <button
-                              type="button"
-                              onClick={() => addBenefit(planPrice.id)}
-                              className="text-emerald-400 hover:text-emerald-300 shrink-0"
-                            >
-                              <Plus size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <ul className="space-y-1.5 flex-1 text-zinc-300 relative z-10 text-[11px] font-medium max-h-[140px] sm:max-h-[160px] overflow-y-auto styled-scrollbar pr-1">
-                          {getCoberturas(planPrice.id, planPrice.plans?.coberturas || []).map((c, i) => (
-                            <li key={i} className="flex items-start">
-                              <CheckCircle2
-                                className={`w-3 h-3 mt-0.5 mr-1.5 shrink-0 ${
-                                  isVip ? theme.colors.primary : 'text-cyan-500'
-                                }`}
-                              />
-                              <span>
-                                {c.label}
-                                {c.param ? `: ${c.param}` : ''}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                            <span className="leading-snug">
+                              {c.label}
+                              {c.param ? `: ${c.param}` : ''}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Bot�o de A��o: Fixo na base sem for�ar scroll */}
-              <div className="pt-2.5 sm:pt-3 border-t border-white/10 shrink-0 bg-[var(--color-surface)]/90 backdrop-blur-md">
+              {/* Modal de Edi��o Avan�ada de Benef�cios */}
+              {editingModalPlanId && (() => {
+                const modalPlan = availablePlans.find((p) => p.id === editingModalPlanId);
+                if (!modalPlan) return null;
+                const currentCoberturas = getCoberturas(modalPlan.id, modalPlan.plans?.coberturas || []);
+
+                return (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="relative w-full max-w-lg bg-[#0E1629] border border-white/15 rounded-2xl shadow-2xl p-5 sm:p-6 flex flex-col max-h-[85vh]">
+                      {/* Modal Header */}
+                      <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+                        <div>
+                          <h3 className="text-base sm:text-lg font-black uppercase text-white tracking-wider flex items-center gap-2">
+                            <Sliders size={16} className="text-sky-400" />
+                            Editar Benef�cios � {modalPlan.plans?.nome}
+                          </h3>
+                          <p className="text-xs text-zinc-400 mt-0.5">
+                            Personalize a lista de coberturas que aparecer� na proposta.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setEditingModalPlanId(null)}
+                          className="p-1 text-zinc-400 hover:text-white transition-colors"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+
+                      {/* Lista de Coberturas */}
+                      <div className="space-y-2 flex-1 overflow-y-auto pr-1 custom-scrollbar mb-4">
+                        {currentCoberturas.map((c, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-xl p-2 sm:p-2.5"
+                          >
+                            <div className="flex-1 flex flex-col sm:flex-row gap-1.5">
+                              <input
+                                type="text"
+                                value={c.label}
+                                onChange={(e) => updateBenefit(modalPlan.id, i, 'label', e.target.value)}
+                                placeholder="Nome da Cobertura"
+                                className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-sky-400"
+                              />
+                              <input
+                                type="text"
+                                value={c.param || ''}
+                                onChange={(e) => updateBenefit(modalPlan.id, i, 'param', e.target.value)}
+                                placeholder="Detalhe (ex: 400km)"
+                                className="sm:w-36 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-sky-400"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeBenefit(modalPlan.id, i)}
+                              className="p-1 text-red-400/70 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors shrink-0"
+                              title="Remover cobertura"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Adicionar Cobertura */}
+                        <div className="bg-white/[0.02] border border-dashed border-white/15 rounded-xl p-2.5 mt-2">
+                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                            + Adicionar Nova Cobertura
+                          </p>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <input
+                              type="text"
+                              value={newBenefit.label}
+                              onChange={(e) => setNewBenefit((prev) => ({ ...prev, label: e.target.value }))}
+                              onKeyDown={(e) => e.key === 'Enter' && addBenefit(modalPlan.id)}
+                              placeholder="Ex: Carro Reserva 7 dias"
+                              className="flex-1 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-emerald-400"
+                            />
+                            <input
+                              type="text"
+                              value={newBenefit.param}
+                              onChange={(e) => setNewBenefit((prev) => ({ ...prev, param: e.target.value }))}
+                              onKeyDown={(e) => e.key === 'Enter' && addBenefit(modalPlan.id)}
+                              placeholder="Detalhe opcional"
+                              className="sm:w-36 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-emerald-400"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => addBenefit(modalPlan.id)}
+                              className="flex items-center justify-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0"
+                            >
+                              <Plus size={14} />
+                              <span>Adicionar</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Modal Footer */}
+                      <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => restoreBenefits(modalPlan.id, modalPlan.plans?.coberturas || [])}
+                          className="text-xs text-zinc-400 hover:text-white flex items-center gap-1.5 transition-colors"
+                        >
+                          <RotateCcw size={12} />
+                          <span>Restaurar originais</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingModalPlanId(null)}
+                          className="bg-sky-500 hover:bg-sky-400 text-black font-black uppercase text-xs tracking-wider px-5 py-2 rounded-xl transition-all shadow-md"
+                        >
+                          Salvar Coberturas
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Bot�o de A��o: Sticky na base sem for�ar corte nos cards */}
+              <div className="sticky bottom-0 z-20 pt-3 pb-2 bg-[var(--color-surface)]/95 backdrop-blur-xl border-t border-white/10 mt-auto">
                 <button
                   type="button"
                   onClick={() => saveQuoteMulti()}
@@ -1282,6 +1443,8 @@ const QuoteGenerator = () => {
                     const modeloNome = formData.modelo?.replace(/\s*\([^)]+\)\s*/, '').trim() || formData.modelo;
                     const mensalidade = getMensalidade(planPrice.id, planPrice.mensalidade);
                     const adesao = getAdesao(planPrice.id, planPrice.mensalidade);
+                    const franquia = getFranquia(planPrice.id, planPrice.franquia_percentual);
+                    const coberturaMaxima = getCoberturaMaxima(planPrice.id, planPrice.cobertura_maxima);
                     const halfLen = Math.ceil(coberturas.length / 2);
                     const colA = coberturas.slice(0, halfLen);
                     const colB = coberturas.slice(halfLen);
@@ -1401,7 +1564,7 @@ const QuoteGenerator = () => {
                             </div>
                             <div style={{ paddingLeft:'12px', paddingRight:'12px', borderRight:'1px solid #ddd' }}>
                               <div style={{ fontSize:'8px', fontWeight:'700', letterSpacing:'1.5px', color:'#999', textTransform:'uppercase' }}>Cota de Participação</div>
-                              <div style={{ fontSize:'18px', fontWeight:'900', color:'#1a1a1a', marginTop:'2px' }}>{planPrice.franquia_percentual}%</div>
+                              <div style={{ fontSize:'18px', fontWeight:'900', color:'#1a1a1a', marginTop:'2px' }}>{franquia}%</div>
                             </div>
                             <div style={{ paddingLeft:'12px' }}>
                               <div style={{ fontSize:'8px', fontWeight:'700', letterSpacing:'1.5px', color:'#c0000e', textTransform:'uppercase' }}>Investimento Mensal</div>
@@ -1543,6 +1706,9 @@ const QuoteGenerator = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
                       {availablePlans.map((planPrice) => {
                         const isVip = planPrice.plans?.nome?.toLowerCase().includes('vip');
+                        const mensalidade = getMensalidade(planPrice.id, planPrice.mensalidade);
+                        const franquia = getFranquia(planPrice.id, planPrice.franquia_percentual);
+                        const cobertura = getCoberturaMaxima(planPrice.id, planPrice.cobertura_maxima);
                         return (
                           <div
                             key={planPrice.id}
@@ -1560,12 +1726,12 @@ const QuoteGenerator = () => {
                               {isVip && <Zap size={12} className="mr-1 inline" />} {planPrice.plans?.nome}
                             </p>
                             <p className="text-base sm:text-lg text-white font-black">
-                              {formatCurrency(getMensalidade(planPrice.id, planPrice.mensalidade))}
+                              {formatCurrency(mensalidade)}
                               <span className="text-[10px] font-normal text-zinc-500">/m�s</span>
                             </p>
                             <div className="flex justify-between items-center text-[10px] text-zinc-400 mt-1 pt-1 border-t border-white/5">
-                              <span>Franquia: <strong className="text-zinc-200">{planPrice.franquia_percentual}%</strong></span>
-                              <span>Cob: <strong className="text-zinc-200">{formatCurrency(planPrice.cobertura_maxima)}</strong></span>
+                              <span>Franquia: <strong className="text-zinc-200">{franquia}%</strong></span>
+                              <span>Cob: <strong className="text-zinc-200">{formatCurrency(cobertura)}</strong></span>
                             </div>
                           </div>
                         );
