@@ -9,10 +9,10 @@ interface LogoProps {
 
 const Logo: React.FC<LogoProps> = ({ className = '', size = 'md' }) => {
   const sizeClasses = {
-    sm: 'h-6 max-h-6',
-    md: 'h-8 sm:h-9 max-h-9',
-    lg: 'h-10 sm:h-11 max-h-11',
-    xl: 'h-14 sm:h-16 max-h-16',
+    sm: 'h-8 max-h-8',
+    md: 'h-10 sm:h-11 max-h-11',
+    lg: 'h-12 sm:h-14 max-h-14',
+    xl: 'h-16 sm:h-20 max-h-20',
   };
 
   return (
@@ -20,7 +20,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 'md' }) => {
       <img
         src={logoImg}
         alt="Cote AI"
-        className={`w-auto object-contain max-h-full ${sizeClasses[size] || 'h-8 sm:h-9'}`}
+        className={`w-auto object-contain max-h-full ${sizeClasses[size] || 'h-10 sm:h-11'}`}
         style={{
           backgroundColor: 'transparent',
         }}
