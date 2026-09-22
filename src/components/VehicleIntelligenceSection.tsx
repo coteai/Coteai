@@ -1,6 +1,6 @@
 ﻿import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Wrench, TrendingUp, Sparkles, User, Phone } from 'lucide-react';
+import { AlertTriangle, Wrench, TrendingUp, Sparkles, User, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import type { VehicleIntelligence, IntelligenceStatus } from '@/hooks/useVehicleIntelligence';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -266,6 +266,9 @@ interface Props {
   status: IntelligenceStatus;
   data: VehicleIntelligence | null;
   consultor?: { nome?: string; telefone?: string } | null;
+  className?: string;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }
 
 const containerVariants = {
@@ -278,22 +281,49 @@ const cardVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
 };
 
-export const VehicleIntelligenceSection: React.FC<Props> = ({ status, data, consultor }) => {
+export const VehicleIntelligenceSection: React.FC<Props> = ({
+  status,
+  data,
+  consultor,
+  className,
+  collapsible = false,
+  defaultOpen = true,
+}) => {
+  const [isOpen, setIsOpen] = React.useState(defaultOpen);
+
   if (status === 'error' || status === 'idle') return null;
 
   return (
-    <div className="w-full max-w-md mx-auto mb-6">
+    <div className={className || "w-full max-w-2xl mx-auto mb-4"}>
       {/* Section Header */}
-      <div className="flex items-center justify-between mb-3 px-1">
+      <div
+        className={`flex items-center justify-between mb-2.5 px-1 ${
+          collapsible ? 'cursor-pointer select-none py-1 hover:opacity-90 transition-opacity' : ''
+        }`}
+        onClick={() => collapsible && setIsOpen(!isOpen)}
+      >
         <div className="flex items-center gap-2">
           <div className="h-4 w-1 bg-sky-400 rounded-full shadow-[0_0_10px_rgba(56,189,248,0.8)]" />
-          <span className="text-white font-black tracking-wider text-sm uppercase">Inteligência do Veículo</span>
+          <span className="text-white font-black tracking-wider text-xs sm:text-sm uppercase">
+            Inteligência do Veículo
+          </span>
         </div>
-        <AiBadge />
+        <div className="flex items-center gap-2">
+          <AiBadge />
+          {collapsible && (
+            <button
+              type="button"
+              className="text-zinc-400 hover:text-white p-0.5 rounded transition-colors"
+              aria-label={isOpen ? 'Recolher análise' : 'Expandir análise'}
+            >
+              {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+          )}
+        </div>
       </div>
 
       {status === 'loading' && (
-        <div className="grid grid-cols-1 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
@@ -302,13 +332,14 @@ export const VehicleIntelligenceSection: React.FC<Props> = ({ status, data, cons
       )}
 
       <AnimatePresence>
-        {status === 'success' && data && (
+        {status === 'success' && data && isOpen && (
           <motion.div
             key="intelligence-cards"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 gap-3.5"
+            exit={{ opacity: 0, height: 0 }}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-3"
           >
             <motion.div variants={cardVariants}>
               <RouboFurtoCard data={data.roubo_furto} />
@@ -323,7 +354,7 @@ export const VehicleIntelligenceSection: React.FC<Props> = ({ status, data, cons
               <RevendaCard data={data.revenda} />
             </motion.div>
             {consultor && (
-              <motion.div variants={cardVariants}>
+              <motion.div variants={cardVariants} className="sm:col-span-2">
                 <ConsultorCard consultor={consultor} />
               </motion.div>
             )}
