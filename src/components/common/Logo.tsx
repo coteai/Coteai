@@ -1,4 +1,5 @@
 import React from 'react';
+import logoImg from '../../assets/cote-ai-logo-transparente.png';
 
 interface LogoProps {
   className?: string;
@@ -6,54 +7,24 @@ interface LogoProps {
   variant?: 'light' | 'dark';
 }
 
-const Logo: React.FC<LogoProps> = ({ className = '' }) => {
-  const accentColor = '#3b82f6';
-  const accentLight = '#60a5fa';
+const Logo: React.FC<LogoProps> = ({ className = '', size = 'md' }) => {
+  const sizeClasses = {
+    sm: 'h-6 max-h-6',
+    md: 'h-8 sm:h-9 max-h-9',
+    lg: 'h-10 sm:h-11 max-h-11',
+    xl: 'h-14 sm:h-16 max-h-16',
+  };
 
   return (
-    <div
-      className={`inline-flex items-baseline justify-center w-full select-none ${className}`}
-      aria-label="Cote AI"
-    >
-      {/* COTE — white luminous glow */}
-      <span
+    <div className={`inline-flex items-center justify-center select-none bg-transparent ${className}`}>
+      <img
+        src={logoImg}
+        alt="Cote AI"
+        className={`w-auto object-contain max-h-full ${sizeClasses[size] || 'h-8 sm:h-9'}`}
         style={{
-          fontFamily: "'Montserrat', 'Outfit', sans-serif",
-          fontWeight: 900,
-          fontSize: '1.4rem',
-          letterSpacing: '0.06em',
-          lineHeight: 1,
-          color: '#ffffff',
-          textShadow: `
-            0 0 8px  rgba(255, 255, 255, 0.95),
-            0 0 20px rgba(255, 255, 255, 0.60),
-            0 0 45px rgba(255, 255, 255, 0.25)
-          `,
+          backgroundColor: 'transparent',
         }}
-      >
-        COTE
-      </span>
-
-      {/* Spacer */}
-      <span style={{ display: 'inline-block', width: '0.4em' }} aria-hidden="true" />
-
-      {/* AI — blue gradient + electric glow */}
-      <span
-        style={{
-          fontFamily: "'Montserrat', 'Outfit', sans-serif",
-          fontWeight: 900,
-          fontSize: '1.4rem',
-          letterSpacing: '0.06em',
-          lineHeight: 1,
-          background: `linear-gradient(135deg, ${accentColor} 0%, ${accentLight} 55%, #93c5fd 100%)`,
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          filter: `drop-shadow(0 0 8px ${accentColor}cc) drop-shadow(0 0 22px ${accentColor}80)`,
-        }}
-      >
-        AI
-      </span>
+      />
     </div>
   );
 };

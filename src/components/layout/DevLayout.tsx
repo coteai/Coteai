@@ -84,7 +84,10 @@ const DevLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative z-10 p-4 md:pl-0">
+      <main
+        className="flex-1 flex flex-col h-full overflow-hidden relative z-10 px-4 pb-4 md:p-4 md:pl-0"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}
+      >
         {/* Header */}
         <header className="h-16 mb-4 flex items-center justify-between px-6 md:px-8 rounded-2xl shrink-0 border" style={{ background: 'rgba(10,10,30,0.8)', backdropFilter: 'blur(20px)', borderColor: 'rgba(99,102,241,0.12)' }}>
           <div className="flex items-center space-x-4">

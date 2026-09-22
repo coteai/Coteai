@@ -71,7 +71,7 @@ const AdminLayout = () => {
         />
         <div>
           <div className="p-8 flex items-center justify-start border-b border-white/5">
-            <Logo className="scale-110" />
+            <Logo size="lg" />
           </div>
           <div className="px-4 mb-4 mt-4">
             <NavLink
@@ -135,14 +135,17 @@ const AdminLayout = () => {
       </aside>
 
       {/* ── Main Content ─────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative z-10 p-4 md:pl-0">
+      <main
+        className="flex-1 flex flex-col h-full overflow-hidden relative z-10 px-4 pb-4 md:p-4 md:pl-0"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}
+      >
         <header className="h-14 md:h-16 mb-4 flex items-center justify-between px-4 md:px-8 glass-panel rounded-2xl relative overflow-hidden shrink-0">
           <div
             className="absolute top-0 left-0 w-full h-full pointer-events-none"
             style={{ background: `linear-gradient(to right, ${accentHex}10, transparent, ${accentHex}10)` }}
           />
           <div className="flex items-center space-x-3 relative z-10">
-            <Logo className="md:hidden scale-75 origin-left" />
+            <Logo className="md:hidden" size="md" />
             <div className="hidden md:flex items-center space-x-4">
               <h2 className="text-xl premium-title uppercase">{associationData?.nome || 'Cote AI'}</h2>
             </div>

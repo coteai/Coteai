@@ -67,7 +67,7 @@ const DevLogin = () => {
           <div className="px-10 pt-12 pb-8 text-center border-b border-white/5">
             {/* Logo */}
             <div className="mb-8 flex justify-center">
-              <Logo className="scale-150" />
+              <Logo size="xl" />
             </div>
             <h1 className="text-xl font-black text-white tracking-tight mb-1">
               Dev Console
