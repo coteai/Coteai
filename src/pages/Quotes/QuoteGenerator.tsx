@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
@@ -183,7 +184,7 @@ const QuoteGenerator = () => {
     setNewBenefit({ label: '', param: '' });
   };
 
-  // Modo manual: gerar cota��o sem buscar placa
+  // Modo manual: gerar cotação sem buscar placa
   const handleManualCotacao = () => {
     const fipeVal = parseFloat(manualFipe.replace(/\./g, '').replace(',', '.'));
     if (!manualModelo.trim() || isNaN(fipeVal) || fipeVal <= 0) {
@@ -594,10 +595,10 @@ const QuoteGenerator = () => {
       <div className="flex justify-between items-center px-1 shrink-0">
         <div>
           <h1 className="premium-title text-xl sm:text-2xl md:text-3xl uppercase tracking-tighter">
-            M�quina de Cota��o
+            Máquina de Cotação
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
-            Gere propostas instant�neas com precis�o FIPE total.
+            Gere propostas instantâneas com precisão FIPE total.
           </p>
         </div>
       </div>
@@ -615,13 +616,13 @@ const QuoteGenerator = () => {
         />
         <div className="flex justify-between relative z-10">
           {renderStepIcon(1, <Car size={16} />, "Placa")}
-          {renderStepIcon(2, <ListTree size={16} />, "Vers�o")}
-          {renderStepIcon(3, <Zap size={16} />, "Pre�os")}
+          {renderStepIcon(2, <ListTree size={16} />, "Versão")}
+          {renderStepIcon(3, <Zap size={16} />, "Preços")}
           {renderStepIcon(4, <FileText size={16} />, "Resumo")}
         </div>
       </div>
 
-      {/* �rea de Trabalho Fluida */}
+      {/* Área de Trabalho Fluida */}
       <div className="glass-panel flex-1 flex flex-col overflow-y-auto relative min-h-0 custom-scrollbar">
         <AnimatePresence mode="wait">
 
@@ -635,10 +636,10 @@ const QuoteGenerator = () => {
               className="p-4 sm:p-6 md:p-8 flex-1 flex flex-col justify-center max-w-2xl mx-auto w-full text-center"
             >
               <h2 className="premium-title text-xl sm:text-2xl md:text-3xl uppercase tracking-tighter mb-1">
-                Consulta de Ve�culo
+                Consulta de Veículo
               </h2>
               <p className="text-xs sm:text-sm text-zinc-400 mb-3 sm:mb-5">
-                Selecione o tipo e informe a placa para busca FIPE instant�nea.
+                Selecione o tipo e informe a placa para busca FIPE instantânea.
               </p>
 
               {/* Segmented Type Selector */}
@@ -692,7 +693,7 @@ const QuoteGenerator = () => {
                   }
                 >
                   <Truck size={16} />
-                  <span className="text-xs font-bold uppercase tracking-wider">Caminh�o</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">Caminhão</span>
                 </button>
               </div>
 
@@ -741,7 +742,7 @@ const QuoteGenerator = () => {
                     </div>
                   </div>
 
-                  {/* Bot�o de Busca FIPE: Sempre Vis�vel */}
+                  {/* Botão de Busca FIPE: Sempre Visível */}
                   <button
                     onClick={handleFipeSearch}
                     disabled={formData.placa.length < 7 || !formData.uf || loading}
@@ -779,23 +780,23 @@ const QuoteGenerator = () => {
                   }`}
                 >
                   <FlaskConical size={12} />
-                  {manualMode ? 'Voltar � consulta por placa' : 'Inserir valor manualmente (teste)'}
+                  {manualMode ? 'Voltar à consulta por placa' : 'Inserir valor manualmente (teste)'}
                 </button>
               </div>
 
-              {/* Formul�rio Manual Responsivo */}
+              {/* Formulário Manual Responsivo */}
               {manualMode && (
                 <div className="mt-3 mx-auto w-full max-w-md space-y-2.5 bg-amber-500/5 border border-amber-500/20 rounded-xl p-3.5 sm:p-4 text-left">
                   <div className="flex items-center gap-2 mb-1">
                     <FlaskConical size={13} className="text-amber-400" />
                     <p className="text-[11px] text-amber-300 font-bold uppercase tracking-widest">
-                      Cota��o de Teste � Sem Placa Real
+                      Cotação de Teste — Sem Placa Real
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
                       <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">
-                        Modelo / Descri��o
+                        Modelo / Descrição
                       </label>
                       <input
                         type="text"
@@ -835,7 +836,7 @@ const QuoteGenerator = () => {
                     ) : (
                       <>
                         <ArrowRight size={14} />
-                        <span>Gerar Cota��o de Teste</span>
+                        <span>Gerar Cotação de Teste</span>
                       </>
                     )}
                   </button>
@@ -863,7 +864,7 @@ const QuoteGenerator = () => {
               <div className="flex justify-between items-center mb-3 pb-2 border-b border-white/5 shrink-0">
                 <div>
                   <h2 className="premium-title text-lg sm:text-2xl uppercase tracking-tighter mb-0.5">
-                    Selecione a vers�o correta
+                    Selecione a versão correta
                   </h2>
                   <p className="text-zinc-400 text-xs sm:text-sm">
                     Variantes encontradas para a placa{' '}
@@ -922,7 +923,7 @@ const QuoteGenerator = () => {
                           {v.modelo}
                         </h3>
                         <p className="text-[10px] text-zinc-400 font-mono bg-white/5 inline-block px-1.5 py-0.5 rounded mt-1 border border-white/5">
-                          C�d. {v.codigo_fipe}
+                          Cód. {v.codigo_fipe}
                         </p>
                       </div>
                     </div>
@@ -940,7 +941,7 @@ const QuoteGenerator = () => {
             </motion.div>
           )}
 
-          {/* STEP 2B: SELE��O DE GRUPO TARIF�RIO */}
+          {/* STEP 2B: SELEÇÃO DE GRUPO TARIFÁRIO */}
           {step === '2b' && (
             <motion.div
               key="step2b"
@@ -952,7 +953,7 @@ const QuoteGenerator = () => {
               <div className="flex justify-between items-center mb-3 pb-2 border-b border-white/5 shrink-0">
                 <div>
                   <h2 className="premium-title text-lg sm:text-2xl uppercase tracking-tighter mb-0.5">
-                    Categoria Tarif�ria
+                    Categoria Tarifária
                   </h2>
                   <p className="text-zinc-400 text-xs sm:text-sm">
                     Qual categoria se enquadra o <strong className="text-white">{formData.modelo}</strong>?
@@ -1029,11 +1030,11 @@ const QuoteGenerator = () => {
               exit={{ opacity: 0, x: -20 }}
               className="p-3 sm:p-5 md:p-6 w-full flex flex-col flex-1"
             >
-              {/* Header com dados do ve�culo */}
+              {/* Header com dados do veículo */}
               <div className="flex justify-between items-center mb-4 pb-3 border-b border-white/5 shrink-0 gap-2">
                 <div className="min-w-0 flex-1">
                   <h2 className="premium-title text-lg sm:text-2xl uppercase tracking-tighter">
-                    Planos Dispon�veis
+                    Planos Disponíveis
                   </h2>
                   <p className="text-zinc-400 flex flex-wrap items-center mt-0.5 text-xs sm:text-sm">
                     <CheckCircle2 className="text-white mr-1.5 w-3.5 h-3.5 shrink-0" />
@@ -1050,11 +1051,11 @@ const QuoteGenerator = () => {
                   onClick={() => setStep(2)}
                   className="text-zinc-300 text-xs sm:text-sm hover:underline font-bold bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shrink-0 transition-colors"
                 >
-                  Trocar Vers�o
+                  Trocar Versão
                 </button>
               </div>
 
-              {/* Grid de Cards de Planos � Layout Est�vel e Sem Corte */}
+              {/* Grid de Cards de Planos — Layout Estável e Sem Corte */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 w-full items-start pb-6">
                 {availablePlans.map((planPrice) => {
                   const isVip = planPrice.plans?.nome?.toLowerCase().includes('vip');
@@ -1079,7 +1080,7 @@ const QuoteGenerator = () => {
                           : {}
                       }
                     >
-                      {/* Top Header com Nome, Tag e Bot�o de Edi��o Imediato */}
+                      {/* Top Header com Nome, Tag e Botão de Edição Imediato */}
                       <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3 mb-3 relative z-10">
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
                           <h3
@@ -1104,7 +1105,7 @@ const QuoteGenerator = () => {
                           )}
                         </div>
 
-                        {/* Bot�o de Edi��o que abre o Modal / Painel Dedicado */}
+                        {/* Botão de Edição que abre o Modal / Painel Dedicado */}
                         <button
                           type="button"
                           onClick={() => openEditModal(planPrice.id, planPrice.plans?.coberturas || [])}
@@ -1120,7 +1121,7 @@ const QuoteGenerator = () => {
                       <div className="mb-3 relative z-10 text-center py-1">
                         <span className="text-3xl sm:text-4xl font-black text-white">
                           {formatCurrency(mensalidadeVal)}
-                          <span className="text-xs text-zinc-500 font-medium">/m�s</span>
+                          <span className="text-xs text-zinc-500 font-medium">/mês</span>
                         </span>
 
                         {/* Franquia & Cobertura */}
@@ -1130,7 +1131,7 @@ const QuoteGenerator = () => {
                             <span className="font-bold text-xs sm:text-sm text-white">{franquiaVal}%</span>
                           </div>
                           <div className="text-right">
-                            <span className="text-[10px] text-zinc-400 font-bold block uppercase mb-0.5">Cobertura M�x.</span>
+                            <span className="text-[10px] text-zinc-400 font-bold block uppercase mb-0.5">Cobertura Máx.</span>
                             <span className="font-bold text-xs sm:text-sm text-white">
                               {formatCurrency(coberturaVal)}
                             </span>
@@ -1138,29 +1139,22 @@ const QuoteGenerator = () => {
                         </div>
                       </div>
 
-                      {/* Ades�o */}
+                      {/* Adesão */}
                       <div className="mb-3 bg-black/40 border border-white/5 rounded-xl p-2.5">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-[10px] text-zinc-400 font-bold uppercase">Taxa de Ades�o</span>
+                          <span className="text-[10px] text-zinc-400 font-bold uppercase">Taxa de Adesão</span>
                           <span className="font-bold text-white text-xs">{formatCurrency(adesaoVal)}</span>
                         </div>
                       </div>
 
-                      {/* Se��o de Benef�cios */}
-                      <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-white/5">
+                      {/* Seção de Benefícios */}
+                      <div className="mb-2 pb-1.5 border-b border-white/5">
                         <p className="text-[9px] text-zinc-400 font-black tracking-widest uppercase">
-                          BENEF�CIOS ({coberturas.length})
+                          BENEFÍCIOS ({coberturas.length})
                         </p>
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(planPrice.id, planPrice.plans?.coberturas || [])}
-                          className="text-[10px] font-bold text-sky-400 hover:text-sky-300 transition-colors"
-                        >
-                          Ver / Editar
-                        </button>
                       </div>
 
-                      {/* Lista de Benef�cios */}
+                      {/* Lista de Benefícios */}
                       <ul className="space-y-1.5 text-zinc-300 relative z-10 text-[11px] font-medium flex-1">
                         {coberturas.map((c, i) => (
                           <li key={i} className="flex items-start">
@@ -1181,240 +1175,241 @@ const QuoteGenerator = () => {
                 })}
               </div>
 
-              {/* Modal / Bottom Sheet de Edi��o Dedicado */}
-              <AnimatePresence>
-                {activeEditPlanId && (() => {
-                  const targetPlan = availablePlans.find((p) => p.id === activeEditPlanId);
-                  if (!targetPlan) return null;
-                  const targetCoberturas = getCoberturas(targetPlan.id, targetPlan.plans?.coberturas || []);
+              {/* Modal / Bottom Sheet de Edição Dedicado com Portal */}
+              {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                  {activeEditPlanId && (() => {
+                    const targetPlan = availablePlans.find((p) => p.id === activeEditPlanId);
+                    if (!targetPlan) return null;
+                    const targetCoberturas = getCoberturas(targetPlan.id, targetPlan.plans?.coberturas || []);
+                    const planName = targetPlan.plans?.nome || 'Plano';
 
-                  return (
-                    <motion.div
-                      key="edit-modal-backdrop"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      onClick={() => setActiveEditPlanId(null)}
-                      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
-                    >
+                    return (
                       <motion.div
-                        key="edit-modal-dialog"
-                        initial={{ y: 60, opacity: 0, scale: 0.96 }}
-                        animate={{ y: 0, opacity: 1, scale: 1 }}
-                        exit={{ y: 60, opacity: 0, scale: 0.96 }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="relative w-full max-w-lg bg-[#0E1629] border border-white/15 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[88vh] overflow-hidden"
+                        key="edit-modal-backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        onClick={() => setActiveEditPlanId(null)}
+                        className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
                       >
-                        {/* Cabe�alho Fixo */}
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0 bg-[#0E1629]">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                              <Pencil size={15} />
-                            </div>
-                            <div>
-                              <h3 className="text-base sm:text-lg font-black uppercase text-white tracking-wider">
-                                Editando Plano {targetPlan.plans?.nome}
-                              </h3>
-                              <p className="text-[11px] text-zinc-400">
-                                Ajuste valores, franquia e benef�cios deste plano
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setActiveEditPlanId(null)}
-                            className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
-                          >
-                            <X size={20} />
-                          </button>
-                        </div>
-
-                        {/* Campos de Valores (Se��o Superior Fixa) */}
-                        <div className="px-5 py-3.5 bg-black/40 border-b border-white/10 shrink-0">
-                          <div className="grid grid-cols-2 gap-3">
-                            {/* Mensalidade */}
-                            <div>
-                              <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-1">
-                                Mensalidade (R$)
-                              </label>
-                              <div className="flex items-center gap-1.5 bg-black/60 border border-white/15 focus-within:border-blue-400 rounded-xl px-3 py-2 transition-colors">
-                                <span className="text-xs text-zinc-400 font-bold">R$</span>
-                                <input
-                                  type="text"
-                                  value={editedMensalidade[targetPlan.id] ?? String(targetPlan.mensalidade)}
-                                  onChange={(e) =>
-                                    setEditedMensalidade((prev) => ({ ...prev, [targetPlan.id]: e.target.value }))
-                                  }
-                                  className="w-full bg-transparent text-white font-bold text-sm outline-none"
-                                  placeholder="0,00"
-                                />
-                                <span className="text-[10px] text-zinc-500">/m�s</span>
+                        <motion.div
+                          key="edit-modal-dialog"
+                          initial={{ y: 60, opacity: 0, scale: 0.96 }}
+                          animate={{ y: 0, opacity: 1, scale: 1 }}
+                          exit={{ y: 60, opacity: 0, scale: 0.96 }}
+                          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="relative w-full max-w-lg bg-[#0E1629] border border-white/15 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
+                        >
+                          {/* Cabeçalho Fixo */}
+                          <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0 bg-[#0E1629]">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                                <Pencil size={15} />
+                              </div>
+                              <div>
+                                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                  Editando {planName}
+                                </h3>
+                                <p className="text-[11px] text-zinc-400">
+                                  Ajuste valores, franquia e benefícios deste plano
+                                </p>
                               </div>
                             </div>
-
-                            {/* Ades�o */}
-                            <div>
-                              <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-1">
-                                Taxa de Ades�o (R$)
-                              </label>
-                              <div className="flex items-center gap-1.5 bg-black/60 border border-white/15 focus-within:border-blue-400 rounded-xl px-3 py-2 transition-colors">
-                                <span className="text-xs text-zinc-400 font-bold">R$</span>
-                                <input
-                                  type="text"
-                                  value={editedAdesao[targetPlan.id] ?? String(targetPlan.mensalidade)}
-                                  onChange={(e) =>
-                                    setEditedAdesao((prev) => ({ ...prev, [targetPlan.id]: e.target.value }))
-                                  }
-                                  className="w-full bg-transparent text-white font-bold text-sm outline-none"
-                                  placeholder="0,00"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Franquia */}
-                            <div>
-                              <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-1">
-                                Franquia / Cota (%)
-                              </label>
-                              <div className="flex items-center gap-1.5 bg-black/60 border border-white/15 focus-within:border-blue-400 rounded-xl px-3 py-2 transition-colors">
-                                <input
-                                  type="text"
-                                  value={editedFranquia[targetPlan.id] ?? String(targetPlan.franquia_percentual)}
-                                  onChange={(e) =>
-                                    setEditedFranquia((prev) => ({ ...prev, [targetPlan.id]: e.target.value }))
-                                  }
-                                  className="w-full bg-transparent text-white font-bold text-sm outline-none"
-                                  placeholder="10"
-                                />
-                                <span className="text-xs text-zinc-400 font-bold">%</span>
-                              </div>
-                            </div>
-
-                            {/* Cobertura M�xima */}
-                            <div>
-                              <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-1">
-                                Cobertura M�xima (R$)
-                              </label>
-                              <div className="flex items-center gap-1.5 bg-black/60 border border-white/15 focus-within:border-blue-400 rounded-xl px-3 py-2 transition-colors">
-                                <span className="text-xs text-zinc-400 font-bold">R$</span>
-                                <input
-                                  type="text"
-                                  value={editedCobertura[targetPlan.id] ?? String(targetPlan.cobertura_maxima)}
-                                  onChange={(e) =>
-                                    setEditedCobertura((prev) => ({ ...prev, [targetPlan.id]: e.target.value }))
-                                  }
-                                  className="w-full bg-transparent text-white font-bold text-sm outline-none font-mono"
-                                  placeholder="80000"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Lista de Benef�cios (Scroll Interno Isolado � N�O VAZA) */}
-                        <div className="px-5 py-3.5 flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col gap-2">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[11px] font-black uppercase tracking-wider text-zinc-300">
-                              Benef�cios & Coberturas ({targetCoberturas.length})
-                            </span>
-                            <span className="text-[10px] text-zinc-500">Altere o texto ou remova itens</span>
+                            <button
+                              type="button"
+                              onClick={() => setActiveEditPlanId(null)}
+                              className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+                              title="Fechar"
+                            >
+                              <X size={16} />
+                            </button>
                           </div>
 
-                          <div className="space-y-2">
-                            {targetCoberturas.map((c, i) => (
-                              <div
-                                key={i}
-                                className="flex items-center gap-2 bg-white/[0.04] border border-white/10 hover:border-white/20 rounded-xl p-2 sm:p-2.5 transition-colors"
-                              >
-                                <div className="flex-1 flex flex-col sm:flex-row gap-1.5 min-w-0">
+                          {/* Campos de Valores (Seção Superior Fixa) */}
+                          <div className="p-4 sm:p-5 border-b border-white/10 bg-black/30 shrink-0 space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              {/* Mensalidade */}
+                              <div>
+                                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                                  Mensalidade (R$)
+                                </label>
+                                <div className="relative">
                                   <input
-                                    type="text"
-                                    value={c.label}
-                                    onChange={(e) => updateBenefit(targetPlan.id, i, 'label', e.target.value)}
-                                    placeholder="Nome do Benef�cio"
-                                    className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-blue-400"
+                                    type="number"
+                                    step="0.01"
+                                    value={planEdits[targetPlan.id]?.mensalidade ?? targetPlan.valor_mensal}
+                                    onChange={(e) => updatePlanField(targetPlan.id, 'mensalidade', parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-blue-500 transition-colors pr-10"
                                   />
-                                  <input
-                                    type="text"
-                                    value={c.param || ''}
-                                    onChange={(e) => updateBenefit(targetPlan.id, i, 'param', e.target.value)}
-                                    placeholder="Detalhe / Limite (ex: 400km)"
-                                    className="sm:w-36 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-blue-400"
-                                  />
+                                  <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500">/mês</span>
                                 </div>
+                              </div>
+
+                              {/* Adesão */}
+                              <div>
+                                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                                  Taxa de Adesão (R$)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={planEdits[targetPlan.id]?.adesao ?? (targetPlan.plans?.taxa_adesao || 0)}
+                                  onChange={(e) => updatePlanField(targetPlan.id, 'adesao', parseFloat(e.target.value) || 0)}
+                                  className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-blue-500 transition-colors"
+                                />
+                              </div>
+
+                              {/* Franquia */}
+                              <div>
+                                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                                  Franquia (%)
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    value={planEdits[targetPlan.id]?.franquia_percentual ?? (targetPlan.plans?.franquia_percentual || 0)}
+                                    onChange={(e) => updatePlanField(targetPlan.id, 'franquia_percentual', parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-blue-500 transition-colors pr-7"
+                                  />
+                                  <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500">%</span>
+                                </div>
+                              </div>
+
+                              {/* Cobertura Máxima */}
+                              <div>
+                                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                                  Cobertura Máxima (R$)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="500"
+                                  value={planEdits[targetPlan.id]?.cobertura_maxima ?? (targetPlan.plans?.cobertura_maxima || 0)}
+                                  onChange={(e) => updatePlanField(targetPlan.id, 'cobertura_maxima', parseFloat(e.target.value) || 0)}
+                                  className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-blue-500 transition-colors"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Lista de Benefícios (Scroll Interno Isolado - NÃO VAZA) */}
+                          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 min-h-[160px]">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                                Benefícios & Coberturas ({targetCoberturas.length})
+                              </span>
+                              <span className="text-[10px] text-zinc-500">
+                                Edite os detalhes ou exclua
+                              </span>
+                            </div>
+
+                            {/* Lista dos benefícios */}
+                            <div className="space-y-2">
+                              {targetCoberturas.map((cob, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-2 bg-zinc-900/80 border border-white/5 p-2 rounded-xl text-xs"
+                                >
+                                  <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 ml-1" />
+                                  <span className="font-semibold text-white shrink-0 min-w-[100px]">
+                                    {cob.label}
+                                  </span>
+                                  <input
+                                    type="text"
+                                    placeholder="Detalhes (ex: 500km, R$ 50k, 100% FIPE)"
+                                    value={cob.param || ''}
+                                    onChange={(e) => updateCustomCoverageParam(targetPlan.id, idx, e.target.value, targetPlan.plans?.coberturas || [])}
+                                    className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCoverage(targetPlan.id, idx, targetPlan.plans?.coberturas || [])}
+                                    className="p-1 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                                    title="Remover cobertura"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Formulário Inline: Adicionar Nova Cobertura */}
+                            <div className="pt-2 border-t border-white/5">
+                              <p className="text-[11px] font-bold text-zinc-400 mb-2 flex items-center gap-1.5">
+                                <Plus size={13} className="text-blue-400" />
+                                Adicionar nova cobertura
+                              </p>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Nome do Benefício"
+                                  value={newCoverageLabel}
+                                  onChange={(e) => setNewCoverageLabel(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      addNewCoverage(targetPlan.id, targetPlan.plans?.coberturas || []);
+                                    }
+                                  }}
+                                  className="flex-1 bg-zinc-900 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Detalhe (opcional)"
+                                  value={newCoverageParam}
+                                  onChange={(e) => setNewCoverageParam(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      addNewCoverage(targetPlan.id, targetPlan.plans?.coberturas || []);
+                                    }
+                                  }}
+                                  className="w-1/3 bg-zinc-900 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                                />
                                 <button
                                   type="button"
-                                  onClick={() => removeBenefit(targetPlan.id, i)}
-                                  className="p-1.5 text-red-400/70 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors shrink-0"
-                                  title="Remover cobertura"
+                                  onClick={() => addNewCoverage(targetPlan.id, targetPlan.plans?.coberturas || [])}
+                                  className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors shrink-0 flex items-center gap-1"
                                 >
-                                  <X size={15} />
+                                  <Plus size={13} />
+                                  <span>Inserir</span>
                                 </button>
                               </div>
-                            ))}
-                          </div>
-
-                          {/* Adicionar Nova Cobertura */}
-                          <div className="bg-white/[0.02] border border-dashed border-white/15 rounded-xl p-2.5 mt-2 shrink-0">
-                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
-                              + Adicionar Nova Cobertura
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <input
-                                type="text"
-                                value={newBenefit.label}
-                                onChange={(e) => setNewBenefit((prev) => ({ ...prev, label: e.target.value }))}
-                                onKeyDown={(e) => e.key === 'Enter' && addBenefit(targetPlan.id)}
-                                placeholder="Ex: Carro Reserva 7 dias"
-                                className="flex-1 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-emerald-400"
-                              />
-                              <input
-                                type="text"
-                                value={newBenefit.param}
-                                onChange={(e) => setNewBenefit((prev) => ({ ...prev, param: e.target.value }))}
-                                onKeyDown={(e) => e.key === 'Enter' && addBenefit(targetPlan.id)}
-                                placeholder="Detalhe opcional"
-                                className="sm:w-36 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-emerald-400"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => addBenefit(targetPlan.id)}
-                                className="flex items-center justify-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0"
-                              >
-                                <Plus size={14} />
-                                <span>Adicionar</span>
-                              </button>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Rodap� Fixo */}
-                        <div className="px-5 py-3.5 bg-[#0E1629] border-t border-white/10 shrink-0 flex items-center justify-between">
-                          <button
-                            type="button"
-                            onClick={() => restoreBenefits(targetPlan.id, targetPlan.plans?.coberturas || [])}
-                            className="text-xs text-zinc-400 hover:text-white flex items-center gap-1.5 transition-colors font-semibold"
-                          >
-                            <RotateCcw size={13} />
-                            <span>Restaurar originais</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setActiveEditPlanId(null)}
-                            className="bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase text-xs tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-lg flex items-center gap-1.5"
-                          >
-                            <CheckCircle2 size={14} />
-                            <span>Salvar altera��es</span>
-                          </button>
-                        </div>
+                          {/* Rodapé Fixo */}
+                          <div className="px-5 py-3.5 border-t border-white/10 bg-[#0E1629] shrink-0 flex items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => resetPlanEdits(targetPlan.id)}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
+                            >
+                              <RotateCcw size={12} />
+                              <span>Restaurar originais</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setActiveEditPlanId(null)}
+                              className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-1.5"
+                            >
+                              <CheckCircle2 size={13} />
+                              <span>Salvar alterações</span>
+                            </button>
+                          </div>
+                        </motion.div>
                       </motion.div>
-                    </motion.div>
-                  );
-                })()}
-              </AnimatePresence>
+                    );
+                  })()}
+                </AnimatePresence>,
+                document.body
+              )}
 
-              {/* Bot�o de A��o: Sticky na base sem for�ar corte nos cards */}
+              {/* Botão de Ação: Sticky na base sem forçar corte nos cards */}
               <div className="sticky bottom-0 z-20 pt-3 pb-2 bg-[var(--color-surface)]/95 backdrop-blur-xl border-t border-white/10 mt-auto">
                 <button
                   type="button"
@@ -1438,7 +1433,7 @@ const QuoteGenerator = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="p-3 sm:p-5 md:p-6 flex-1 flex flex-col h-full min-h-0 overflow-y-auto styled-scrollbar"
             >
-              {/* Top Bar: Status e Bot�o Nova Cota��o */}
+              {/* Top Bar: Status e Botão Nova Cotação */}
               <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/10 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
@@ -1459,7 +1454,7 @@ const QuoteGenerator = () => {
                   className="text-zinc-400 hover:text-white text-xs font-bold bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-colors uppercase tracking-wider flex items-center gap-1.5 shrink-0"
                 >
                   <RotateCcw size={13} />
-                  <span className="hidden sm:inline">Nova Cota��o</span>
+                  <span className="hidden sm:inline">Nova Cotação</span>
                 </button>
               </div>
 
@@ -1696,9 +1691,9 @@ const QuoteGenerator = () => {
               </div>
 
 
-              {/* Grid Responsivo de Exibi��o do Resultado: 2 Colunas no Desktop, 1 Coluna Priorizada no Mobile */}
+              {/* Grid Responsivo de Exibição do Resultado: 2 Colunas no Desktop, 1 Coluna Priorizada no Mobile */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:gap-5 flex-1 min-h-0 items-start">
-                {/* COLUNA ESQUERDA: Resumo da Proposta + A��es Imediatas (WhatsApp, Compartilhar, PDF) */}
+                {/* COLUNA ESQUERDA: Resumo da Proposta + Ações Imediatas (WhatsApp, Compartilhar, PDF) */}
                 <div className="lg:col-span-5 flex flex-col gap-3 shrink-0">
                   {/* Card de Resumo da Proposta */}
                   <div className="bg-black/40 border border-white/10 rounded-xl sm:rounded-2xl p-4 sm:p-5 text-left relative overflow-hidden shadow-lg">
@@ -1706,7 +1701,7 @@ const QuoteGenerator = () => {
                       <div className="flex items-center space-x-2">
                         <div className="h-3.5 w-1 bg-blue-500 rounded-full" />
                         <span className="text-white font-black tracking-widest text-xs uppercase">
-                          Resumo da Cota��o
+                          Resumo da Cotação
                         </span>
                       </div>
                       <span className="text-zinc-500 text-[11px] font-mono">
@@ -1716,14 +1711,14 @@ const QuoteGenerator = () => {
 
                     <div className="mb-3">
                       <p className="text-[10px] text-blue-400/80 uppercase font-black tracking-widest">
-                        Ve�culo Selecionado
+                        Veículo Selecionado
                       </p>
                       <p className="text-white font-bold text-sm sm:text-base uppercase truncate">
                         {formData.modelo}
                       </p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span className="text-[11px] text-zinc-400 font-mono bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                          Placa: {formData.placa !== 'TESTE' ? formData.placa : '�'}
+                          Placa: {formData.placa !== 'TESTE' ? formData.placa : '—'}
                         </span>
                         <span className="text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                           FIPE: {formatCurrency(formData.fipe)}
@@ -1732,7 +1727,7 @@ const QuoteGenerator = () => {
                     </div>
 
                     <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-2">
-                      Op��es de Planos
+                      Opções de Planos
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
                       {availablePlans.map((planPrice) => {
@@ -1758,7 +1753,7 @@ const QuoteGenerator = () => {
                             </p>
                             <p className="text-base sm:text-lg text-white font-black">
                               {formatCurrency(mensalidade)}
-                              <span className="text-[10px] font-normal text-zinc-500">/m�s</span>
+                              <span className="text-[10px] font-normal text-zinc-500">/mês</span>
                             </p>
                             <div className="flex justify-between items-center text-[10px] text-zinc-400 mt-1 pt-1 border-t border-white/5">
                               <span>Franquia: <strong className="text-zinc-200">{franquia}%</strong></span>
@@ -1770,7 +1765,7 @@ const QuoteGenerator = () => {
                     </div>
                   </div>
 
-                  {/* CTAs de Compartilhamento Imediato (SEMPRE VIS�VEIS NO TOPO) */}
+                  {/* CTAs de Compartilhamento Imediato (SEMPRE VISÍVEIS NO TOPO) */}
                   <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                     <button
                       type="button"
@@ -1824,7 +1819,7 @@ const QuoteGenerator = () => {
                   </div>
                 </div>
 
-                {/* COLUNA DIREITA: Intelig�ncia Veicular (IA) & Detalhes */}
+                {/* COLUNA DIREITA: Inteligência Veicular (IA) & Detalhes */}
                 <div className="lg:col-span-7 flex flex-col gap-3 min-h-0 w-full">
                   <VehicleIntelligenceSection
                     status={intelligence.status}
