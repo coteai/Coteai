@@ -55,12 +55,11 @@ const QuoteGenerator = () => {
 
   // ── Benefit Editing States ──
   const [editedCoberturas, setEditedCoberturas] = useState<Record<string, { label: string; param?: string }[]>>({});
-  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+  const [activeEditPlanId, setActiveEditPlanId] = useState<string | null>(null);
   const [editedAdesao, setEditedAdesao] = useState<Record<string, string>>({});
   const [editedMensalidade, setEditedMensalidade] = useState<Record<string, string>>({});
   const [editedFranquia, setEditedFranquia] = useState<Record<string, string>>({});
   const [editedCobertura, setEditedCobertura] = useState<Record<string, string>>({});
-  const [editingModalPlanId, setEditingModalPlanId] = useState<string | null>(null);
   const [newBenefit, setNewBenefit] = useState<{ label: string; param: string }>({ label: '', param: '' });
 
 
@@ -86,7 +85,7 @@ const QuoteGenerator = () => {
     setSavedQuoteId(null);
     setError('');
     setEditedCoberturas({});
-    setEditingPlanId(null);
+    setActiveEditPlanId(null);
     setNewBenefit({ label: '', param: '' });
     setEditedAdesao({});
     setEditedMensalidade({});
@@ -145,13 +144,15 @@ const QuoteGenerator = () => {
       }
     }));
 
-  const openEditMode = (planId: string, original: any[]) => {
-    setEditedCoberturas(prev => ({ ...prev, [planId]: JSON.parse(JSON.stringify(original ?? [])) }));
-    setEditingPlanId(planId);
+  const openEditModal = (planId: string, original: any[]) => {
+    if (!editedCoberturas[planId]) {
+      setEditedCoberturas(prev => ({ ...prev, [planId]: JSON.parse(JSON.stringify(original ?? [])) }));
+    }
+    setActiveEditPlanId(planId);
     setNewBenefit({ label: '', param: '' });
   };
 
-  const closeEditMode = () => setEditingPlanId(null);
+  const closeEditMode = () => setActiveEditPlanId(null);
 
   const restoreBenefits = (planId: string, original: any[]) => {
     setEditedCoberturas(prev => { const next = { ...prev }; delete next[planId]; return next; });
@@ -1053,16 +1054,20 @@ const QuoteGenerator = () => {
                 </button>
               </div>
 
-              {/* Grid Responsivo de Planos � Altura Livre (h-auto), Sem Corte Inferior */}
+              {/* Grid de Cards de Planos � Layout Est�vel e Sem Corte */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 w-full items-start pb-6">
                 {availablePlans.map((planPrice) => {
                   const isVip = planPrice.plans?.nome?.toLowerCase().includes('vip');
-                  const isEditing = editingPlanId === planPrice.id;
                   const mensalidadeVal = getMensalidade(planPrice.id, planPrice.mensalidade);
                   const adesaoVal = getAdesao(planPrice.id, planPrice.mensalidade);
                   const franquiaVal = getFranquia(planPrice.id, planPrice.franquia_percentual);
                   const coberturaVal = getCoberturaMaxima(planPrice.id, planPrice.cobertura_maxima);
                   const coberturas = getCoberturas(planPrice.id, planPrice.plans?.coberturas || []);
+                  const hasEdits = editedMensalidade[planPrice.id] !== undefined || 
+                                   editedAdesao[planPrice.id] !== undefined || 
+                                   editedFranquia[planPrice.id] !== undefined || 
+                                   editedCobertura[planPrice.id] !== undefined || 
+                                   editedCoberturas[planPrice.id] !== undefined;
 
                   return (
                     <div
@@ -1092,157 +1097,70 @@ const QuoteGenerator = () => {
                               Recomendado
                             </span>
                           )}
+                          {hasEdits && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                              Editado
+                            </span>
+                          )}
                         </div>
 
-                        {/* Bot�o de Edi��o no Topo */}
+                        {/* Bot�o de Edi��o que abre o Modal / Painel Dedicado */}
                         <button
                           type="button"
-                          onClick={() => {
-                            if (isEditing) {
-                              closeEditMode();
-                            } else {
-                              openEditMode(planPrice.id, planPrice.plans?.coberturas || []);
-                            }
-                          }}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                            isEditing
-                              ? 'bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.4)]'
-                              : 'bg-white/5 hover:bg-white/15 text-zinc-300 hover:text-white border border-white/10'
-                          }`}
-                          title={isEditing ? 'Concluir edi��o' : 'Editar valores deste plano'}
+                          onClick={() => openEditModal(planPrice.id, planPrice.plans?.coberturas || [])}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 bg-white/5 hover:bg-white/15 text-zinc-300 hover:text-white border border-white/10 group"
+                          title="Editar valores e coberturas deste plano"
                         >
-                          {isEditing ? (
-                            <>
-                              <CheckCircle2 size={13} className="text-black" />
-                              <span>Concluir</span>
-                            </>
-                          ) : (
-                            <>
-                              <Pencil size={12} className="text-zinc-400 group-hover:text-white" />
-                              <span>Editar</span>
-                            </>
-                          )}
+                          <Pencil size={12} className="text-zinc-400 group-hover:text-white transition-colors" />
+                          <span>Editar</span>
                         </button>
                       </div>
 
-                      {/* Valor Mensal (Inline Edit�vel) */}
-                      <div className="mb-3 relative z-10 text-center">
-                        {isEditing ? (
-                          <div className="flex flex-col items-center bg-blue-500/10 border border-blue-500/30 rounded-xl p-2.5">
-                            <span className="text-[10px] font-bold text-blue-300 uppercase tracking-wider mb-1">
-                              Mensalidade
-                            </span>
-                            <div className="flex items-baseline justify-center gap-1">
-                              <span className="text-zinc-400 text-sm font-bold">R$</span>
-                              <input
-                                type="text"
-                                value={editedMensalidade[planPrice.id] ?? String(planPrice.mensalidade)}
-                                onChange={(e) =>
-                                  setEditedMensalidade((prev) => ({ ...prev, [planPrice.id]: e.target.value }))
-                                }
-                                className="w-28 bg-black/70 border border-white/20 rounded-lg px-2 py-1 text-white text-2xl font-black text-center outline-none focus:border-blue-400 transition-colors"
-                                placeholder="0"
-                              />
-                              <span className="text-xs text-zinc-400 font-medium">/m�s</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="py-1">
-                            <span className="text-3xl sm:text-4xl font-black text-white">
-                              {formatCurrency(mensalidadeVal)}
-                              <span className="text-xs text-zinc-500 font-medium">/m�s</span>
-                            </span>
-                          </div>
-                        )}
+                      {/* Valor Mensal */}
+                      <div className="mb-3 relative z-10 text-center py-1">
+                        <span className="text-3xl sm:text-4xl font-black text-white">
+                          {formatCurrency(mensalidadeVal)}
+                          <span className="text-xs text-zinc-500 font-medium">/m�s</span>
+                        </span>
 
-                        {/* Franquia & Cobertura (Inline Edit�vel) */}
-                        <div className="grid grid-cols-2 gap-2 mt-2.5 bg-black/60 p-2.5 rounded-xl border border-white/5 text-left">
+                        {/* Franquia & Cobertura */}
+                        <div className="grid grid-cols-2 gap-2 mt-3 bg-black/60 p-2.5 rounded-xl border border-white/5 text-left">
                           <div>
-                            <span className="text-[10px] text-zinc-400 font-bold block uppercase mb-0.5">Franquia (%)</span>
-                            {isEditing ? (
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="text"
-                                  value={editedFranquia[planPrice.id] ?? String(planPrice.franquia_percentual)}
-                                  onChange={(e) =>
-                                    setEditedFranquia((prev) => ({ ...prev, [planPrice.id]: e.target.value }))
-                                  }
-                                  className="w-14 bg-black/80 border border-white/20 rounded px-1.5 py-0.5 text-white text-xs font-bold text-center outline-none focus:border-blue-400"
-                                  placeholder="10"
-                                />
-                                <span className="text-xs text-zinc-400 font-bold">%</span>
-                              </div>
-                            ) : (
-                              <span className="font-bold text-xs sm:text-sm text-white">{franquiaVal}%</span>
-                            )}
+                            <span className="text-[10px] text-zinc-400 font-bold block uppercase mb-0.5">Franquia</span>
+                            <span className="font-bold text-xs sm:text-sm text-white">{franquiaVal}%</span>
                           </div>
-
                           <div className="text-right">
                             <span className="text-[10px] text-zinc-400 font-bold block uppercase mb-0.5">Cobertura M�x.</span>
-                            {isEditing ? (
-                              <div className="flex items-center justify-end gap-1">
-                                <span className="text-zinc-500 text-[10px]">R$</span>
-                                <input
-                                  type="text"
-                                  value={editedCobertura[planPrice.id] ?? String(planPrice.cobertura_maxima)}
-                                  onChange={(e) =>
-                                    setEditedCobertura((prev) => ({ ...prev, [planPrice.id]: e.target.value }))
-                                  }
-                                  className="w-20 bg-black/80 border border-white/20 rounded px-1.5 py-0.5 text-white text-xs font-bold text-right outline-none focus:border-blue-400 font-mono"
-                                  placeholder="80000"
-                                />
-                              </div>
-                            ) : (
-                              <span className="font-bold text-xs sm:text-sm text-white">
-                                {formatCurrency(coberturaVal)}
-                              </span>
-                            )}
+                            <span className="font-bold text-xs sm:text-sm text-white">
+                              {formatCurrency(coberturaVal)}
+                            </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Ades�o (Inline Edit�vel) */}
+                      {/* Ades�o */}
                       <div className="mb-3 bg-black/40 border border-white/5 rounded-xl p-2.5">
                         <div className="flex justify-between items-center text-xs">
                           <span className="text-[10px] text-zinc-400 font-bold uppercase">Taxa de Ades�o</span>
-                          {isEditing ? (
-                            <div className="flex items-center gap-1">
-                              <span className="text-zinc-500 text-xs">R$</span>
-                              <input
-                                type="text"
-                                value={editedAdesao[planPrice.id] ?? String(planPrice.mensalidade)}
-                                onChange={(e) =>
-                                  setEditedAdesao((prev) => ({ ...prev, [planPrice.id]: e.target.value }))
-                                }
-                                className="w-20 bg-black/60 border border-white/20 rounded px-1.5 py-0.5 text-white text-xs font-bold text-right outline-none focus:border-blue-400"
-                                placeholder="0"
-                              />
-                            </div>
-                          ) : (
-                            <span className="font-bold text-white text-xs">{formatCurrency(adesaoVal)}</span>
-                          )}
+                          <span className="font-bold text-white text-xs">{formatCurrency(adesaoVal)}</span>
                         </div>
                       </div>
 
-                      {/* Se��o de Benef�cios com Bot�o de Gerenciamento da Lista */}
+                      {/* Se��o de Benef�cios */}
                       <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-white/5">
                         <p className="text-[9px] text-zinc-400 font-black tracking-widest uppercase">
                           BENEF�CIOS ({coberturas.length})
                         </p>
                         <button
                           type="button"
-                          onClick={() => {
-                            openEditMode(planPrice.id, planPrice.plans?.coberturas || []);
-                            setEditingModalPlanId(planPrice.id);
-                          }}
-                          className="flex items-center gap-1 text-[10px] font-bold text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-2 py-0.5 rounded-md border border-sky-500/20 transition-colors"
+                          onClick={() => openEditModal(planPrice.id, planPrice.plans?.coberturas || [])}
+                          className="text-[10px] font-bold text-sky-400 hover:text-sky-300 transition-colors"
                         >
-                          <Sliders size={10} />
-                          <span>Editar Lista</span>
+                          Ver / Editar
                         </button>
                       </div>
 
-                      {/* Lista de Benef�cios com altura natural (sem corte inferior) */}
+                      {/* Lista de Benef�cios */}
                       <ul className="space-y-1.5 text-zinc-300 relative z-10 text-[11px] font-medium flex-1">
                         {coberturas.map((c, i) => (
                           <li key={i} className="flex items-start">
@@ -1263,125 +1181,238 @@ const QuoteGenerator = () => {
                 })}
               </div>
 
-              {/* Modal de Edi��o Avan�ada de Benef�cios */}
-              {editingModalPlanId && (() => {
-                const modalPlan = availablePlans.find((p) => p.id === editingModalPlanId);
-                if (!modalPlan) return null;
-                const currentCoberturas = getCoberturas(modalPlan.id, modalPlan.plans?.coberturas || []);
+              {/* Modal / Bottom Sheet de Edi��o Dedicado */}
+              <AnimatePresence>
+                {activeEditPlanId && (() => {
+                  const targetPlan = availablePlans.find((p) => p.id === activeEditPlanId);
+                  if (!targetPlan) return null;
+                  const targetCoberturas = getCoberturas(targetPlan.id, targetPlan.plans?.coberturas || []);
 
-                return (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="relative w-full max-w-lg bg-[#0E1629] border border-white/15 rounded-2xl shadow-2xl p-5 sm:p-6 flex flex-col max-h-[85vh]">
-                      {/* Modal Header */}
-                      <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
-                        <div>
-                          <h3 className="text-base sm:text-lg font-black uppercase text-white tracking-wider flex items-center gap-2">
-                            <Sliders size={16} className="text-sky-400" />
-                            Editar Benef�cios � {modalPlan.plans?.nome}
-                          </h3>
-                          <p className="text-xs text-zinc-400 mt-0.5">
-                            Personalize a lista de coberturas que aparecer� na proposta.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setEditingModalPlanId(null)}
-                          className="p-1 text-zinc-400 hover:text-white transition-colors"
-                        >
-                          <X size={20} />
-                        </button>
-                      </div>
-
-                      {/* Lista de Coberturas */}
-                      <div className="space-y-2 flex-1 overflow-y-auto pr-1 custom-scrollbar mb-4">
-                        {currentCoberturas.map((c, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center gap-2 bg-white/[0.04] border border-white/10 rounded-xl p-2 sm:p-2.5"
-                          >
-                            <div className="flex-1 flex flex-col sm:flex-row gap-1.5">
-                              <input
-                                type="text"
-                                value={c.label}
-                                onChange={(e) => updateBenefit(modalPlan.id, i, 'label', e.target.value)}
-                                placeholder="Nome da Cobertura"
-                                className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-sky-400"
-                              />
-                              <input
-                                type="text"
-                                value={c.param || ''}
-                                onChange={(e) => updateBenefit(modalPlan.id, i, 'param', e.target.value)}
-                                placeholder="Detalhe (ex: 400km)"
-                                className="sm:w-36 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-sky-400"
-                              />
+                  return (
+                    <motion.div
+                      key="edit-modal-backdrop"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setActiveEditPlanId(null)}
+                      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+                    >
+                      <motion.div
+                        key="edit-modal-dialog"
+                        initial={{ y: 60, opacity: 0, scale: 0.96 }}
+                        animate={{ y: 0, opacity: 1, scale: 1 }}
+                        exit={{ y: 60, opacity: 0, scale: 0.96 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="relative w-full max-w-lg bg-[#0E1629] border border-white/15 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[88vh] overflow-hidden"
+                      >
+                        {/* Cabe�alho Fixo */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0 bg-[#0E1629]">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                              <Pencil size={15} />
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => removeBenefit(modalPlan.id, i)}
-                              className="p-1 text-red-400/70 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors shrink-0"
-                              title="Remover cobertura"
-                            >
-                              <X size={16} />
-                            </button>
+                            <div>
+                              <h3 className="text-base sm:text-lg font-black uppercase text-white tracking-wider">
+                                Editando Plano {targetPlan.plans?.nome}
+                              </h3>
+                              <p className="text-[11px] text-zinc-400">
+                                Ajuste valores, franquia e benef�cios deste plano
+                              </p>
+                            </div>
                           </div>
-                        ))}
+                          <button
+                            type="button"
+                            onClick={() => setActiveEditPlanId(null)}
+                            className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                          >
+                            <X size={20} />
+                          </button>
+                        </div>
 
-                        {/* Adicionar Cobertura */}
-                        <div className="bg-white/[0.02] border border-dashed border-white/15 rounded-xl p-2.5 mt-2">
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
-                            + Adicionar Nova Cobertura
-                          </p>
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            <input
-                              type="text"
-                              value={newBenefit.label}
-                              onChange={(e) => setNewBenefit((prev) => ({ ...prev, label: e.target.value }))}
-                              onKeyDown={(e) => e.key === 'Enter' && addBenefit(modalPlan.id)}
-                              placeholder="Ex: Carro Reserva 7 dias"
-                              className="flex-1 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-emerald-400"
-                            />
-                            <input
-                              type="text"
-                              value={newBenefit.param}
-                              onChange={(e) => setNewBenefit((prev) => ({ ...prev, param: e.target.value }))}
-                              onKeyDown={(e) => e.key === 'Enter' && addBenefit(modalPlan.id)}
-                              placeholder="Detalhe opcional"
-                              className="sm:w-36 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-emerald-400"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => addBenefit(modalPlan.id)}
-                              className="flex items-center justify-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0"
-                            >
-                              <Plus size={14} />
-                              <span>Adicionar</span>
-                            </button>
+                        {/* Campos de Valores (Se��o Superior Fixa) */}
+                        <div className="px-5 py-3.5 bg-black/40 border-b border-white/10 shrink-0">
+                          <div className="grid grid-cols-2 gap-3">
+                            {/* Mensalidade */}
+                            <div>
+                              <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-1">
+                                Mensalidade (R$)
+                              </label>
+                              <div className="flex items-center gap-1.5 bg-black/60 border border-white/15 focus-within:border-blue-400 rounded-xl px-3 py-2 transition-colors">
+                                <span className="text-xs text-zinc-400 font-bold">R$</span>
+                                <input
+                                  type="text"
+                                  value={editedMensalidade[targetPlan.id] ?? String(targetPlan.mensalidade)}
+                                  onChange={(e) =>
+                                    setEditedMensalidade((prev) => ({ ...prev, [targetPlan.id]: e.target.value }))
+                                  }
+                                  className="w-full bg-transparent text-white font-bold text-sm outline-none"
+                                  placeholder="0,00"
+                                />
+                                <span className="text-[10px] text-zinc-500">/m�s</span>
+                              </div>
+                            </div>
+
+                            {/* Ades�o */}
+                            <div>
+                              <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-1">
+                                Taxa de Ades�o (R$)
+                              </label>
+                              <div className="flex items-center gap-1.5 bg-black/60 border border-white/15 focus-within:border-blue-400 rounded-xl px-3 py-2 transition-colors">
+                                <span className="text-xs text-zinc-400 font-bold">R$</span>
+                                <input
+                                  type="text"
+                                  value={editedAdesao[targetPlan.id] ?? String(targetPlan.mensalidade)}
+                                  onChange={(e) =>
+                                    setEditedAdesao((prev) => ({ ...prev, [targetPlan.id]: e.target.value }))
+                                  }
+                                  className="w-full bg-transparent text-white font-bold text-sm outline-none"
+                                  placeholder="0,00"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Franquia */}
+                            <div>
+                              <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-1">
+                                Franquia / Cota (%)
+                              </label>
+                              <div className="flex items-center gap-1.5 bg-black/60 border border-white/15 focus-within:border-blue-400 rounded-xl px-3 py-2 transition-colors">
+                                <input
+                                  type="text"
+                                  value={editedFranquia[targetPlan.id] ?? String(targetPlan.franquia_percentual)}
+                                  onChange={(e) =>
+                                    setEditedFranquia((prev) => ({ ...prev, [targetPlan.id]: e.target.value }))
+                                  }
+                                  className="w-full bg-transparent text-white font-bold text-sm outline-none"
+                                  placeholder="10"
+                                />
+                                <span className="text-xs text-zinc-400 font-bold">%</span>
+                              </div>
+                            </div>
+
+                            {/* Cobertura M�xima */}
+                            <div>
+                              <label className="block text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-1">
+                                Cobertura M�xima (R$)
+                              </label>
+                              <div className="flex items-center gap-1.5 bg-black/60 border border-white/15 focus-within:border-blue-400 rounded-xl px-3 py-2 transition-colors">
+                                <span className="text-xs text-zinc-400 font-bold">R$</span>
+                                <input
+                                  type="text"
+                                  value={editedCobertura[targetPlan.id] ?? String(targetPlan.cobertura_maxima)}
+                                  onChange={(e) =>
+                                    setEditedCobertura((prev) => ({ ...prev, [targetPlan.id]: e.target.value }))
+                                  }
+                                  className="w-full bg-transparent text-white font-bold text-sm outline-none font-mono"
+                                  placeholder="80000"
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Modal Footer */}
-                      <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                        <button
-                          type="button"
-                          onClick={() => restoreBenefits(modalPlan.id, modalPlan.plans?.coberturas || [])}
-                          className="text-xs text-zinc-400 hover:text-white flex items-center gap-1.5 transition-colors"
-                        >
-                          <RotateCcw size={12} />
-                          <span>Restaurar originais</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingModalPlanId(null)}
-                          className="bg-sky-500 hover:bg-sky-400 text-black font-black uppercase text-xs tracking-wider px-5 py-2 rounded-xl transition-all shadow-md"
-                        >
-                          Salvar Coberturas
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+                        {/* Lista de Benef�cios (Scroll Interno Isolado � N�O VAZA) */}
+                        <div className="px-5 py-3.5 flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col gap-2">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[11px] font-black uppercase tracking-wider text-zinc-300">
+                              Benef�cios & Coberturas ({targetCoberturas.length})
+                            </span>
+                            <span className="text-[10px] text-zinc-500">Altere o texto ou remova itens</span>
+                          </div>
+
+                          <div className="space-y-2">
+                            {targetCoberturas.map((c, i) => (
+                              <div
+                                key={i}
+                                className="flex items-center gap-2 bg-white/[0.04] border border-white/10 hover:border-white/20 rounded-xl p-2 sm:p-2.5 transition-colors"
+                              >
+                                <div className="flex-1 flex flex-col sm:flex-row gap-1.5 min-w-0">
+                                  <input
+                                    type="text"
+                                    value={c.label}
+                                    onChange={(e) => updateBenefit(targetPlan.id, i, 'label', e.target.value)}
+                                    placeholder="Nome do Benef�cio"
+                                    className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-blue-400"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={c.param || ''}
+                                    onChange={(e) => updateBenefit(targetPlan.id, i, 'param', e.target.value)}
+                                    placeholder="Detalhe / Limite (ex: 400km)"
+                                    className="sm:w-36 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-blue-400"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeBenefit(targetPlan.id, i)}
+                                  className="p-1.5 text-red-400/70 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors shrink-0"
+                                  title="Remover cobertura"
+                                >
+                                  <X size={15} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Adicionar Nova Cobertura */}
+                          <div className="bg-white/[0.02] border border-dashed border-white/15 rounded-xl p-2.5 mt-2 shrink-0">
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">
+                              + Adicionar Nova Cobertura
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <input
+                                type="text"
+                                value={newBenefit.label}
+                                onChange={(e) => setNewBenefit((prev) => ({ ...prev, label: e.target.value }))}
+                                onKeyDown={(e) => e.key === 'Enter' && addBenefit(targetPlan.id)}
+                                placeholder="Ex: Carro Reserva 7 dias"
+                                className="flex-1 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-emerald-400"
+                              />
+                              <input
+                                type="text"
+                                value={newBenefit.param}
+                                onChange={(e) => setNewBenefit((prev) => ({ ...prev, param: e.target.value }))}
+                                onKeyDown={(e) => e.key === 'Enter' && addBenefit(targetPlan.id)}
+                                placeholder="Detalhe opcional"
+                                className="sm:w-36 bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 outline-none focus:border-emerald-400"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => addBenefit(targetPlan.id)}
+                                className="flex items-center justify-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0"
+                              >
+                                <Plus size={14} />
+                                <span>Adicionar</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Rodap� Fixo */}
+                        <div className="px-5 py-3.5 bg-[#0E1629] border-t border-white/10 shrink-0 flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={() => restoreBenefits(targetPlan.id, targetPlan.plans?.coberturas || [])}
+                            className="text-xs text-zinc-400 hover:text-white flex items-center gap-1.5 transition-colors font-semibold"
+                          >
+                            <RotateCcw size={13} />
+                            <span>Restaurar originais</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveEditPlanId(null)}
+                            className="bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase text-xs tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-lg flex items-center gap-1.5"
+                          >
+                            <CheckCircle2 size={14} />
+                            <span>Salvar altera��es</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  );
+                })()}
+              </AnimatePresence>
 
               {/* Bot�o de A��o: Sticky na base sem for�ar corte nos cards */}
               <div className="sticky bottom-0 z-20 pt-3 pb-2 bg-[var(--color-surface)]/95 backdrop-blur-xl border-t border-white/10 mt-auto">
