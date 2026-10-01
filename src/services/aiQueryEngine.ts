@@ -89,27 +89,27 @@ async function callGpt4oMini(prompt: string, ctx: AiContext, contextData: Record
       return data.answer;
     }
   } catch (err) {
-    console.warn('[Cote AI] Edge function invoke error:', err);
+    // Edge function indisponível ou 404
   }
 
-  // 2. Tenta chamada direta se VITE_OPENAI_API_KEY estiver configurada no frontend
+  // 2. Tenta chave OpenAI no frontend se configurada no Vite env
   const clientKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
   if (clientKey) {
     try {
       const roleDesc = ctx.role === 'manager'
-        ? 'Você é o Cote AI Manager, gestor analítico e copiloto comercial da associação no Cote AI. Você tem visão de toda a operação.'
-        : 'Você é o Cote AI, assessor comercial exclusivo do consultor no Cote AI. Você só tem acesso aos dados pessoais do consultor.';
+        ? 'Você é o Cote AI Manager, analista comercial executivo e parceiro estratégico da associação no Cote AI. Você tem visão de toda a operação.'
+        : 'Você é o Cote AI, assessor comercial pessoal do consultor no Cote AI.';
 
       const systemPrompt = `${roleDesc}
 
 DIRETRIZES CRÍTICAS E OBRIGATÓRIAS:
-1. Baseie TODAS as suas respostas EXCLUSIVAMENTE nos DADOS REAIS DO SISTEMA fornecidos no JSON abaixo.
+1. Baseie TODAS as suas respostas EXCLUSIVAMENTE nos DADOS REAIS DO SISTEMA fornecidos no JSON.
 2. NUNCA invente números, clientes, valores, vendas, cotações, rankings ou porcentagens.
 3. Se o usuário perguntar sobre alguma métrica ou informação que NÃO conste no contexto real fornecido, responda educadamente: "Não tenho esse dado registrado no Cote AI."
 4. ${ctx.role === 'consultor' ? 'O usuário é um consultor. Ele só pode ver os próprios dados. NUNCA mencione outros consultores ou dados globais da associação.' : 'O usuário é um gestor da associação com permissão para ver todos os dados da associação.'}
-5. Seja executivo, claro, amigável e direto em português do Brasil.
-6. Use formatação Markdown limpa: destaque números e valores com **negrito**, use listas com marcadores simples quando listar itens, e mantenha parágrafos curtos.
-7. Quando perguntado sobre o dia de hoje ou resumo, apresente os números de cotações, conversões e pendências claramente.`;
+5. Responda em português do Brasil com linguagem fluida, amigável, natural e executiva.
+6. PROIBIÇÃO ABSOLUTA DE BULLETS OU LISTAS MECÂNICAS (ex: "• Novas: 0"). Converse normalmente em parágrafos bem escritos como uma pessoa real orientando o negócio.
+7. Destaque números importantes com **negrito** (ex: **4 cotações**, **R$ 2.500/mês**).`;
 
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -145,7 +145,7 @@ DIRETRIZES CRÍTICAS E OBRIGATÓRIAS:
 }
 
 /**
- * Motor determinístico factual - garante que nenhuma pergunta fique sem resposta precisa
+ * Motor determinístico factual com linguagem conversacional 100% natural (sem bullets mecânicos)
  */
 async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<AiResponse> {
   const p = prompt.toLowerCase().trim();
@@ -160,36 +160,211 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
   else if (p.includes('este mês') || p.includes('este mes') || p.includes('desse mês')) periodType = 'este_mes';
   else if (p.includes('sempre') || p.includes('total') || p.includes('histórico')) periodType = 'tudo';
 
-  // 1. RESUMO DIÁRIO / OPERAÇÃO DE HOJE
+  // 1. VOLUME DE COTAÇÕES (ex: "Quantas cotações fizemos hoje?", "Quantas cotações este mês?")
+  if (p.includes('quantas cotações') || p.includes('quantas cotacoes') || p.includes('total de cotações') || p.includes('volume de cotações')) {
+    const qMetrics = await get_quote_metrics(ctx, periodType);
+    if (qMetrics.total === 0) {
+      return {
+        answer: `Até o momento, não registramos nenhuma nova cotação ${qMetrics.periodo}. Vale a pena verificar se há oportunidades no CRM para dar andamento.`,
+        sourceFunction: 'get_quote_metrics',
+        data: qMetrics,
+      };
+    }
+
+    let answer = `Nós registramos um total de **${qMetrics.total} ${qMetrics.total === 1 ? 'cotação' : 'cotações'}** ${qMetrics.periodo}. `;
+    const parts: string[] = [];
+    if (qMetrics.novas > 0) parts.push(`**${qMetrics.novas}** ${qMetrics.novas === 1 ? 'está como nova' : 'estão como novas'}`);
+    if (qMetrics.negociacao > 0) parts.push(`**${qMetrics.negociacao}** em negociação ativa`);
+    if (qMetrics.proposta_enviada > 0) parts.push(`**${qMetrics.proposta_enviada}** com proposta enviada ao cliente`);
+    if (qMetrics.convertida > 0) parts.push(`**${qMetrics.convertida}** convertida${qMetrics.convertida === 1 ? '' : 's'} em venda`);
+    if (qMetrics.nao_convertida > 0) parts.push(`**${qMetrics.nao_convertida}** não convertida${qMetrics.nao_convertida === 1 ? '' : 's'}`);
+
+    if (parts.length > 0) {
+      answer += `Dessas, ${parts.join(', ')}.`;
+    }
+    if (qMetrics.convertida > 0) {
+      const convRate = ((qMetrics.convertida / qMetrics.total) * 100).toFixed(1);
+      answer += ` Isso representa uma taxa de conversão de **${convRate}%** no período.`;
+    }
+    return { answer, sourceFunction: 'get_quote_metrics', data: qMetrics };
+  }
+
+  // 2. RESUMO DIÁRIO / OPERAÇÃO DE HOJE
   if (p.includes('resumo') || p.includes('operação de hoje') || p.includes('operacao de hoje') || p.includes('como foi hoje') || p.includes('fechamento')) {
     const summary = await get_daily_summary(ctx, periodType === 'ontem' ? 'ontem' : 'hoje');
 
     if (summary.total === 0) {
       return {
-        answer: `**Resumo da operação de ${summary.dataReferencia}:**\n\nNenhuma cotação foi registrada ${summary.dataReferencia} até o momento.\n\n*Recomendação:* Fique atento às oportunidades no CRM para iniciar novas negociações.`,
+        answer: `Até agora não tivemos novas cotações geradas ${summary.dataReferencia}. Caso precise, posso listar as cotações pendentes de dias anteriores para você retomar o contato com os clientes.`,
         sourceFunction: 'get_daily_summary',
         data: summary,
       };
     }
 
-    let text = `📊 **Resumo da operação de ${summary.dataReferencia}:**\n\n`;
-    text += `• **${summary.total}** cotações geradas\n`;
-    text += `• **${summary.proposta_enviada}** propostas enviadas\n`;
-    text += `• **${summary.negociacao}** em negociação ativa\n`;
-    text += `• **${summary.convertida}** conversões (${formatCurrency(summary.faturamentoGerado)}/mês)\n`;
-    text += `• **${summary.nao_convertida}** não convertidas\n`;
-    text += `• **${summary.taxaConversao}%** de taxa de conversão\n\n`;
+    let text = `Na operação de **${summary.dataReferencia}**, foram geradas **${summary.total} ${summary.total === 1 ? 'cotação' : 'cotações'}**. `;
+    if (summary.convertida > 0) {
+      text += `Já tivemos **${summary.convertida} conversão** em venda, somando **${formatCurrency(summary.faturamentoGerado)}/mês** em novas mensalidades (conversão de **${summary.taxaConversao}%**). `;
+    } else {
+      text += `Ainda não tivemos conversões finalizadas ${summary.dataReferencia}. `;
+    }
+
+    const situacoes: string[] = [];
+    if (summary.novas > 0) situacoes.push(`**${summary.novas} nova(s)**`);
+    if (summary.negociacao > 0) situacoes.push(`**${summary.negociacao} em negociação ativa**`);
+    if (summary.proposta_enviada > 0) situacoes.push(`**${summary.proposta_enviada} com proposta enviada**`);
+
+    if (situacoes.length > 0) {
+      text += `No momento, o status delas é: ${situacoes.join(', ')}. `;
+    }
 
     if (summary.semAtualizacao48h > 0) {
-      text += `⚠️ **Atenção:** Existem **${summary.semAtualizacao48h} cotações** aguardando atualização há mais de 48 horas. Recomenda-se realizar o fechamento diário ou retomar contato imediato.`;
-    } else {
-      text += `✅ O fluxo de cotações de ${summary.dataReferencia} está com os registros comerciais atualizados.`;
+      text += `Um ponto importante de atenção: existem **${summary.semAtualizacao48h} cotações sem interação há mais de 48 horas** no CRM que precisam de acompanhamento.`;
     }
 
     return { answer: text, sourceFunction: 'get_daily_summary', data: summary };
   }
 
-  // 2. COMPARAÇÃO DE PERÍODOS
+  // 3. TAXA DE CONVERSÃO
+  if (p.includes('taxa de conversão') || p.includes('taxa de conversao') || p.includes('conversão') || p.includes('conversao')) {
+    const conv = await get_conversion_rate(ctx, periodType);
+    if (conv.total === 0) {
+      return {
+        answer: `Ainda não temos cotações registradas ${conv.periodo} para calcular a taxa de conversão.`,
+        sourceFunction: 'get_conversion_rate',
+      };
+    }
+    return {
+      answer: `Nossa taxa de conversão ${conv.periodo} está em **${conv.taxaConversao}%**. Do total de **${conv.total} cotações** analisadas no período, **${conv.convertidas} foram convertidas em vendas** e **${conv.naoConvertidas}** não foram fechadas.`,
+      sourceFunction: 'get_conversion_rate',
+      data: conv,
+    };
+  }
+
+  // 4. COTAÇÕES PENDENTES E SEM ATUALIZAÇÃO
+  if (p.includes('pendente') || p.includes('sem atualização') || p.includes('sem atualizacao') || p.includes('48 horas') || p.includes('48h') || p.includes('aguardando')) {
+    const pending = await get_pending_quotes(ctx);
+    if (pending.totalPendentes === 0) {
+      return {
+        answer: 'Excelente notícia! Todas as cotações estão com status atualizado e não há nenhuma cotação pendente no momento.',
+        sourceFunction: 'get_pending_quotes',
+        data: pending,
+      };
+    }
+
+    let text = `Temos atualmente **${pending.totalPendentes} cotações ativas aguardando fechamento comercial**. `;
+    if (pending.semAtualizacao48h > 0) {
+      text += `Dessas, **${pending.semAtualizacao48h} estão sem qualquer atualização há mais de 48 horas**, o que exige prioridade da equipe para não perder a oportunidade. `;
+      if (pending.exemplos48h.length > 0) {
+        const nomes = pending.exemplos48h.map((e: any) => `${e.modelo}${e.cliente && e.cliente !== 'Sem nome' ? ` (${e.cliente})` : ''}`).join(', ');
+        text += `Alguns dos veículos aguardando retorno são: ${nomes}.`;
+      }
+    } else {
+      text += 'Todas elas tiveram movimentações recentes nas últimas 48 horas.';
+    }
+
+    return { answer: text, sourceFunction: 'get_pending_quotes', data: pending };
+  }
+
+  // 5. VENDAS / CONVERSÕES
+  if (p.includes('quantas vendas') || p.includes('total de vendas') || p.includes('vendas fiz') || p.includes('vendas tivemos') || p.includes('convertidas')) {
+    const sales = await get_sales_metrics(ctx, periodType);
+    if (sales.totalVendas === 0) {
+      return {
+        answer: `Ainda não temos vendas convertidas registradas ${sales.periodo}. Foram feitas **${sales.totalCotacoesPeriodo} cotações** no período que ainda estão no funil comercial.`,
+        sourceFunction: 'get_sales_metrics',
+        data: sales,
+      };
+    }
+    return {
+      answer: `${sales.periodo.charAt(0).toUpperCase() + sales.periodo.slice(1)}, nós fechamos **${sales.totalVendas} vendas convertidas**, gerando um faturamento mensal de **${formatCurrency(sales.mensalidadeTotal)}/mês** para a associação, com um ticket médio de **${formatCurrency(sales.ticketMedio)}/mês** por proposta.`,
+      sourceFunction: 'get_sales_metrics',
+      data: sales,
+    };
+  }
+
+  // 6. VEÍCULOS MAIS COTADOS
+  if (p.includes('veículo') || p.includes('veiculo') || p.includes('mais cotado') || p.includes('modelos')) {
+    const topV = await get_top_vehicles(ctx, 5);
+    if (topV.topVeiculos.length === 0) {
+      return { answer: 'Ainda não temos registros suficientes de veículos cotados no sistema.' };
+    }
+    const lista = topV.topVeiculos.map((v, i) => `${i + 1}º **${v.modelo}** (${v.count} cotações)`).join(', ');
+    return {
+      answer: `Os veículos mais cotados até agora são: ${lista}.`,
+      sourceFunction: 'get_top_vehicles',
+      data: topV,
+    };
+  }
+
+  // 7. PLANOS MAIS COTADOS
+  if (p.includes('plano') || p.includes('planos')) {
+    const topP = await get_top_plans(ctx, 5);
+    if (topP.topPlanos.length === 0) {
+      return { answer: 'Ainda não temos planos cotados registrados no sistema.' };
+    }
+    const lista = topP.topPlanos.map((pItem) => `**${pItem.plano}** com ${pItem.cotacoes} cotações (${pItem.taxaConversao}% convertidas)`).join(', ');
+    return {
+      answer: `Os planos com maior volume de propostas são: ${lista}.`,
+      sourceFunction: 'get_top_plans',
+      data: topP,
+    };
+  }
+
+  // 8. ANÁLISE DE CONSULTORES (Exclusivo Manager)
+  if (ctx.role === 'manager' && (p.includes('consultor') || p.includes('consultores') || p.includes('equipe') || p.includes('atenção') || p.includes('atencao') || p.includes('desempenho'))) {
+    let targetName: string | undefined = undefined;
+    const words = p.split(/\s+/);
+    const triggerIndex = words.findIndex((w) => w === 'do' || w === 'da' || w === 'de');
+    if (triggerIndex !== -1 && words[triggerIndex + 1]) {
+      targetName = words[triggerIndex + 1].replace(/[?,.!]/g, '');
+    }
+
+    const result = await get_consultant_performance(ctx, targetName, periodType === 'tudo' ? 'tudo' : 'este_mes');
+
+    if (result.isFiltered && targetName) {
+      if (!result.consultores || result.consultores.length === 0) {
+        return {
+          answer: `Não encontrei nenhum consultor com o nome "${targetName}" cadastrado no sistema.`,
+        };
+      }
+      const c = result.consultores[0];
+      return {
+        answer: `Sobre o desempenho de **${c.nome}** (${result.periodo}): gerou **${c.cotacoes} cotações**, convertendo **${c.convertidas} vendas** (${c.taxaConversao}% de conversão) com ticket médio de **${formatCurrency(c.valorMedio)}/mês**.`,
+        sourceFunction: 'get_consultant_performance',
+        data: c,
+      };
+    }
+
+    let text = `Analisando a equipe comercial em **${result.periodo}**: `;
+    if (result.topConsultorCotacoes) {
+      text += `quem mais cotou foi **${result.topConsultorCotacoes.nome}** com **${result.topConsultorCotacoes.cotacoes} cotações**. `;
+    }
+    if (result.topConsultorConversao && result.topConsultorConversao.convertidas > 0) {
+      text += `A maior taxa de conversão foi de **${result.topConsultorConversao.nome}** com **${result.topConsultorConversao.taxaConversao}%** (${result.topConsultorConversao.convertidas} vendas fechadas). `;
+    }
+
+    const consultores = result.consultores || [];
+    const precisandoAtencao = consultores.filter((c: any) => c.cotacoes >= 3 && c.taxaConversao === 0);
+    if (precisandoAtencao.length > 0) {
+      const nomes = precisandoAtencao.map((c: any) => `${c.nome} (${c.cotacoes} cotações)`).join(', ');
+      text += `Vale dar uma atenção especial para ${nomes}, que tiveram bom volume de cotações mas ainda não converteram.`;
+    }
+
+    return { answer: text, sourceFunction: 'get_consultant_performance', data: result };
+  }
+
+  // 9. PIPELINE GERAL
+  if (p.includes('pipeline') || p.includes('funil') || p.includes('etapas')) {
+    const pipe = await get_quote_pipeline(ctx);
+    const d = pipe.pipeline;
+    return {
+      answer: `No pipeline comercial, temos **${d.nova.count} novas**, **${d.negociacao.count} em negociação** (${formatCurrency(d.negociacao.valor)}/mês), **${d.proposta_enviada.count} com proposta enviada** (${formatCurrency(d.proposta_enviada.valor)}/mês), além de **${d.convertida.count} já convertidas** e **${d.nao_convertida.count} não convertidas**.`,
+      sourceFunction: 'get_quote_pipeline',
+      data: pipe,
+    };
+  }
+
+  // 10. COMPARAÇÃO DE PERÍODOS
   if (p.includes('compare') || p.includes('comparar') || p.includes('comparativo') || p.includes('diferença entre')) {
     let pA: 'hoje' | 'esta_semana' | 'este_mes' = 'este_mes';
     let pB: 'ontem' | 'semana_passada' | 'mes_passado' = 'mes_passado';
@@ -206,173 +381,22 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     const A = comp.periodoA;
     const B = comp.periodoB;
 
-    let text = `📈 **Comparativo: ${A.nome.toUpperCase()} vs ${B.nome.toUpperCase()}**\n\n`;
-    text += `• **Cotações:** ${A.total} (${A.nome}) vs ${B.total} (${B.nome}) [${comp.diferencas.diffCotacoes >= 0 ? `+${comp.diferencas.diffCotacoes}` : comp.diferencas.diffCotacoes}]\n`;
-    text += `• **Convertidas:** ${A.convertidas} vs ${B.convertidas} [${comp.diferencas.diffConvertidas >= 0 ? `+${comp.diferencas.diffConvertidas}` : comp.diferencas.diffConvertidas}]\n`;
-    text += `• **Taxa de Conversão:** ${A.taxa}% vs ${B.taxa}% [${comp.diferencas.diffTaxa >= 0 ? `+${comp.diferencas.diffTaxa}%` : `${comp.diferencas.diffTaxa}%`}]\n`;
-    text += `• **Ticket Médio:** ${formatCurrency(A.ticket)} vs ${formatCurrency(B.ticket)}\n\n`;
-
+    let text = `Comparando **${A.nome}** com **${B.nome}**: geramos **${A.total} cotações** (contra ${B.total} no período anterior) e **${A.convertidas} conversões** (contra ${B.convertidas}). A taxa de conversão ficou em **${A.taxa}%** versus **${B.taxa}%**. `;
     if (comp.diferencas.crescimentoCotacoesPct !== null) {
       if (comp.diferencas.crescimentoCotacoesPct > 0) {
-        text += `O volume de cotações cresceu **${comp.diferencas.crescimentoCotacoesPct}%** em relação ao período anterior.\n`;
+        text += `Isso representa um crescimento de **+${comp.diferencas.crescimentoCotacoesPct}%** no volume de cotações.`;
       } else if (comp.diferencas.crescimentoCotacoesPct < 0) {
-        text += `Houve uma retração de **${Math.abs(comp.diferencas.crescimentoCotacoesPct)}%** no volume de cotações.\n`;
+        text += `Houve uma oscilação de **${comp.diferencas.crescimentoCotacoesPct}%** no volume comparado.`;
       }
     }
-
     return { answer: text, sourceFunction: 'compare_periods', data: comp };
-  }
-
-  // 3. TAXA DE CONVERSÃO
-  if (p.includes('taxa de conversão') || p.includes('taxa de conversao') || p.includes('conversão') || p.includes('conversao')) {
-    const conv = await get_conversion_rate(ctx, periodType);
-    if (conv.total === 0) {
-      return {
-        answer: `Não tenho cotações registradas para calcular a taxa de conversão em **${conv.periodo}**.`,
-        sourceFunction: 'get_conversion_rate',
-      };
-    }
-    return {
-      answer: `Sua taxa de conversão em **${conv.periodo}** é de **${conv.taxaConversao}%**.\n\n• Total de cotações: **${conv.total}**\n• Cotações convertidas em vendas: **${conv.convertidas}**\n• Não convertidas: **${conv.naoConvertidas}**`,
-      sourceFunction: 'get_conversion_rate',
-      data: conv,
-    };
-  }
-
-  // 4. COTAÇÕES PENDENTES E SEM ATUALIZAÇÃO
-  if (p.includes('pendente') || p.includes('sem atualização') || p.includes('sem atualizacao') || p.includes('48 horas') || p.includes('48h') || p.includes('aguardando')) {
-    const pending = await get_pending_quotes(ctx);
-    if (pending.totalPendentes === 0) {
-      return {
-        answer: 'Parabéns! Todas as suas cotações estão com status atualizado e não há nenhuma cotação pendente no momento.',
-        sourceFunction: 'get_pending_quotes',
-        data: pending,
-      };
-    }
-
-    let text = `Você possui **${pending.totalPendentes} cotações ativas aguardando fechamento comercial**.\n\n`;
-    if (pending.semAtualizacao48h > 0) {
-      text += `⚠️ **${pending.semAtualizacao48h} cotações estão sem atualização há mais de 48 horas!**\n`;
-      if (pending.exemplos48h.length > 0) {
-        text += '\nExemplos prioritários para contato:\n';
-        pending.exemplos48h.forEach((item: any) => {
-          text += `• **${item.cliente}** - ${item.modelo} (${item.placa || 'Sem placa'}) - ${formatCurrency(item.valor)}/mês\n`;
-        });
-      }
-    } else {
-      text += 'Todas as cotações pendentes tiveram interações recentes nas últimas 48 horas.';
-    }
-
-    return { answer: text, sourceFunction: 'get_pending_quotes', data: pending };
-  }
-
-  // 5. VENDAS / CONVERSÕES
-  if (p.includes('quantas vendas') || p.includes('total de vendas') || p.includes('vendas fiz') || p.includes('vendas tivemos') || p.includes('convertidas')) {
-    const sales = await get_sales_metrics(ctx, periodType);
-    return {
-      answer: `Em **${sales.periodo}**, foram realizadas **${sales.totalVendas} vendas convertidas**.\n\n• Mensalidade total gerada: **${formatCurrency(sales.mensalidadeTotal)}/mês**\n• Ticket médio da proposta: **${formatCurrency(sales.ticketMedio)}/mês**\n• Total de cotações analisadas no período: **${sales.totalCotacoesPeriodo}**`,
-      sourceFunction: 'get_sales_metrics',
-      data: sales,
-    };
-  }
-
-  // 6. VOLUME DE COTAÇÕES
-  if (p.includes('quantas cotações') || p.includes('quantas cotacoes') || p.includes('total de cotações') || p.includes('volume de cotações')) {
-    const qMetrics = await get_quote_metrics(ctx, periodType);
-    return {
-      answer: `Foram geradas **${qMetrics.total} cotações** em **${qMetrics.periodo}**.\n\nDistribuição atual:\n• Novas: **${qMetrics.novas}**\n• Em negociação: **${qMetrics.negociacao}**\n• Propostas enviadas: **${qMetrics.proposta_enviada}**\n• Convertidas: **${qMetrics.convertida}**\n• Não convertidas: **${qMetrics.nao_convertida}**`,
-      sourceFunction: 'get_quote_metrics',
-      data: qMetrics,
-    };
-  }
-
-  // 7. VEÍCULOS MAIS COTADOS
-  if (p.includes('veículo') || p.includes('veiculo') || p.includes('mais cotado') || p.includes('modelos')) {
-    const topV = await get_top_vehicles(ctx, 5);
-    if (topV.topVeiculos.length === 0) {
-      return { answer: 'Não tenho esse dado registrado no Cote AI (nenhum veículo cotado até o momento).' };
-    }
-    let text = `🚗 **Top 5 Veículos mais cotados no sistema:**\n\n`;
-    topV.topVeiculos.forEach((v, idx) => {
-      text += `${idx + 1}. **${v.modelo}**: ${v.count} cotações\n`;
-    });
-    return { answer: text, sourceFunction: 'get_top_vehicles', data: topV };
-  }
-
-  // 8. PLANOS MAIS COTADOS
-  if (p.includes('plano') || p.includes('planos')) {
-    const topP = await get_top_plans(ctx, 5);
-    if (topP.topPlanos.length === 0) {
-      return { answer: 'Não tenho esse dado registrado no Cote AI (nenhum plano cotado ainda).' };
-    }
-    let text = `🛡️ **Planos mais cotados e aceitos:**\n\n`;
-    topP.topPlanos.forEach((pItem, idx) => {
-      text += `${idx + 1}. **${pItem.plano}**: ${pItem.cotacoes} cotações | ${pItem.convertidas} convertidas (${pItem.taxaConversao}%)\n`;
-    });
-    return { answer: text, sourceFunction: 'get_top_plans', data: topP };
-  }
-
-  // 9. ANÁLISE DE CONSULTORES (Exclusivo Manager)
-  if (ctx.role === 'manager' && (p.includes('consultor') || p.includes('consultores') || p.includes('equipe') || p.includes('atenção') || p.includes('atencao') || p.includes('desempenho'))) {
-    let targetName: string | undefined = undefined;
-    const words = p.split(/\s+/);
-    const triggerIndex = words.findIndex((w) => w === 'do' || w === 'da' || w === 'de');
-    if (triggerIndex !== -1 && words[triggerIndex + 1]) {
-      targetName = words[triggerIndex + 1].replace(/[?,.!]/g, '');
-    }
-
-    const result = await get_consultant_performance(ctx, targetName, periodType === 'tudo' ? 'tudo' : 'este_mes');
-
-    if (result.isFiltered && targetName) {
-      if (!result.consultores || result.consultores.length === 0) {
-        return {
-          answer: `Não encontrei nenhum consultor com o nome "${targetName}" registrado no Cote AI.`,
-        };
-      }
-      const c = result.consultores[0];
-      return {
-        answer: `👤 **Desempenho de ${c.nome} (${result.periodo}):**\n\n• Cotações geradas: **${c.cotacoes}**\n• Vendas convertidas: **${c.convertidas}**\n• Não convertidas: **${c.naoConvertidas}**\n• Taxa de conversão: **${c.taxaConversao}%**\n• Ticket médio: **${formatCurrency(c.valorMedio)}/mês**`,
-        sourceFunction: 'get_consultant_performance',
-        data: c,
-      };
-    }
-
-    let text = `👥 **Desempenho da equipe comercial em ${result.periodo}:**\n\n`;
-    if (result.topConsultorCotacoes) {
-      text += `• **Maior volume de cotações:** ${result.topConsultorCotacoes.nome} (${result.topConsultorCotacoes.cotacoes} cotações)\n`;
-    }
-    if (result.topConsultorConversao) {
-      text += `• **Maior taxa de conversão:** ${result.topConsultorConversao.nome} (${result.topConsultorConversao.taxaConversao}% com ${result.topConsultorConversao.convertidas} vendas)\n`;
-    }
-
-    const consultores = result.consultores || [];
-    const precisandoAtencao = consultores.filter((c: any) => c.cotacoes >= 3 && c.taxaConversao === 0);
-    if (precisandoAtencao.length > 0) {
-      text += `\n⚠️ **Consultores que precisam de suporte no fechamento:**\n`;
-      precisandoAtencao.forEach((c: any) => {
-        text += `• **${c.nome}**: ${c.cotacoes} cotações sem nenhuma conversão até o momento.\n`;
-      });
-    }
-
-    return { answer: text, sourceFunction: 'get_consultant_performance', data: result };
-  }
-
-  // 10. PIPELINE GERAL
-  if (p.includes('pipeline') || p.includes('funil') || p.includes('etapas')) {
-    const pipe = await get_quote_pipeline(ctx);
-    const d = pipe.pipeline;
-    return {
-      answer: `🎯 **Pipeline Comercial Ativo:**\n\n• **Novas:** ${d.nova.count} (${formatCurrency(d.nova.valor)}/mês)\n• **Em Negociação:** ${d.negociacao.count} (${formatCurrency(d.negociacao.valor)}/mês)\n• **Proposta Enviada:** ${d.proposta_enviada.count} (${formatCurrency(d.proposta_enviada.valor)}/mês)\n• **Convertidas:** ${d.convertida.count} (${formatCurrency(d.convertida.valor)}/mês)\n• **Não Convertidas:** ${d.nao_convertida.count}`,
-      sourceFunction: 'get_quote_pipeline',
-      data: pipe,
-    };
   }
 
   // 11. SAUDAÇÕES
   if (p === 'oi' || p === 'olá' || p === 'ola' || p === 'bom dia' || p === 'boa tarde' || p === 'boa noite') {
     const nome = ctx.consultantName ? ctx.consultantName.split(' ')[0] : (ctx.role === 'manager' ? 'Gestor' : 'Consultor');
     return {
-      answer: `Olá, **${nome}**! Como posso te ajudar hoje? Você pode me perguntar sobre o **resumo de hoje**, **suas vendas**, **taxa de conversão** ou **cotações pendentes**.`,
+      answer: `Olá, **${nome}**! Como posso te ajudar agora? Você pode me perguntar sobre o resumo de hoje, suas vendas, taxa de conversão ou cotações pendentes da equipe.`,
     };
   }
 
@@ -397,7 +421,7 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
     for (const term of prohibitedTerms) {
       if (p.includes(term)) {
         return {
-          answer: 'Como seu assistente pessoal no Cote AI, tenho acesso exclusivamente aos seus próprios dados comerciais, clientes e cotações. Não possuo permissão para consultar métricas de outros consultores ou da associação.',
+          answer: 'Como seu assistente pessoal no Cote AI, tenho acesso exclusivamente aos seus próprios dados comerciais e cotações. Não possuo permissão para consultar métricas de outros consultores ou da associação.',
         };
       }
     }
@@ -416,6 +440,6 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
     };
   }
 
-  // 4. Fallback imediato para o motor determinístico factual
+  // 4. Fallback imediato para o motor determinístico conversacional
   return runDeterministicQuery(prompt, ctx);
 }

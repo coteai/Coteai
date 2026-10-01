@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, Send, Mic, MicOff, Sparkles, Bot, User, RefreshCw, Minus, MessageSquare
+  X, Send, Mic, MicOff, Sparkles, Bot, User, RefreshCw, Minus
 } from 'lucide-react';
 import type { AiContext } from '../../services/aiAssistantService';
 import type { AiResponse } from '../../services/aiQueryEngine';
@@ -21,6 +21,43 @@ interface CoteAiAssistantModalProps {
   context: AiContext;
   accentHex?: string;
 }
+
+/**
+ * Renderizador de mensagens fluido e conversacional (destaque em negrito e parágrafos naturais)
+ */
+const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
+  const paragraphs = text.split('\n\n').filter(Boolean);
+
+  const renderLine = (line: string) => {
+    // Processa destaques em **negrito**
+    const parts = line.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <strong key={idx} className="font-extrabold text-white">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return <span key={idx}>{part}</span>;
+    });
+  };
+
+  return (
+    <div className="space-y-2 text-zinc-200 leading-relaxed font-sans text-xs sm:text-sm">
+      {paragraphs.map((para, pIdx) => (
+        <p key={pIdx}>
+          {para.split('\n').map((line, lIdx) => (
+            <React.Fragment key={lIdx}>
+              {lIdx > 0 && <br />}
+              {renderLine(line)}
+            </React.Fragment>
+          ))}
+        </p>
+      ))}
+    </div>
+  );
+};
 
 export const CoteAiAssistantModal: React.FC<CoteAiAssistantModalProps> = ({
   isOpen: externalIsOpen,
@@ -71,12 +108,12 @@ export const CoteAiAssistantModal: React.FC<CoteAiAssistantModalProps> = ({
     }
   }, [transcript]);
 
-  // Mensagem inicial de boas-vindas
+  // Mensagem inicial de boas-vindas conversacional
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const greeting = isManager
-        ? `Olá! Sou o **Cote AI Manager**, seu assistente de inteligência comercial. Tenho acesso completo aos dados reais da sua operação.\n\nVocê pode me perguntar sobre o **resumo de hoje**, **comparativo de períodos**, **desempenho da equipe**, **veículos mais cotados** ou **oportunidades de conversão**.`
-        : `Olá, ${context.consultantName ? context.consultantName.split(' ')[0] : 'Consultor'}! Sou o **Cote AI**, seu assessor comercial pessoal.\n\nEstou conectado aos seus dados em tempo real. Pode me perguntar sobre suas **cotações do mês**, **taxa de conversão**, **propostas pendentes** e **desempenho**. Como posso te ajudar agora?`;
+        ? `Olá! Sou o **Cote AI Manager**, seu copiloto de inteligência comercial. Estou conectado aos dados reais da sua operação.\n\nVocê pode me perguntar sobre as cotações de hoje, taxa de conversão, comparativos de meses ou desempenho da equipe.`
+        : `Olá, ${context.consultantName ? context.consultantName.split(' ')[0] : 'Consultor'}! Sou o **Cote AI**, seu assessor comercial pessoal.\n\nEstou conectado aos seus dados em tempo real. Pode me perguntar sobre suas cotações, taxa de conversão, propostas pendentes ou desempenho. Como posso te ajudar agora?`;
 
       setMessages([
         {
@@ -94,24 +131,22 @@ export const CoteAiAssistantModal: React.FC<CoteAiAssistantModalProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isProcessing]);
 
-  // Sugestões de perguntas rápidas
+  // Sugestões de perguntas rápidas naturais
   const consultantSuggestions = [
-    'Quantas cotações eu fiz este mês?',
+    'Quantas cotações eu fiz hoje?',
     'Qual minha taxa de conversão?',
     'Quais cotações estão pendentes?',
     'Quantas propostas tenho em negociação?',
-    'Meu resumo de hoje',
     'Quantas vendas fiz este mês?',
   ];
 
   const managerSuggestions = [
+    'Quantas cotações fizemos hoje?',
     'Resumo da operação de hoje',
     'Compare este mês com o mês passado',
-    'Qual consultor teve maior taxa de conversão?',
-    'Quais consultores precisam de atenção?',
-    'Quais veículos foram mais cotados?',
-    'Qual plano foi mais cotado?',
-    'Pipeline comercial ativo',
+    'Quem vendeu mais na equipe?',
+    'Quais cotações estão pendentes?',
+    'Veículos mais cotados',
   ];
 
   const suggestions = isManager ? managerSuggestions : consultantSuggestions;
@@ -175,23 +210,23 @@ export const CoteAiAssistantModal: React.FC<CoteAiAssistantModalProps> = ({
 
   return (
     <>
-      {/* Botão Flutuante (FAB) fixo no canto inferior direito quando a janela estiver minimizada */}
+      {/* Botão Flutuante (FAB) posicionado mais acima (bottom-28 no mobile) para NÃO sobrepor os 3 pontinhos do menu inferior */}
       {!isOpen && (
         <button
           type="button"
           onClick={handleOpen}
-          className="fixed bottom-20 md:bottom-7 right-4 md:right-7 z-[9990] flex items-center gap-2.5 px-4 py-3 rounded-full text-black font-black uppercase text-xs tracking-wider shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 group border border-white/20"
+          className="fixed bottom-28 sm:bottom-8 right-5 sm:right-8 z-[9990] flex items-center gap-2 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full text-black font-black uppercase text-xs tracking-wider shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 group border border-white/20"
           style={{
             backgroundColor: accentHex,
-            boxShadow: `0 10px 30px -5px ${accentHex}80, 0 0 20px ${accentHex}40`,
+            boxShadow: `0 12px 30px -5px ${accentHex}90, 0 0 25px ${accentHex}40`,
           }}
           title={`Abrir ${assistantName}`}
         >
           <div className="relative flex items-center justify-center">
-            <Sparkles size={18} className="fill-black animate-pulse" />
+            <Sparkles size={17} className="fill-black animate-pulse" />
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-950 border border-white animate-ping" />
           </div>
-          <span className="hidden sm:inline-block font-extrabold">{assistantName}</span>
+          <span className="font-extrabold">{assistantName}</span>
           <span className="text-[10px] bg-black/20 text-black px-1.5 py-0.5 rounded-full font-bold">IA</span>
         </button>
       )}
@@ -204,7 +239,7 @@ export const CoteAiAssistantModal: React.FC<CoteAiAssistantModalProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
-            className="fixed bottom-20 md:bottom-7 right-3 md:right-7 w-[calc(100vw-24px)] sm:w-[440px] md:w-[460px] h-[590px] max-h-[calc(100vh-110px)] rounded-3xl z-[9999] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.9)] border border-white/15 bg-[#0b1329]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-28 sm:bottom-8 right-3 sm:right-8 w-[calc(100vw-24px)] sm:w-[440px] md:w-[460px] h-[580px] max-h-[calc(100vh-140px)] rounded-3xl z-[9999] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.9)] border border-white/15 bg-[#0b1329]/95 backdrop-blur-2xl flex flex-col overflow-hidden"
           >
             {/* Glow de fundo */}
             <div
@@ -303,22 +338,7 @@ export const CoteAiAssistantModal: React.FC<CoteAiAssistantModalProps> = ({
                         : 'bg-[#121c38] text-zinc-200 border border-white/10 rounded-tl-none'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap font-sans space-y-1">
-                      {msg.text.split('\n').map((line, lIdx) => {
-                        if (line.startsWith('•') || line.startsWith('-')) {
-                          return (
-                            <p key={lIdx} className="pl-1 text-zinc-300">
-                              {line}
-                            </p>
-                          );
-                        }
-                        return (
-                          <p key={lIdx} className="text-zinc-200">
-                            {line}
-                          </p>
-                        );
-                      })}
-                    </div>
+                    <FormattedMessage text={msg.text} />
                     <span className="text-[9px] text-zinc-500 font-mono block text-right mt-1 opacity-70">
                       {msg.timestamp}
                     </span>
@@ -330,7 +350,7 @@ export const CoteAiAssistantModal: React.FC<CoteAiAssistantModalProps> = ({
               {isProcessing && (
                 <div className="flex items-center space-x-2 text-zinc-400 text-xs pl-8">
                   <Sparkles size={13} className="animate-spin" style={{ color: accentHex }} />
-                  <span>Consultando dados reais com GPT-4o mini...</span>
+                  <span>Analisando dados reais do sistema...</span>
                 </div>
               )}
 
@@ -348,7 +368,7 @@ export const CoteAiAssistantModal: React.FC<CoteAiAssistantModalProps> = ({
                   type="button"
                   onClick={() => handleSend(sug)}
                   disabled={isProcessing}
-                  className="text-[10px] font-medium text-zinc-300 bg-white/5 hover:bg-white/10 hover:text-white px-2 py-0.5 rounded-full border border-white/10 whitespace-nowrap transition-all active:scale-95 shrink-0"
+                  className="text-[10px] font-medium text-zinc-300 bg-white/5 hover:bg-white/10 hover:text-white px-2.5 py-1 rounded-full border border-white/10 whitespace-nowrap transition-all active:scale-95 shrink-0"
                 >
                   {sug}
                 </button>

@@ -191,42 +191,7 @@ const ConsultorDashboard = () => {
         </div>
       </div>
 
-            {/* Banner do Assistente Cote AI */}
-      <div className="glass-card p-4 rounded-2xl border border-white/10 bg-gradient-to-r from-blue-900/20 via-[#0b162f]/80 to-emerald-900/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative overflow-hidden shadow-lg">
-        <div className="flex items-center space-x-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center border font-black text-white shrink-0 shadow-md"
-            style={{
-              backgroundColor: `${accentHex}20`,
-              borderColor: `${accentHex}50`,
-              color: accentHex,
-            }}
-          >
-            <Sparkles size={20} className="animate-pulse" />
-          </div>
-          <div>
-            <h4 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
-              Cote AI — Assessor Comercial
-              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">
-                GPT-4o mini
-              </span>
-            </h4>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Inteligência artificial conectada às suas vendas. Consulte cotações em negociação, pendências de fechamento e taxa de conversão.
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent('open-cote-ai-assistant'))}
-          className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-black transition-all hover:scale-105 active:scale-95 shadow-md flex items-center gap-1.5 shrink-0 hover:brightness-110"
-          style={{ backgroundColor: accentHex }}
-        >
-          <Sparkles size={14} className="fill-black" />
-          <span>Abrir Cote AI</span>
-        </button>
-      </div>
+            
 
       {/* Grid de Resumo Comercial (Métricas Reais) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">

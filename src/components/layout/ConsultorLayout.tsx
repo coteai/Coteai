@@ -154,19 +154,7 @@ const ConsultorLayout = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3 relative z-10">
-                        <button
-              onClick={() => setAssistantOpen(true)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border font-black text-xs uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-md"
-              style={{
-                backgroundColor: `${accentHex}18`,
-                borderColor: `${accentHex}50`,
-                color: accentHex,
-              }}
-              title="Abrir Assistente Cote AI"
-            >
-              <Sparkles size={14} className="animate-pulse" />
-              <span>Cote AI</span>
-            </button>
+                        
             <InstallAppButton accentColor={accentHex} />
             <button className="relative p-2 text-zinc-500 hover:text-white transition-colors">
               <Bell size={20} />

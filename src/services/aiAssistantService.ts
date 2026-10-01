@@ -72,17 +72,35 @@ export function getPeriodDates(periodType: 'hoje' | 'ontem' | 'esta_semana' | 's
  * Consulta cotações com filtros de segurança obrigatórios
  */
 async function fetchSecureQuotes(ctx: AiContext, period?: PeriodFilter): Promise<any[]> {
-  if (!ctx.associationId) return [];
+  let assocId = ctx.associationId;
+  if (!assocId) {
+    try {
+      const adminSession = localStorage.getItem('admin_session');
+      if (adminSession) assocId = JSON.parse(adminSession).id;
+      else {
+        const consultorSession = localStorage.getItem('consultor_session');
+        if (consultorSession) assocId = JSON.parse(consultorSession).association_id;
+      }
+    } catch (e) {}
+  }
+  if (!assocId) return [];
 
   let query = supabase
     .from('quotes')
-    .select('id, created_at, updated_at, status, mensalidade, plano_selecionado, cliente_nome, cliente_whatsapp, placa, modelo, valor_fipe, consultant_id, observacoes, consultants(id, nome)')
-    .eq('association_id', ctx.associationId);
+    .select('id, created_at, status, mensalidade, plano_selecionado, cliente_nome, cliente_whatsapp, placa, modelo, valor_fipe, consultant_id, consultants(id, nome)')
+    .eq('association_id', assocId);
 
   // SEGURANÇA: Se for consultor, restringe OBRIGATORIAMENTE ao seu consultant_id
   if (ctx.role === 'consultor') {
-    if (!ctx.consultantId) return [];
-    query = query.eq('consultant_id', ctx.consultantId);
+    let consId = ctx.consultantId;
+    if (!consId) {
+      try {
+        const consultorSession = localStorage.getItem('consultor_session');
+        if (consultorSession) consId = JSON.parse(consultorSession).id;
+      } catch (e) {}
+    }
+    if (!consId) return [];
+    query = query.eq('consultant_id', consId);
   }
 
   if (period?.startDate) {
