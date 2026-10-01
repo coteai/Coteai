@@ -1,8 +1,8 @@
--- Habilita a extensão de UUID
+﻿-- Habilita a extensÃ£o de UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- =============================================
--- 1. ASSOCIATIONS (Associações de Proteção)
+-- 1. ASSOCIATIONS (AssociaÃ§Ãµes de ProteÃ§Ã£o)
 -- =============================================
 CREATE TABLE IF NOT EXISTS public.associations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS public.consultants (
 );
 
 -- =============================================
--- 4. VEHICLE GROUPS (Grupos de Veículos)
+-- 4. VEHICLE GROUPS (Grupos de VeÃ­culos)
 -- =============================================
 CREATE TABLE IF NOT EXISTS public.vehicle_groups (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS public.vehicle_categories (
 );
 
 -- =============================================
--- 6. PLANS (Planos da Associação)
+-- 6. PLANS (Planos da AssociaÃ§Ã£o)
 -- =============================================
 CREATE TABLE IF NOT EXISTS public.plans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS public.pricing_table (
 );
 
 -- =============================================
--- 8. QUOTES (Cotações Geradas)
+-- 8. QUOTES (CotaÃ§Ãµes Geradas)
 -- =============================================
 CREATE TABLE IF NOT EXISTS public.quotes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -132,7 +132,9 @@ CREATE TABLE IF NOT EXISTS public.quotes (
   plano_selecionado TEXT,
   mensalidade NUMERIC,
   planos_cotados JSONB,
-  status TEXT DEFAULT 'pending',
+  status TEXT DEFAULT 'nova',
+  observacoes TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
   converted_at TIMESTAMPTZ,
   converted_by TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -151,7 +153,7 @@ CREATE TABLE IF NOT EXISTS public.leads (
 );
 
 -- =============================================
--- ROW LEVEL SECURITY (RLS) E POLÍTICAS
+-- ROW LEVEL SECURITY (RLS) E POLÃTICAS
 -- =============================================
 
 -- Habilita RLS em todas as tabelas
@@ -165,7 +167,7 @@ ALTER TABLE public.pricing_table ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 
--- Políticas temporárias (abertas) para facilitar o desenvolvimento
+-- PolÃ­ticas temporÃ¡rias (abertas) para facilitar o desenvolvimento
 DROP POLICY IF EXISTS "select_all" ON public.associations;
 DROP POLICY IF EXISTS "insert_all" ON public.associations;
 DROP POLICY IF EXISTS "update_all" ON public.associations;
@@ -238,7 +240,8 @@ CREATE POLICY "update_all" ON public.quotes FOR UPDATE USING (true);
 DROP POLICY IF EXISTS "insert_all" ON public.leads;
 CREATE POLICY "insert_all" ON public.leads FOR INSERT WITH CHECK (true);
 
--- Criar a associação padrão para testes se não existir
+-- Criar a associaÃ§Ã£o padrÃ£o para testes se nÃ£o existir
 INSERT INTO public.associations (nome, slug, status)
 VALUES ('VipCar Brasil', 'vipcar', 'active')
 ON CONFLICT (slug) DO NOTHING;
+

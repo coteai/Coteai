@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { CheckCircle2, ArrowRight, Smartphone, Loader2, AlertCircle, Bike, Truck, Zap, Car, FileText, ListTree, Share2, Download, Copy, Pencil, Plus, X, RotateCcw, FlaskConical, DollarSign, Sliders } from 'lucide-react';
+import { User, CheckCircle2, ArrowRight, Smartphone, Loader2, AlertCircle, Bike, Truck, Zap, Car, FileText, ListTree, Share2, Download, Copy, Pencil, Plus, X, RotateCcw, FlaskConical, DollarSign, Sliders } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAssociation } from '../../contexts/AssociationContext';
 import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
@@ -25,7 +25,7 @@ const QuoteGenerator = () => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const pdfRef = useRef(null);
   
-  const [formData, setFormData] = useState<any>({ placa: '', tipo_veiculo: 'carro', modelo: '', fipe: 0 });
+  const [formData, setFormData] = useState<any>({ placa: '', tipo_veiculo: 'carro', modelo: '', fipe: 0, cliente_nome: '', cliente_whatsapp: '' });
   const [fipeVariants, setFipeVariants] = useState<any[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   
@@ -54,7 +54,7 @@ const QuoteGenerator = () => {
   // Vehicle Intelligence
   const intelligence = useVehicleIntelligence();
 
-  // ── Benefit Editing States ──
+  // â”€â”€ Benefit Editing States â”€â”€
   const [editedCoberturas, setEditedCoberturas] = useState<Record<string, { label: string; param?: string }[]>>({});
   const [activeEditPlanId, setActiveEditPlanId] = useState<string | null>(null);
   const [editedAdesao, setEditedAdesao] = useState<Record<string, string>>({});
@@ -76,7 +76,7 @@ const QuoteGenerator = () => {
 
   const resetFlow = () => {
     setStep(1);
-    setFormData({ placa: '', tipo_veiculo: 'carro', modelo: '', fipe: 0 });
+    setFormData({ placa: '', tipo_veiculo: 'carro', modelo: '', fipe: 0, cliente_nome: '', cliente_whatsapp: '' });
     setFipeVariants([]);
     setSelectedVariant(null);
     setSelectedGroupId(null);
@@ -95,7 +95,7 @@ const QuoteGenerator = () => {
     intelligence.reset();
   };
 
-  // ── Benefit Editing Helpers ──
+  // â”€â”€ Benefit Editing Helpers â”€â”€
   const getCoberturas = (planId: string, original: any[]) =>
     editedCoberturas[planId] ?? original ?? [];
 
@@ -182,7 +182,7 @@ const QuoteGenerator = () => {
     setNewBenefit({ label: '', param: '' });
   };
 
-  // Modo manual: gerar cotação sem buscar placa
+  // Modo manual: gerar cotaÃ§Ã£o sem buscar placa
   const handleManualCotacao = () => {
     const fipeVal = parseFloat(manualFipe.replace(/\./g, '').replace(',', '.'));
     if (!manualModelo.trim() || isNaN(fipeVal) || fipeVal <= 0) {
@@ -209,7 +209,7 @@ const QuoteGenerator = () => {
       const data = await response.json();
 
       if (data.codigo !== 1 || !data.fipe || data.fipe.length === 0) {
-        setError(data.msg || 'Nenhum veículo encontrado para esta placa.');
+        setError(data.msg || 'Nenhum veÃ­culo encontrado para esta placa.');
         setLoading(false);
         return;
       }
@@ -233,7 +233,7 @@ const QuoteGenerator = () => {
       
       setStep(2);
     } catch (err) {
-      setError('Erro de conexão com a API da Placa Fipe. Tente novamente.');
+      setError('Erro de conexÃ£o com a API da Placa Fipe. Tente novamente.');
       console.error("FIPE fetch erro:", err);
     } finally {
       setLoading(false);
@@ -253,7 +253,7 @@ const QuoteGenerator = () => {
       // Only one group -> skip selection, go straight to pricing
       fetchPricingForGroup(variant, relevantGroups[0].id);
     } else if (relevantGroups.length === 0) {
-      setError(`Nenhum Grupo Tarifário configurado para ${formData.tipo_veiculo}. Configure na aba Precificação.`);
+      setError(`Nenhum Grupo TarifÃ¡rio configurado para ${formData.tipo_veiculo}. Configure na aba PrecificaÃ§Ã£o.`);
     } else {
       // Multiple groups -> show selection step
       setStep('2b');
@@ -281,19 +281,19 @@ const QuoteGenerator = () => {
 
     if (!categories) {
       const groupName = vehicleGroups.find(g => g.id === groupId)?.nome || 'grupo selecionado';
-      setError(`Tabela "${groupName}" não cobre um veículo de ${formatCurrency(v.fipe)}. Verifique as faixas FIPE configuradas.`);
+      setError(`Tabela "${groupName}" nÃ£o cobre um veÃ­culo de ${formatCurrency(v.fipe)}. Verifique as faixas FIPE configuradas.`);
       setLoading(false);
       return;
     }
     setMatchedCategory(categories);
 
-    // Verifica o modo de precificação do grupo
+    // Verifica o modo de precificaÃ§Ã£o do grupo
     const group = vehicleGroups.find(g => g.id === groupId);
     const isFipeTiers = group?.pricing_mode === 'fipe_tiers';
 
     if (isFipeTiers) {
       if (categories.mensalidade === null || categories.mensalidade === undefined) {
-        setError('Essa faixa FIPE não tem um preço configurado.');
+        setError('Essa faixa FIPE nÃ£o tem um preÃ§o configurado.');
         setLoading(false);
         return;
       }
@@ -317,7 +317,7 @@ const QuoteGenerator = () => {
       return;
     }
 
-    // Modo "plans": Busca os planos disponíveis na tabela de preços
+    // Modo "plans": Busca os planos disponÃ­veis na tabela de preÃ§os
     const { data: prices } = await supabase
       .from('pricing_table')
       .select('*, plans(id, nome, descricao, coberturas)')
@@ -342,22 +342,39 @@ const QuoteGenerator = () => {
     
     const minPrice = Math.min(...availablePlans.map(p => p.mensalidade));
 
-    const { data: quote, error: quoteError } = await supabase
+    const insertPayload: any = {
+      association_id: associationId,
+      consultant_id: consultor?.id || null,
+      cliente_nome: formData.cliente_nome?.trim() || null,
+      cliente_whatsapp: formData.cliente_whatsapp?.trim() || null,
+      placa: formData.placa,
+      modelo: formData.modelo,
+      categoria_id: matchedCategory.id,
+      valor_fipe: formData.fipe,
+      plano_selecionado: getPlansWithEdits().length > 1 ? 'Múltiplas Opções' : getPlansWithEdits()[0]?.plans?.nome,
+      mensalidade: minPrice,
+      planos_cotados: getPlansWithEdits(),
+      status: 'nova',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    let { data: quote, error: quoteError } = await supabase
       .from('quotes')
-      .insert({
-        association_id: associationId,
-        consultant_id: consultor?.id || null,
-        placa: formData.placa,
-        modelo: formData.modelo,
-        categoria_id: matchedCategory.id,
-        valor_fipe: formData.fipe,
-        plano_selecionado: getPlansWithEdits().length > 1 ? 'Múltiplas Opções' : getPlansWithEdits()[0]?.plans?.nome,
-        mensalidade: minPrice,
-        planos_cotados: getPlansWithEdits(),
-        status: 'pending'
-      })
+      .insert(insertPayload)
       .select()
       .single();
+
+    if (quoteError && (quoteError.code === '42703' || String(quoteError.message || '').includes('does not exist'))) {
+      delete insertPayload.updated_at;
+      const retry = await supabase
+        .from('quotes')
+        .insert(insertPayload)
+        .select()
+        .single();
+      quote = retry.data;
+      quoteError = retry.error;
+    }
 
     if (!quoteError && quote) {
       setSavedQuoteId(quote.id);
@@ -390,28 +407,28 @@ const QuoteGenerator = () => {
     let ano = anoMatch ? anoMatch[1] : 'N/A';
     let modeloNome = formData.modelo.replace(/\s*\([^)]+\)\s*/, '');
 
-    let text = `🚗 *COTAÇÃO PARA SEU VEÍCULO*\n\n`;
-    text += `📊 *Dados do Veículo:*\n\n`;
+    let text = `ðŸš— *COTAÃ‡ÃƒO PARA SEU VEÃCULO*\n\n`;
+    text += `ðŸ“Š *Dados do VeÃ­culo:*\n\n`;
     text += `Modelo: ${modeloNome}\n`;
     text += `Ano: ${ano}\n`;
     text += `Valor FIPE: ${formatCurrency(formData.fipe)}\n\n`;
     
-    text += `📋 *PLANOS DISPONÍVEIS:*\n\n`;
+    text += `ðŸ“‹ *PLANOS DISPONÃVEIS:*\n\n`;
 
     const _plans = getPlansWithEdits();
     _plans.forEach(p => {
       const isVip = p.plans?.nome?.toLowerCase().includes('vip');
-      const icon = isVip ? '🔴✨' : '🔴';
+      const icon = isVip ? 'ðŸ”´âœ¨' : 'ðŸ”´';
       
       text += `${icon} *Plano ${p.plans?.nome?.toUpperCase()}*\n\n`;
-      text += `💰 Mensalidade: ${formatCurrency(p.mensalidade)}\n`;
-      text += `✅ Adesão: ${formatCurrency(p.mensalidade)}\n`; 
-      text += `🎯 Cota Participação: ${p.franquia_percentual}%\n\n`;
+      text += `ðŸ’° Mensalidade: ${formatCurrency(p.mensalidade)}\n`;
+      text += `âœ… AdesÃ£o: ${formatCurrency(p.mensalidade)}\n`; 
+      text += `ðŸŽ¯ Cota ParticipaÃ§Ã£o: ${p.franquia_percentual}%\n\n`;
       
-      text += `📋 *Benefícios:*\n\n`;
+      text += `ðŸ“‹ *BenefÃ­cios:*\n\n`;
       const coberturas = p.plans?.coberturas || [];
       coberturas.forEach(c => {
-        text += `• ${c.label}${c.param ? `: ${c.param}` : ''}\n`;
+        text += `â€¢ ${c.label}${c.param ? `: ${c.param}` : ''}\n`;
       });
       text += `\n`;
     });
@@ -421,7 +438,7 @@ const QuoteGenerator = () => {
       
       _plans.forEach(p1 => {
         const isVip = p1.plans?.nome?.toLowerCase().includes('vip');
-        const icon = isVip ? '🔴✨' : '🔴';
+        const icon = isVip ? 'ðŸ”´âœ¨' : 'ðŸ”´';
         
         let diffs: string[] = [];
         const myCovs = p1.plans?.coberturas || [];
@@ -439,7 +456,7 @@ const QuoteGenerator = () => {
              }
           });
           if (isDifferent) {
-            diffs.push(`• ${myC.label}${myC.param ? `: ${myC.param}` : ''}`);
+            diffs.push(`â€¢ ${myC.label}${myC.param ? `: ${myC.param}` : ''}`);
           }
         });
 
@@ -453,7 +470,7 @@ const QuoteGenerator = () => {
       });
     }
 
-    text += `Qualquer dúvida, é só me chamar!`;
+    text += `Qualquer dÃºvida, Ã© sÃ³ me chamar!`;
     return text;
   };
 
@@ -520,14 +537,14 @@ const QuoteGenerator = () => {
       try {
         await navigator.share({
           files: [file],
-          title: `Cotação ${formData.modelo}`,
+          title: `CotaÃ§Ã£o ${formData.modelo}`,
           text: `Segue a proposta em PDF para o ${formData.modelo}.`
         });
       } catch (err) {
         console.error('Share failed', err);
       }
     } else {
-      alert("Seu aparelho/navegador não suporta envio direto de documentos do sistema. O download do PDF começará agora, anexe manualmente onde preferir.");
+      alert("Seu aparelho/navegador nÃ£o suporta envio direto de documentos do sistema. O download do PDF comeÃ§arÃ¡ agora, anexe manualmente onde preferir.");
       handleDownloadPDF(blob); // fallback
     }
   };
@@ -593,10 +610,10 @@ const QuoteGenerator = () => {
       <div className="flex justify-between items-center px-1 shrink-0">
         <div>
           <h1 className="premium-title text-xl sm:text-2xl md:text-3xl uppercase tracking-tighter">
-            Máquina de Cotação
+            MÃ¡quina de CotaÃ§Ã£o
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
-            Gere propostas instantâneas com precisão FIPE total.
+            Gere propostas instantÃ¢neas com precisÃ£o FIPE total.
           </p>
         </div>
       </div>
@@ -614,13 +631,13 @@ const QuoteGenerator = () => {
         />
         <div className="flex justify-between relative z-10">
           {renderStepIcon(1, <Car size={16} />, "Placa")}
-          {renderStepIcon(2, <ListTree size={16} />, "Versão")}
-          {renderStepIcon(3, <Zap size={16} />, "Preços")}
+          {renderStepIcon(2, <ListTree size={16} />, "VersÃ£o")}
+          {renderStepIcon(3, <Zap size={16} />, "PreÃ§os")}
           {renderStepIcon(4, <FileText size={16} />, "Resumo")}
         </div>
       </div>
 
-      {/* Área de Trabalho Fluida */}
+      {/* Ãrea de Trabalho Fluida */}
       <div className="glass-panel flex-1 flex flex-col overflow-y-auto relative min-h-0 custom-scrollbar">
         <AnimatePresence mode="wait">
 
@@ -634,10 +651,10 @@ const QuoteGenerator = () => {
               className="p-4 sm:p-6 md:p-8 flex-1 flex flex-col justify-center max-w-2xl mx-auto w-full text-center"
             >
               <h2 className="premium-title text-xl sm:text-2xl md:text-3xl uppercase tracking-tighter mb-1">
-                Consulta de Veículo
+                Consulta de VeÃ­culo
               </h2>
               <p className="text-xs sm:text-sm text-zinc-400 mb-3 sm:mb-5">
-                Selecione o tipo e informe a placa para busca FIPE instantânea.
+                Selecione o tipo e informe a placa para busca FIPE instantÃ¢nea.
               </p>
 
               {/* Segmented Type Selector */}
@@ -691,7 +708,7 @@ const QuoteGenerator = () => {
                   }
                 >
                   <Truck size={16} />
-                  <span className="text-xs font-bold uppercase tracking-wider">Caminhão</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">CaminhÃ£o</span>
                 </button>
               </div>
 
@@ -740,7 +757,7 @@ const QuoteGenerator = () => {
                     </div>
                   </div>
 
-                  {/* Botão de Busca FIPE: Sempre Visível */}
+                  {/* BotÃ£o de Busca FIPE: Sempre VisÃ­vel */}
                   <button
                     onClick={handleFipeSearch}
                     disabled={formData.placa.length < 7 || !formData.uf || loading}
@@ -778,23 +795,23 @@ const QuoteGenerator = () => {
                   }`}
                 >
                   <FlaskConical size={12} />
-                  {manualMode ? 'Voltar à consulta por placa' : 'Inserir valor manualmente (teste)'}
+                  {manualMode ? 'Voltar Ã  consulta por placa' : 'Inserir valor manualmente (teste)'}
                 </button>
               </div>
 
-              {/* Formulário Manual Responsivo */}
+              {/* FormulÃ¡rio Manual Responsivo */}
               {manualMode && (
                 <div className="mt-3 mx-auto w-full max-w-md space-y-2.5 bg-amber-500/5 border border-amber-500/20 rounded-xl p-3.5 sm:p-4 text-left">
                   <div className="flex items-center gap-2 mb-1">
                     <FlaskConical size={13} className="text-amber-400" />
                     <p className="text-[11px] text-amber-300 font-bold uppercase tracking-widest">
-                      Cotação de Teste — Sem Placa Real
+                      CotaÃ§Ã£o de Teste â€” Sem Placa Real
                     </p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
                       <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">
-                        Modelo / Descrição
+                        Modelo / DescriÃ§Ã£o
                       </label>
                       <input
                         type="text"
@@ -834,7 +851,7 @@ const QuoteGenerator = () => {
                     ) : (
                       <>
                         <ArrowRight size={14} />
-                        <span>Gerar Cotação de Teste</span>
+                        <span>Gerar CotaÃ§Ã£o de Teste</span>
                       </>
                     )}
                   </button>
@@ -850,7 +867,7 @@ const QuoteGenerator = () => {
           )}
 
           
-{/* STEP 2: VERSÕES FIPE */}
+{/* STEP 2: VERSÃ•ES FIPE */}
           {step === 2 && (
             <motion.div
               key="step2"
@@ -862,7 +879,7 @@ const QuoteGenerator = () => {
               <div className="flex justify-between items-center mb-3 pb-2 border-b border-white/5 shrink-0">
                 <div>
                   <h2 className="premium-title text-lg sm:text-2xl uppercase tracking-tighter mb-0.5">
-                    Selecione a versão correta
+                    Selecione a versÃ£o correta
                   </h2>
                   <p className="text-zinc-400 text-xs sm:text-sm">
                     Variantes encontradas para a placa{' '}
@@ -921,7 +938,7 @@ const QuoteGenerator = () => {
                           {v.modelo}
                         </h3>
                         <p className="text-[10px] text-zinc-400 font-mono bg-white/5 inline-block px-1.5 py-0.5 rounded mt-1 border border-white/5">
-                          Cód. {v.codigo_fipe}
+                          CÃ³d. {v.codigo_fipe}
                         </p>
                       </div>
                     </div>
@@ -939,7 +956,7 @@ const QuoteGenerator = () => {
             </motion.div>
           )}
 
-          {/* STEP 2B: SELEÇÃO DE GRUPO TARIFÁRIO */}
+          {/* STEP 2B: SELEÃ‡ÃƒO DE GRUPO TARIFÃRIO */}
           {step === '2b' && (
             <motion.div
               key="step2b"
@@ -951,7 +968,7 @@ const QuoteGenerator = () => {
               <div className="flex justify-between items-center mb-3 pb-2 border-b border-white/5 shrink-0">
                 <div>
                   <h2 className="premium-title text-lg sm:text-2xl uppercase tracking-tighter mb-0.5">
-                    Categoria Tarifária
+                    Categoria TarifÃ¡ria
                   </h2>
                   <p className="text-zinc-400 text-xs sm:text-sm">
                     Qual categoria se enquadra o <strong className="text-white">{formData.modelo}</strong>?
@@ -1019,7 +1036,7 @@ const QuoteGenerator = () => {
           )}
 
           
-{/* STEP 3: PREÇO & PLANO */}
+{/* STEP 3: PREÃ‡O & PLANO */}
           {step === 3 && (
             <motion.div
               key="step3"
@@ -1028,11 +1045,11 @@ const QuoteGenerator = () => {
               exit={{ opacity: 0, x: -20 }}
               className="p-3 sm:p-5 md:p-6 w-full flex flex-col flex-1"
             >
-              {/* Header com dados do veículo */}
+              {/* Header com dados do veÃ­culo */}
               <div className="flex justify-between items-center mb-4 pb-3 border-b border-white/5 shrink-0 gap-2">
                 <div className="min-w-0 flex-1">
                   <h2 className="premium-title text-lg sm:text-2xl uppercase tracking-tighter">
-                    Planos Disponíveis
+                    Planos DisponÃ­veis
                   </h2>
                   <p className="text-zinc-400 flex flex-wrap items-center mt-0.5 text-xs sm:text-sm">
                     <CheckCircle2 className="text-white mr-1.5 w-3.5 h-3.5 shrink-0" />
@@ -1049,11 +1066,11 @@ const QuoteGenerator = () => {
                   onClick={() => setStep(2)}
                   className="text-zinc-300 text-xs sm:text-sm hover:underline font-bold bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 shrink-0 transition-colors"
                 >
-                  Trocar Versão
+                  Trocar VersÃ£o
                 </button>
               </div>
 
-              {/* Grid de Cards de Planos — Layout Estável e Sem Corte */}
+              {/* Grid de Cards de Planos â€” Layout EstÃ¡vel e Sem Corte */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 w-full items-start pb-6">
                 {availablePlans.map((planPrice) => {
                   const isVip = planPrice.plans?.nome?.toLowerCase().includes('vip');
@@ -1078,7 +1095,7 @@ const QuoteGenerator = () => {
                           : {}
                       }
                     >
-                      {/* Top Header com Nome, Tag e Botão de Edição Imediato */}
+                      {/* Top Header com Nome, Tag e BotÃ£o de EdiÃ§Ã£o Imediato */}
                       <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3 mb-3 relative z-10">
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
                           <h3
@@ -1103,7 +1120,7 @@ const QuoteGenerator = () => {
                           )}
                         </div>
 
-                        {/* Botão de Edição que abre o Modal / Painel Dedicado */}
+                        {/* BotÃ£o de EdiÃ§Ã£o que abre o Modal / Painel Dedicado */}
                         <button
                           type="button"
                           onClick={() => openEditModal(planPrice.id, planPrice.plans?.coberturas || [])}
@@ -1119,7 +1136,7 @@ const QuoteGenerator = () => {
                       <div className="mb-3 relative z-10 text-center py-1">
                         <span className="text-3xl sm:text-4xl font-black text-white">
                           {formatCurrency(mensalidadeVal)}
-                          <span className="text-xs text-zinc-500 font-medium">/mês</span>
+                          <span className="text-xs text-zinc-500 font-medium">/mÃªs</span>
                         </span>
 
                         {/* Franquia & Cobertura */}
@@ -1129,7 +1146,7 @@ const QuoteGenerator = () => {
                             <span className="font-bold text-xs sm:text-sm text-white">{franquiaVal}%</span>
                           </div>
                           <div className="text-right">
-                            <span className="text-[10px] text-zinc-400 font-bold block uppercase mb-0.5">Cobertura Máx.</span>
+                            <span className="text-[10px] text-zinc-400 font-bold block uppercase mb-0.5">Cobertura MÃ¡x.</span>
                             <span className="font-bold text-xs sm:text-sm text-white">
                               {formatCurrency(coberturaVal)}
                             </span>
@@ -1137,22 +1154,22 @@ const QuoteGenerator = () => {
                         </div>
                       </div>
 
-                      {/* Adesão */}
+                      {/* AdesÃ£o */}
                       <div className="mb-3 bg-black/40 border border-white/5 rounded-xl p-2.5">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-[10px] text-zinc-400 font-bold uppercase">Taxa de Adesão</span>
+                          <span className="text-[10px] text-zinc-400 font-bold uppercase">Taxa de AdesÃ£o</span>
                           <span className="font-bold text-white text-xs">{formatCurrency(adesaoVal)}</span>
                         </div>
                       </div>
 
-                      {/* Seção de Benefícios */}
+                      {/* SeÃ§Ã£o de BenefÃ­cios */}
                       <div className="mb-2 pb-1.5 border-b border-white/5">
                         <p className="text-[9px] text-zinc-400 font-black tracking-widest uppercase">
-                          BENEFÍCIOS ({coberturas.length})
+                          BENEFÃCIOS ({coberturas.length})
                         </p>
                       </div>
 
-                      {/* Lista de Benefícios */}
+                      {/* Lista de BenefÃ­cios */}
                       <ul className="space-y-1.5 text-zinc-300 relative z-10 text-[11px] font-medium flex-1">
                         {coberturas.map((c, i) => (
                           <li key={i} className="flex items-start">
@@ -1173,7 +1190,7 @@ const QuoteGenerator = () => {
                 })}
               </div>
 
-              {/* Modal / Bottom Sheet de Edição Dedicado com Portal */}
+              {/* Modal / Bottom Sheet de EdiÃ§Ã£o Dedicado com Portal */}
               {typeof document !== 'undefined' && createPortal(
                 <AnimatePresence>
                   {activeEditPlanId && (() => {
@@ -1217,7 +1234,7 @@ const QuoteGenerator = () => {
                           onClick={(e) => e.stopPropagation()}
                           className="relative w-full max-w-lg bg-[#0E1629] border border-white/15 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
                         >
-                          {/* Cabeçalho Fixo */}
+                          {/* CabeÃ§alho Fixo */}
                           <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0 bg-[#0E1629]">
                             <div className="flex items-center gap-2.5">
                               <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
@@ -1228,7 +1245,7 @@ const QuoteGenerator = () => {
                                   Editando {planName}
                                 </h3>
                                 <p className="text-[11px] text-zinc-400">
-                                  Ajuste valores, franquia e benefícios deste plano
+                                  Ajuste valores, franquia e benefÃ­cios deste plano
                                 </p>
                               </div>
                             </div>
@@ -1242,7 +1259,7 @@ const QuoteGenerator = () => {
                             </button>
                           </div>
 
-                          {/* Campos de Valores (Seção Superior Fixa) */}
+                          {/* Campos de Valores (SeÃ§Ã£o Superior Fixa) */}
                           <div className="p-4 sm:p-5 border-b border-white/10 bg-black/30 shrink-0 space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                               {/* Mensalidade */}
@@ -1258,14 +1275,14 @@ const QuoteGenerator = () => {
                                     onChange={(e) => setEditedMensalidade(prev => ({ ...prev, [targetPlan.id]: e.target.value }))}
                                     className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-bold focus:outline-none focus:border-blue-500 transition-colors pr-10"
                                   />
-                                  <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500">/mês</span>
+                                  <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500">/mÃªs</span>
                                 </div>
                               </div>
 
-                              {/* Adesão */}
+                              {/* AdesÃ£o */}
                               <div>
                                 <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                                  Taxa de Adesão (R$)
+                                  Taxa de AdesÃ£o (R$)
                                 </label>
                                 <input
                                   type="text"
@@ -1293,10 +1310,10 @@ const QuoteGenerator = () => {
                                 </div>
                               </div>
 
-                              {/* Cobertura Máxima */}
+                              {/* Cobertura MÃ¡xima */}
                               <div>
                                 <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                                  Cobertura Máxima (R$)
+                                  Cobertura MÃ¡xima (R$)
                                 </label>
                                 <input
                                   type="text"
@@ -1309,18 +1326,18 @@ const QuoteGenerator = () => {
                             </div>
                           </div>
 
-                          {/* Lista de Benefícios (Scroll Interno Isolado - NÃO VAZA) */}
+                          {/* Lista de BenefÃ­cios (Scroll Interno Isolado - NÃƒO VAZA) */}
                           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 min-h-[160px]">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                                Benefícios & Coberturas ({targetCoberturas.length})
+                                BenefÃ­cios & Coberturas ({targetCoberturas.length})
                               </span>
                               <span className="text-[10px] text-zinc-500">
                                 Edite os detalhes ou exclua
                               </span>
                             </div>
 
-                            {/* Lista dos benefícios */}
+                            {/* Lista dos benefÃ­cios */}
                             <div className="space-y-2">
                               {targetCoberturas.map((cob, idx) => (
                                 <div
@@ -1350,7 +1367,7 @@ const QuoteGenerator = () => {
                               ))}
                             </div>
 
-                            {/* Formulário Inline: Adicionar Nova Cobertura */}
+                            {/* FormulÃ¡rio Inline: Adicionar Nova Cobertura */}
                             <div className="pt-2 border-t border-white/5">
                               <p className="text-[11px] font-bold text-zinc-400 mb-2 flex items-center gap-1.5">
                                 <Plus size={13} className="text-blue-400" />
@@ -1359,7 +1376,7 @@ const QuoteGenerator = () => {
                               <div className="flex gap-2">
                                 <input
                                   type="text"
-                                  placeholder="Nome do Benefício"
+                                  placeholder="Nome do BenefÃ­cio"
                                   value={newBenefit.label}
                                   onChange={(e) => setNewBenefit(prev => ({ ...prev, label: e.target.value }))}
                                   onKeyDown={(e) => {
@@ -1395,7 +1412,7 @@ const QuoteGenerator = () => {
                             </div>
                           </div>
 
-                          {/* Rodapé Fixo */}
+                          {/* RodapÃ© Fixo */}
                           <div className="px-5 py-3.5 border-t border-white/10 bg-[#0E1629] shrink-0 flex items-center justify-between gap-3">
                             <button
                               type="button"
@@ -1412,7 +1429,7 @@ const QuoteGenerator = () => {
                               className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-1.5"
                             >
                               <CheckCircle2 size={13} />
-                              <span>Salvar alterações</span>
+                              <span>Salvar alteraÃ§Ãµes</span>
                             </button>
                           </div>
                         </motion.div>
@@ -1422,7 +1439,29 @@ const QuoteGenerator = () => {
                 </AnimatePresence>,
                 document.body
               )}
-              {/* Botão de Ação: Sticky na base sem forçar corte nos cards */}
+              {/* BotÃ£o de AÃ§Ã£o: Sticky na base sem forÃ§ar corte nos cards */}
+                            {/* Identificação do Cliente (Opcional) */}
+              <div className="bg-black/20 border border-white/5 rounded-xl p-3 mb-3 text-left">
+                <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <User size={13} className="text-zinc-500" /> Identificação do Cliente (Opcional)
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={formData.cliente_nome || ''}
+                    onChange={(e) => setFormData({ ...formData, cliente_nome: e.target.value })}
+                    placeholder="Nome do Cliente (opcional)"
+                    className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30"
+                  />
+                  <input
+                    type="text"
+                    value={formData.cliente_whatsapp || ''}
+                    onChange={(e) => setFormData({ ...formData, cliente_whatsapp: e.target.value })}
+                    placeholder="WhatsApp do Cliente (opcional)"
+                    className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30"
+                  />
+                </div>
+              </div>
               <div className="sticky bottom-0 z-20 pt-3 pb-2 bg-[var(--color-surface)]/95 backdrop-blur-xl border-t border-white/10 mt-auto">
                 <button
                   type="button"
@@ -1446,7 +1485,7 @@ const QuoteGenerator = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="p-3 sm:p-5 md:p-6 flex-1 flex flex-col h-full min-h-0 overflow-y-auto styled-scrollbar"
             >
-              {/* Top Bar: Status e Botão Nova Cotação */}
+              {/* Top Bar: Status e BotÃ£o Nova CotaÃ§Ã£o */}
               <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/10 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
@@ -1467,7 +1506,7 @@ const QuoteGenerator = () => {
                   className="text-zinc-400 hover:text-white text-xs font-bold bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-colors uppercase tracking-wider flex items-center gap-1.5 shrink-0"
                 >
                   <RotateCcw size={13} />
-                  <span className="hidden sm:inline">Nova Cotação</span>
+                  <span className="hidden sm:inline">Nova CotaÃ§Ã£o</span>
                 </button>
               </div>
 
@@ -1478,7 +1517,7 @@ const QuoteGenerator = () => {
                     const isFirst = index === 0;
                     const coberturas = getCoberturas(planPrice.id, planPrice.plans?.coberturas || []);
                     const anoMatch = formData.modelo?.match(/\(([^)]+)\)/);
-                    const anoModelo = anoMatch ? anoMatch[1] : '—';
+                    const anoModelo = anoMatch ? anoMatch[1] : 'â€”';
                     const modeloNome = formData.modelo?.replace(/\s*\([^)]+\)\s*/, '').trim() || formData.modelo;
                     const mensalidade = getMensalidade(planPrice.id, planPrice.mensalidade);
                     const adesao = getAdesao(planPrice.id, planPrice.mensalidade);
@@ -1492,14 +1531,14 @@ const QuoteGenerator = () => {
                     return (
                       <div key={planPrice.id} style={{ width:'800px', minHeight:'1131px', backgroundColor:'#ffffff', fontFamily:'Arial,sans-serif', display:'flex', flexDirection:'column', overflow:'hidden', position:'relative' }}>
 
-                        {/* ── 1. HEADER ── */}
+                        {/* â”€â”€ 1. HEADER â”€â”€ */}
                         <div style={{ position:'relative', backgroundColor:'#ffffff', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 28px 14px 22px', borderBottom:'1px solid #e4e4e4', overflow:'hidden' }}>
                           {/* diagonal vermelho externo */}
                           <div style={{ position:'absolute', top:0, right:0, width:0, height:0, borderStyle:'solid', borderWidth:'0 115px 115px 0', borderColor:'transparent #c0000e transparent transparent' }}/>
                           {/* diagonal preto interno */}
                           <div style={{ position:'absolute', top:0, right:0, width:0, height:0, borderStyle:'solid', borderWidth:'0 82px 82px 0', borderColor:'transparent #1a1a1a transparent transparent', zIndex:1 }}/>
 
-                          {/* Logo Oficial da Associação */}
+                          {/* Logo Oficial da AssociaÃ§Ã£o */}
                           <div style={{ zIndex: 2 }}>
                             <img
                               src={VIPCAR_LOGO_LIGHT}
@@ -1512,47 +1551,47 @@ const QuoteGenerator = () => {
                           <div style={{ zIndex:2, display:'flex', alignItems:'center', gap:'14px', marginRight:'125px' }}>
                             <div style={{ width:'1px', height:'46px', background:'#ccc', flexShrink:0 }}/>
                             <div style={{ fontSize:'10px', fontWeight:'700', letterSpacing:'2px', color:'#1a1a1a', textTransform:'uppercase', lineHeight:'1.75', textAlign:'right' }}>
-                              MAIS QUE PROTEÇÃO,<br/>É TRANQUILIDADE<br/>PARA VOCÊ SEGUIR.
+                              MAIS QUE PROTEÃ‡ÃƒO,<br/>Ã‰ TRANQUILIDADE<br/>PARA VOCÃŠ SEGUIR.
                             </div>
                           </div>
                         </div>
 
-                        {/* ── 2. TITLE BLOCK ── */}
+                        {/* â”€â”€ 2. TITLE BLOCK â”€â”€ */}
                         <div style={{ backgroundColor:'#ffffff', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'24px 0 0 28px', minHeight:'150px' }}>
                           <div style={{ maxWidth:'240px', flexShrink:0 }}>
-                            <div style={{ fontSize:'12px', fontWeight:'600', letterSpacing:'3px', color:'#555', textTransform:'uppercase' }}>Cotação</div>
+                            <div style={{ fontSize:'12px', fontWeight:'600', letterSpacing:'3px', color:'#555', textTransform:'uppercase' }}>CotaÃ§Ã£o</div>
                             <div style={{ fontSize:'46px', fontWeight:'900', color:'#1a1a1a', textTransform:'uppercase', lineHeight:'0.95', letterSpacing:'-1px' }}>
-                              PROTEÇÃO<br/><span style={{ color:'#c0000e' }}>VEICULAR</span>
+                              PROTEÃ‡ÃƒO<br/><span style={{ color:'#c0000e' }}>VEICULAR</span>
                             </div>
                             <div style={{ fontSize:'13px', fontWeight:'500', color:'#444', marginTop:'10px', lineHeight:'1.5' }}>
-                              Seu veículo seguro,<br/>você tranquilo.
+                              Seu veÃ­culo seguro,<br/>vocÃª tranquilo.
                             </div>
                             <div style={{ width:'48px', height:'3px', background:'#c0000e', marginTop:'10px', borderRadius:'2px' }}/>
                           </div>
                           <div style={{ flex:1, display:'flex', justifyContent:'flex-end', alignItems:'flex-end', padding:'16px 28px 0 0' }}>
                             <div style={{ textAlign:'right' }}>
-                              <div style={{ fontSize:'10px', fontWeight:'700', color:'#c0000e', letterSpacing:'2px', textTransform:'uppercase' }}>Veículo Cotado</div>
+                              <div style={{ fontSize:'10px', fontWeight:'700', color:'#c0000e', letterSpacing:'2px', textTransform:'uppercase' }}>VeÃ­culo Cotado</div>
                               <div style={{ fontSize:'20px', fontWeight:'900', color:'#1a1a1a', textTransform:'uppercase', lineHeight:1.1, maxWidth:'320px' }}>{modeloNome}</div>
                               <div style={{ fontSize:'12px', color:'#888', marginTop:'4px' }}>Valor FIPE: {formatCurrency(formData.fipe)}</div>
                             </div>
                           </div>
                         </div>
 
-                        {/* ── 3. CARD DADOS DO VEÍCULO ── */}
+                        {/* â”€â”€ 3. CARD DADOS DO VEÃCULO â”€â”€ */}
                         <div style={{ margin:'14px 20px 0', backgroundColor:'#f5f5f5', borderRadius:'12px', padding:'16px 20px' }}>
                           <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'12px' }}>
                             <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'#fff', border:'2px solid #e0e0e0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                               <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 17H3V12L5.5 6H18.5L21 12V17H19M5 17H19M5 17a2 2 0 1 0 4 0m10 0a2 2 0 1 0-4 0m-6 0h6" stroke="#c0000e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                             </div>
                             <div>
-                              <div style={{ fontSize:'10px', fontWeight:'800', letterSpacing:'2px', color:'#c0000e', textTransform:'uppercase' }}>Dados do Veículo</div>
+                              <div style={{ fontSize:'10px', fontWeight:'800', letterSpacing:'2px', color:'#c0000e', textTransform:'uppercase' }}>Dados do VeÃ­culo</div>
                               <div style={{ fontSize:'15px', fontWeight:'800', color:'#1a1a1a', textTransform:'uppercase', marginTop:'2px' }}>{modeloNome}</div>
                             </div>
                           </div>
                           <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', borderTop:'1px solid #ddd', paddingTop:'12px' }}>
                             {[
                               { label:'Ano Modelo', value: anoModelo },
-                              { label:'Placa', value: formData.placa !== 'TESTE' ? formData.placa : '—' },
+                              { label:'Placa', value: formData.placa !== 'TESTE' ? formData.placa : 'â€”' },
                               { label:'Valor FIPE', value: formatCurrency(formData.fipe) },
                               { label:'Plano', value: planPrice.plans?.nome }
                             ].map((col, ci) => (
@@ -1564,7 +1603,7 @@ const QuoteGenerator = () => {
                           </div>
                         </div>
 
-                        {/* ── 4. CARD COBERTURAS ── */}
+                        {/* â”€â”€ 4. CARD COBERTURAS â”€â”€ */}
                         <div style={{ margin:'12px 20px 0', backgroundColor:'#f5f5f5', borderRadius:'12px', padding:'16px 20px', flex:1 }}>
                           <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'12px' }}>
                             <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'#fff', border:'2px solid #e0e0e0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
@@ -1572,7 +1611,7 @@ const QuoteGenerator = () => {
                             </div>
                             <div>
                               <div style={{ fontSize:'10px', fontWeight:'800', letterSpacing:'2px', color:'#c0000e', textTransform:'uppercase' }}>Coberturas</div>
-                              <div style={{ fontSize:'9px', fontWeight:'500', color:'#888', textTransform:'uppercase', letterSpacing:'1px', marginTop:'2px' }}>Proteção completa para o seu veículo</div>
+                              <div style={{ fontSize:'9px', fontWeight:'500', color:'#888', textTransform:'uppercase', letterSpacing:'1px', marginTop:'2px' }}>ProteÃ§Ã£o completa para o seu veÃ­culo</div>
                             </div>
                           </div>
                           {/* Grid 2 colunas */}
@@ -1594,34 +1633,34 @@ const QuoteGenerator = () => {
                           </div>
                         </div>
 
-                        {/* ── PRICING ROW ── */}
+                        {/* â”€â”€ PRICING ROW â”€â”€ */}
                         <div style={{ margin:'12px 20px 0', backgroundColor:'#f0f0f0', borderRadius:'12px', padding:'14px 20px' }}>
                           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1.4fr', gap:'0' }}>
                             <div style={{ paddingRight:'12px', borderRight:'1px solid #ddd' }}>
-                              <div style={{ fontSize:'8px', fontWeight:'700', letterSpacing:'1.5px', color:'#999', textTransform:'uppercase' }}>Taxa de Adesão</div>
+                              <div style={{ fontSize:'8px', fontWeight:'700', letterSpacing:'1.5px', color:'#999', textTransform:'uppercase' }}>Taxa de AdesÃ£o</div>
                               <div style={{ fontSize:'18px', fontWeight:'900', color:'#1a1a1a', marginTop:'2px' }}>{formatCurrency(adesao)}</div>
                             </div>
                             <div style={{ paddingLeft:'12px', paddingRight:'12px', borderRight:'1px solid #ddd' }}>
-                              <div style={{ fontSize:'8px', fontWeight:'700', letterSpacing:'1.5px', color:'#999', textTransform:'uppercase' }}>Cota de Participação</div>
+                              <div style={{ fontSize:'8px', fontWeight:'700', letterSpacing:'1.5px', color:'#999', textTransform:'uppercase' }}>Cota de ParticipaÃ§Ã£o</div>
                               <div style={{ fontSize:'18px', fontWeight:'900', color:'#1a1a1a', marginTop:'2px' }}>{franquia}%</div>
                             </div>
                             <div style={{ paddingLeft:'12px' }}>
                               <div style={{ fontSize:'8px', fontWeight:'700', letterSpacing:'1.5px', color:'#c0000e', textTransform:'uppercase' }}>Investimento Mensal</div>
                               <div style={{ fontSize:'24px', fontWeight:'900', color:'#1a1a1a', marginTop:'2px', lineHeight:1 }}>
-                                {formatCurrency(mensalidade)}<span style={{ fontSize:'12px', color:'#888', fontWeight:'500' }}>/mês</span>
+                                {formatCurrency(mensalidade)}<span style={{ fontSize:'12px', color:'#888', fontWeight:'500' }}>/mÃªs</span>
                               </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* ── 5. FOOTER ── */}
+                        {/* â”€â”€ 5. FOOTER â”€â”€ */}
                         <div style={{ backgroundColor:'#1a1a1a', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 28px', marginTop:'14px' }}>
                           <div>
                             <div style={{ fontSize:'11px', fontWeight:'600', letterSpacing:'3px', color:'#aaa', textTransform:'uppercase' }}>Juntos por</div>
                             <div style={{ fontSize:'22px', fontWeight:'900', color:'#fff', textTransform:'uppercase', letterSpacing:'0.5px', lineHeight:'1.05' }}>Mais Conquistas!</div>
                             <div style={{ width:'40px', height:'3px', background:'#c0000e', marginTop:'6px', borderRadius:'2px' }}/>
                           </div>
-                          {/* Logo Oficial no Rodapé */}
+                          {/* Logo Oficial no RodapÃ© */}
                           <div>
                             <img
                               src={VIPCAR_LOGO_DARK}
@@ -1635,7 +1674,7 @@ const QuoteGenerator = () => {
                     );
                   })}
 
-                  {/* COMPARISON PAGE – mantida sem alteração */}
+                  {/* COMPARISON PAGE â€“ mantida sem alteraÃ§Ã£o */}
                   {availablePlans.length > 1 && (
                       <div className="bg-[#080F1E] text-[#E2E8F0] w-[800px] min-h-[1131px] p-8 font-sans relative overflow-hidden flex flex-col pt-12 shrink-0">
                         <div className="absolute top-[20%] right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] translate-x-1/3"></div>
@@ -1646,17 +1685,17 @@ const QuoteGenerator = () => {
                           </p>
                         </div>
                         <p className="text-sm font-medium text-zinc-400 mb-8 shrink-0">
-                          Entenda abaixo, de forma transparente, as diferenças exatas entre as coberturas de cada plano oferecido para o <strong className="text-white">{formData.modelo}</strong>.
+                          Entenda abaixo, de forma transparente, as diferenÃ§as exatas entre as coberturas de cada plano oferecido para o <strong className="text-white">{formData.modelo}</strong>.
                         </p>
                         <div className="relative z-10 flex-col flex bg-[#0E1629]/90 rounded-2xl border border-white/5 shadow-[0_0_50px_rgba(255,255,255,0.02)] overflow-hidden w-full max-w-[700px] mx-auto h-auto">
                             <div className={`grid bg-[#080F1E]/80 border-b border-white/5 p-5 shrink-0 ${getPlansWithEdits().length === 2 ? 'grid-cols-[2fr_1fr_1fr]' : 'grid-cols-[2fr_1fr_1fr_1fr]'} gap-4`}>
-                               <div className="font-black text-zinc-500 uppercase tracking-widest text-[11px] self-end pb-2">Benefício Estrutural</div>
+                               <div className="font-black text-zinc-500 uppercase tracking-widest text-[11px] self-end pb-2">BenefÃ­cio Estrutural</div>
                                {availablePlans.map((plan, i) => (
                                  <div key={i} className="text-center font-black uppercase text-xl border-l border-white/5 pl-4 flex flex-col justify-end">
                                     <span className={`premium-title text-xl uppercase tracking-tighter ${plan.plans?.nome?.toLowerCase().includes('vip') ? `text-transparent bg-clip-text bg-gradient-to-r ${theme.colors.gradientFrom} to-white` : 'text-white'}`}>
                                       {plan.plans?.nome}
                                     </span>
-                                    <p className="text-[12px] font-medium text-zinc-400 mt-1">{formatCurrency(plan.mensalidade)}/mês</p>
+                                    <p className="text-[12px] font-medium text-zinc-400 mt-1">{formatCurrency(plan.mensalidade)}/mÃªs</p>
                                  </div>
                                ))}
                             </div>
@@ -1675,7 +1714,7 @@ const QuoteGenerator = () => {
                                                  {hasBenefit ? (
                                                     hasBenefit.param ? <span className="text-white font-medium">{hasBenefit.param}</span> : <div className="text-white bg-white/10 px-2.5 py-0.5 rounded-md border border-white/20">INCLUSO</div>
                                                  ) : (
-                                                    <span className="text-zinc-600 font-black">—</span>
+                                                    <span className="text-zinc-600 font-black">â€”</span>
                                                  )}
                                               </div>
                                            );
@@ -1686,12 +1725,12 @@ const QuoteGenerator = () => {
                             </div>
                             <div className="bg-[#080F1E]/80 border-t border-white/5 p-4 text-center">
                                <p className="text-[10px] text-zinc-500 font-medium tracking-wide">
-                                  Franquia base de {availablePlans[0]?.franquia_percentual}% para todos os planos padrão listados acima.
+                                  Franquia base de {availablePlans[0]?.franquia_percentual}% para todos os planos padrÃ£o listados acima.
                                </p>
                             </div>
                         </div>
                         <div className="text-center text-zinc-600 text-[10px] mt-8 relative z-10 border-t border-indigo-500/10 pt-5 shrink-0 flex-1 flex items-end justify-center pb-4">
-                          Resumo comparativo autogerado. Em caso de discrepância, prevalecem as condições gerais regulamentares da Associação.
+                          Resumo comparativo autogerado. Em caso de discrepÃ¢ncia, prevalecem as condiÃ§Ãµes gerais regulamentares da AssociaÃ§Ã£o.
                         </div>
                       </div>
                   )}
@@ -1704,9 +1743,9 @@ const QuoteGenerator = () => {
               </div>
 
 
-              {/* Grid Responsivo de Exibição do Resultado: 2 Colunas no Desktop, 1 Coluna Priorizada no Mobile */}
+              {/* Grid Responsivo de ExibiÃ§Ã£o do Resultado: 2 Colunas no Desktop, 1 Coluna Priorizada no Mobile */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:gap-5 flex-1 min-h-0 items-start">
-                {/* COLUNA ESQUERDA: Resumo da Proposta + Ações Imediatas (WhatsApp, Compartilhar, PDF) */}
+                {/* COLUNA ESQUERDA: Resumo da Proposta + AÃ§Ãµes Imediatas (WhatsApp, Compartilhar, PDF) */}
                 <div className="lg:col-span-5 flex flex-col gap-3 shrink-0">
                   {/* Card de Resumo da Proposta */}
                   <div className="bg-black/40 border border-white/10 rounded-xl sm:rounded-2xl p-4 sm:p-5 text-left relative overflow-hidden shadow-lg">
@@ -1714,7 +1753,7 @@ const QuoteGenerator = () => {
                       <div className="flex items-center space-x-2">
                         <div className="h-3.5 w-1 bg-blue-500 rounded-full" />
                         <span className="text-white font-black tracking-widest text-xs uppercase">
-                          Resumo da Cotação
+                          Resumo da CotaÃ§Ã£o
                         </span>
                       </div>
                       <span className="text-zinc-500 text-[11px] font-mono">
@@ -1724,14 +1763,14 @@ const QuoteGenerator = () => {
 
                     <div className="mb-3">
                       <p className="text-[10px] text-blue-400/80 uppercase font-black tracking-widest">
-                        Veículo Selecionado
+                        VeÃ­culo Selecionado
                       </p>
                       <p className="text-white font-bold text-sm sm:text-base uppercase truncate">
                         {formData.modelo}
                       </p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span className="text-[11px] text-zinc-400 font-mono bg-white/5 px-2 py-0.5 rounded border border-white/5">
-                          Placa: {formData.placa !== 'TESTE' ? formData.placa : '—'}
+                          Placa: {formData.placa !== 'TESTE' ? formData.placa : 'â€”'}
                         </span>
                         <span className="text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                           FIPE: {formatCurrency(formData.fipe)}
@@ -1740,7 +1779,7 @@ const QuoteGenerator = () => {
                     </div>
 
                     <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-2">
-                      Opções de Planos
+                      OpÃ§Ãµes de Planos
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
                       {availablePlans.map((planPrice) => {
@@ -1766,7 +1805,7 @@ const QuoteGenerator = () => {
                             </p>
                             <p className="text-base sm:text-lg text-white font-black">
                               {formatCurrency(mensalidade)}
-                              <span className="text-[10px] font-normal text-zinc-500">/mês</span>
+                              <span className="text-[10px] font-normal text-zinc-500">/mÃªs</span>
                             </p>
                             <div className="flex justify-between items-center text-[10px] text-zinc-400 mt-1 pt-1 border-t border-white/5">
                               <span>Franquia: <strong className="text-zinc-200">{franquia}%</strong></span>
@@ -1778,7 +1817,7 @@ const QuoteGenerator = () => {
                     </div>
                   </div>
 
-                  {/* CTAs de Compartilhamento Imediato (SEMPRE VISÍVEIS NO TOPO) */}
+                  {/* CTAs de Compartilhamento Imediato (SEMPRE VISÃVEIS NO TOPO) */}
                   <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                     <button
                       type="button"
@@ -1832,7 +1871,7 @@ const QuoteGenerator = () => {
                   </div>
                 </div>
 
-                {/* COLUNA DIREITA: Inteligência Veicular (IA) & Detalhes */}
+                {/* COLUNA DIREITA: InteligÃªncia Veicular (IA) & Detalhes */}
                 <div className="lg:col-span-7 flex flex-col gap-3 min-h-0 w-full">
                   <VehicleIntelligenceSection
                     status={intelligence.status}
@@ -1855,6 +1894,8 @@ const QuoteGenerator = () => {
 };
 
 export default QuoteGenerator;
+
+
 
 
 
