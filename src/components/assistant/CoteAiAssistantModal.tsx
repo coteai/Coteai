@@ -155,7 +155,7 @@ export const CoteAiAssistantModal: React.FC<CoteAiAssistantModalProps> = ({
     setIsProcessing(true);
 
     try {
-      const response: AiResponse = await processAiQuery(query, context);
+      const response: AiResponse = await processAiQuery(query, context, messages);
       const assistantMsg: Message = {
         id: String(Date.now() + 1),
         sender: 'assistant',
@@ -205,7 +205,7 @@ export const CoteAiAssistantModal: React.FC<CoteAiAssistantModalProps> = ({
           className="w-full h-full md:h-[90vh] md:max-h-[820px] md:max-w-3xl bg-[#070d1d] md:rounded-3xl md:border md:border-white/15 md:shadow-[0_25px_80px_rgba(0,0,0,0.95)] flex flex-col overflow-hidden relative"
         >
           {/* Header Sólido com Botão Voltar */}
-          <header className="h-16 px-4 sm:px-6 border-b border-white/10 bg-[#0a1226] flex items-center justify-between shrink-0 select-none relative z-10">
+          <header className="px-4 sm:px-6 border-b border-white/10 bg-[#0a1226] flex items-center justify-between shrink-0 select-none relative z-10 pt-[max(env(safe-area-inset-top),28px)] pb-3 sm:pt-4 sm:pb-4 min-h-[4.75rem]">
             <div className="flex items-center space-x-3">
               <button
                 type="button"
@@ -378,7 +378,7 @@ export const CoteAiAssistantModal: React.FC<CoteAiAssistantModalProps> = ({
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder={isListening ? 'Ouvindo...' : 'Faça uma pergunta sobre a operação...'}
                 disabled={isProcessing}
-                className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/30 transition-all font-medium"
+                className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[16px] text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/30 transition-all font-medium"
               />
 
               <button
