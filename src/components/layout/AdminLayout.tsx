@@ -306,6 +306,17 @@ const AdminLayout = () => {
           </button>
         </div>
       </nav>
+
+      {/* Assistente Flutuante Cote AI Manager */}
+      <CoteAiAssistantModal
+        isOpen={assistantOpen}
+        onClose={() => setAssistantOpen(false)}
+        context={{
+          role: 'manager',
+          associationId: associationData?.id || '',
+        }}
+        accentHex={accentHex}
+      />
     </div>
   );
 };

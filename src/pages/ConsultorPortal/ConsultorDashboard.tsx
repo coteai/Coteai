@@ -19,7 +19,7 @@ import { DailyClosingSection } from '../../components/crm/DailyClosingSection';
 import { PendingQuotesSection } from '../../components/crm/PendingQuotesSection';
 import { CrmPipeline } from '../../components/crm/CrmPipeline';
 import { QuoteObservationsModal } from '../../components/crm/QuoteObservationsModal';
-import { CoteAiAssistantModal } from '../../components/assistant/CoteAiAssistantModal';
+// CoteAiAssistantModal hosted in ConsultorLayout
 
 const formatCurrency = (val: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val || 0);
@@ -81,8 +81,8 @@ const ConsultorDashboard = () => {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuote, setSelectedQuote] = useState<any | null>(null);
-  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-  const [assistantInitialQuery, setAssistantInitialQuery] = useState('');
+  
+  
   const [activeTab, setActiveTab] = useState<'pipeline' | 'fechamento' | 'pendentes'>('pipeline');
 
   const theme = getThemeConfig(consultor?.tema_cor || 'emerald');
@@ -206,28 +206,25 @@ const ConsultorDashboard = () => {
           </div>
           <div>
             <h4 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">
-              Cote AI • Seu Assessor Comercial
-              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                Online
+              Cote AI — Assessor Comercial
+              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">
+                GPT-4o mini
               </span>
             </h4>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Fale por áudio ou texto para consultar suas vendas, cotações pendentes e taxa de conversão.
+              Inteligência artificial conectada às suas vendas. Consulte cotações em negociação, pendências de fechamento e taxa de conversão.
             </p>
           </div>
         </div>
 
         <button
           type="button"
-          onClick={() => {
-            setAssistantInitialQuery('');
-            setIsAssistantOpen(true);
-          }}
-          className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-black transition-all hover:scale-105 active:scale-95 shadow-md flex items-center gap-1.5 shrink-0"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-cote-ai-assistant'))}
+          className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-black transition-all hover:scale-105 active:scale-95 shadow-md flex items-center gap-1.5 shrink-0 hover:brightness-110"
           style={{ backgroundColor: accentHex }}
         >
           <Sparkles size={14} className="fill-black" />
-          <span>Falar com Cote AI</span>
+          <span>Abrir Cote AI</span>
         </button>
       </div>
 
@@ -467,20 +464,7 @@ const ConsultorDashboard = () => {
         </>
       )}
 
-            {/* Modal do Assistente Cote AI */}
-      {consultor && (
-        <CoteAiAssistantModal
-          isOpen={isAssistantOpen}
-          onClose={() => setIsAssistantOpen(false)}
-          context={{
-            role: 'consultor',
-            associationId: associationData?.id || '',
-            consultantId: consultor.id,
-            consultantName: consultor.nome,
-          }}
-          accentHex={accentHex}
-        />
-      )}
+            {/* CoteAiAssistantModal is hosted globally in ConsultorLayout */}
 
       {/* Modal de Detalhes & Observações */}
       {selectedQuote && (

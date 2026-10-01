@@ -1,4 +1,5 @@
-﻿import type { AiContext } from './aiAssistantService';
+﻿import { supabase } from '@/lib/supabase';
+import type { AiContext } from './aiAssistantService';
 import {
   get_daily_summary,
   compare_periods,
@@ -19,28 +20,135 @@ export interface AiResponse {
   answer: string;
   sourceFunction?: string;
   data?: any;
+  model?: string;
 }
 
 /**
- * Processa a pergunta do usuário e devolve uma resposta estritamente factual
+ * Coleta os dados reais do CRM em um snapshot factual estruturado
  */
-export async function processAiQuery(prompt: string, ctx: AiContext): Promise<AiResponse> {
-  const p = prompt.toLowerCase().trim();
+export async function gatherFactualContext(ctx: AiContext): Promise<Record<string, any>> {
+  const context: Record<string, any> = {
+    role: ctx.role,
+    dataConsulta: new Date().toISOString(),
+    usuario: ctx.consultantName || (ctx.role === 'manager' ? 'Gestor' : 'Consultor'),
+  };
 
-  // 1. VERIFICAÇÃO DE SEGURANÇA E ESCOPO PARA O CONSULTOR
-  if (ctx.role === 'consultor') {
-    const prohibitedTerms = [
-      'outros consultores', 'outro consultor', 'ranking geral', 'toda a associação',
-      'todos os consultores', 'qual consultor', 'quem vendeu mais', 'equipe toda', 'geral da associação'
-    ];
-    for (const term of prohibitedTerms) {
-      if (p.includes(term)) {
-        return {
-          answer: 'Como seu assistente pessoal no Cote AI, tenho acesso exclusivamente aos seus próprios dados comerciais, clientes e cotações. Não possuo permissão para consultar métricas de outros consultores ou da associação.',
-        };
+  try {
+    const [daily, quotesThisMonth, salesThisMonth, conversionThisMonth, pending, pipeline] = await Promise.all([
+      get_daily_summary(ctx, 'hoje').catch(() => null),
+      get_quote_metrics(ctx, 'este_mes').catch(() => null),
+      get_sales_metrics(ctx, 'este_mes').catch(() => null),
+      get_conversion_rate(ctx, 'este_mes').catch(() => null),
+      get_pending_quotes(ctx).catch(() => null),
+      get_quote_pipeline(ctx).catch(() => null),
+    ]);
+
+    context.resumoHoje = daily;
+    context.cotacoesMesAtual = quotesThisMonth;
+    context.vendasMesAtual = salesThisMonth;
+    context.conversaoMesAtual = conversionThisMonth;
+    context.cotacoesPendentes = pending;
+    context.pipelineComercial = pipeline;
+
+    if (ctx.role === 'manager') {
+      const [teamPerf, topVehicles, topPlans, periodCompare] = await Promise.all([
+        get_consultant_performance(ctx, undefined, 'este_mes').catch(() => null),
+        get_top_vehicles(ctx, 5).catch(() => null),
+        get_top_plans(ctx, 5).catch(() => null),
+        compare_periods(ctx, 'este_mes', 'mes_passado').catch(() => null),
+      ]);
+      context.desempenhoEquipe = teamPerf;
+      context.topVeiculos = topVehicles;
+      context.topPlanos = topPlans;
+      context.comparativoMesPassado = periodCompare;
+    }
+  } catch (err) {
+    console.warn('[Cote AI] Error gathering factual context:', err);
+  }
+
+  return context;
+}
+
+/**
+ * Tenta processar a consulta utilizando o modelo GPT-4o-mini
+ */
+async function callGpt4oMini(prompt: string, ctx: AiContext, contextData: Record<string, any>): Promise<string | null> {
+  // 1. Tenta Edge Function do Supabase
+  try {
+    const { data, error } = await supabase.functions.invoke('cote-ai-assistant', {
+      body: {
+        prompt,
+        role: ctx.role,
+        association_id: ctx.associationId,
+        consultant_id: ctx.consultantId,
+        context_data: contextData,
+      },
+    });
+
+    if (!error && data && data.success && data.answer) {
+      return data.answer;
+    }
+  } catch (err) {
+    console.warn('[Cote AI] Edge function invoke error:', err);
+  }
+
+  // 2. Tenta chamada direta se VITE_OPENAI_API_KEY estiver configurada no frontend
+  const clientKey = (import.meta as any).env?.VITE_OPENAI_API_KEY;
+  if (clientKey) {
+    try {
+      const roleDesc = ctx.role === 'manager'
+        ? 'Você é o Cote AI Manager, gestor analítico e copiloto comercial da associação no Cote AI. Você tem visão de toda a operação.'
+        : 'Você é o Cote AI, assessor comercial exclusivo do consultor no Cote AI. Você só tem acesso aos dados pessoais do consultor.';
+
+      const systemPrompt = `${roleDesc}
+
+DIRETRIZES CRÍTICAS E OBRIGATÓRIAS:
+1. Baseie TODAS as suas respostas EXCLUSIVAMENTE nos DADOS REAIS DO SISTEMA fornecidos no JSON abaixo.
+2. NUNCA invente números, clientes, valores, vendas, cotações, rankings ou porcentagens.
+3. Se o usuário perguntar sobre alguma métrica ou informação que NÃO conste no contexto real fornecido, responda educadamente: "Não tenho esse dado registrado no Cote AI."
+4. ${ctx.role === 'consultor' ? 'O usuário é um consultor. Ele só pode ver os próprios dados. NUNCA mencione outros consultores ou dados globais da associação.' : 'O usuário é um gestor da associação com permissão para ver todos os dados da associação.'}
+5. Seja executivo, claro, amigável e direto em português do Brasil.
+6. Use formatação Markdown limpa: destaque números e valores com **negrito**, use listas com marcadores simples quando listar itens, e mantenha parágrafos curtos.
+7. Quando perguntado sobre o dia de hoje ou resumo, apresente os números de cotações, conversões e pendências claramente.`;
+
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${clientKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            {
+              role: 'user',
+              content: `DADOS REAIS DO SISTEMA (CRM COTE AI):\n${JSON.stringify(contextData, null, 2)}\n\nPERGUNTA DO USUÁRIO:\n${prompt}`,
+            },
+          ],
+          temperature: 0.3,
+          max_tokens: 650,
+        }),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const text = json.choices?.[0]?.message?.content;
+        if (text) return text;
       }
+    } catch (err) {
+      console.warn('[Cote AI] Direct OpenAI API error:', err);
     }
   }
+
+  return null;
+}
+
+/**
+ * Motor determinístico factual - garante que nenhuma pergunta fique sem resposta precisa
+ */
+async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<AiResponse> {
+  const p = prompt.toLowerCase().trim();
 
   // Identificação do período mencionado na pergunta
   let periodType: 'hoje' | 'ontem' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'mes_passado' | 'tudo' = 'este_mes';
@@ -52,13 +160,13 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
   else if (p.includes('este mês') || p.includes('este mes') || p.includes('desse mês')) periodType = 'este_mes';
   else if (p.includes('sempre') || p.includes('total') || p.includes('histórico')) periodType = 'tudo';
 
-  // 2. RESUMO DIÁRIO / OPERAÇÃO DE HOJE
-  if (p.includes('resumo da operação') || p.includes('resumo de hoje') || p.includes('como foi nossa operação') || p.includes('como foi hoje') || p.includes('meu resumo de hoje') || p.includes('resumo do dia')) {
+  // 1. RESUMO DIÁRIO / OPERAÇÃO DE HOJE
+  if (p.includes('resumo') || p.includes('operação de hoje') || p.includes('operacao de hoje') || p.includes('como foi hoje') || p.includes('fechamento')) {
     const summary = await get_daily_summary(ctx, periodType === 'ontem' ? 'ontem' : 'hoje');
 
     if (summary.total === 0) {
       return {
-        answer: `**Resumo da operação de ${summary.dataReferencia}:**\n\nNenhuma cotação foi registrada ${summary.dataReferencia} até o momento.\n\n*Nota:* Fique atento às oportunidades no CRM para iniciar novas negociações.`,
+        answer: `**Resumo da operação de ${summary.dataReferencia}:**\n\nNenhuma cotação foi registrada ${summary.dataReferencia} até o momento.\n\n*Recomendação:* Fique atento às oportunidades no CRM para iniciar novas negociações.`,
         sourceFunction: 'get_daily_summary',
         data: summary,
       };
@@ -81,7 +189,7 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
     return { answer: text, sourceFunction: 'get_daily_summary', data: summary };
   }
 
-  // 3. COMPARAÇÃO DE PERÍODOS
+  // 2. COMPARAÇÃO DE PERÍODOS
   if (p.includes('compare') || p.includes('comparar') || p.includes('comparativo') || p.includes('diferença entre')) {
     let pA: 'hoje' | 'esta_semana' | 'este_mes' = 'este_mes';
     let pB: 'ontem' | 'semana_passada' | 'mes_passado' = 'mes_passado';
@@ -99,25 +207,23 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
     const B = comp.periodoB;
 
     let text = `📈 **Comparativo: ${A.nome.toUpperCase()} vs ${B.nome.toUpperCase()}**\n\n`;
-    text += `| Indicador | ${A.nome} | ${B.nome} | Variação |\n`;
-    text += `| :--- | :---: | :---: | :---: |\n`;
-    text += `| **Cotações** | ${A.total} | ${B.total} | ${comp.diferencas.diffCotacoes >= 0 ? `+${comp.diferencas.diffCotacoes}` : comp.diferencas.diffCotacoes} |\n`;
-    text += `| **Convertidas** | ${A.convertidas} | ${B.convertidas} | ${comp.diferencas.diffConvertidas >= 0 ? `+${comp.diferencas.diffConvertidas}` : comp.diferencas.diffConvertidas} |\n`;
-    text += `| **Taxa de Conversão** | ${A.taxa}% | ${B.taxa}% | ${comp.diferencas.diffTaxa >= 0 ? `+${comp.diferencas.diffTaxa}%` : `${comp.diferencas.diffTaxa}%`} |\n`;
-    text += `| **Ticket Médio** | ${formatCurrency(A.ticket)} | ${formatCurrency(B.ticket)} | - |\n\n`;
+    text += `• **Cotações:** ${A.total} (${A.nome}) vs ${B.total} (${B.nome}) [${comp.diferencas.diffCotacoes >= 0 ? `+${comp.diferencas.diffCotacoes}` : comp.diferencas.diffCotacoes}]\n`;
+    text += `• **Convertidas:** ${A.convertidas} vs ${B.convertidas} [${comp.diferencas.diffConvertidas >= 0 ? `+${comp.diferencas.diffConvertidas}` : comp.diferencas.diffConvertidas}]\n`;
+    text += `• **Taxa de Conversão:** ${A.taxa}% vs ${B.taxa}% [${comp.diferencas.diffTaxa >= 0 ? `+${comp.diferencas.diffTaxa}%` : `${comp.diferencas.diffTaxa}%`}]\n`;
+    text += `• **Ticket Médio:** ${formatCurrency(A.ticket)} vs ${formatCurrency(B.ticket)}\n\n`;
 
     if (comp.diferencas.crescimentoCotacoesPct !== null) {
       if (comp.diferencas.crescimentoCotacoesPct > 0) {
-        text += `• O volume de cotações cresceu **${comp.diferencas.crescimentoCotacoesPct}%** em relação ao período anterior.\n`;
+        text += `O volume de cotações cresceu **${comp.diferencas.crescimentoCotacoesPct}%** em relação ao período anterior.\n`;
       } else if (comp.diferencas.crescimentoCotacoesPct < 0) {
-        text += `• Houve uma retração de **${Math.abs(comp.diferencas.crescimentoCotacoesPct)}%** no volume de cotações.\n`;
+        text += `Houve uma retração de **${Math.abs(comp.diferencas.crescimentoCotacoesPct)}%** no volume de cotações.\n`;
       }
     }
 
     return { answer: text, sourceFunction: 'compare_periods', data: comp };
   }
 
-  // 4. TAXA DE CONVERSÃO
+  // 3. TAXA DE CONVERSÃO
   if (p.includes('taxa de conversão') || p.includes('taxa de conversao') || p.includes('conversão') || p.includes('conversao')) {
     const conv = await get_conversion_rate(ctx, periodType);
     if (conv.total === 0) {
@@ -133,7 +239,7 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
     };
   }
 
-  // 5. COTAÇÕES PENDENTES E SEM ATUALIZAÇÃO
+  // 4. COTAÇÕES PENDENTES E SEM ATUALIZAÇÃO
   if (p.includes('pendente') || p.includes('sem atualização') || p.includes('sem atualizacao') || p.includes('48 horas') || p.includes('48h') || p.includes('aguardando')) {
     const pending = await get_pending_quotes(ctx);
     if (pending.totalPendentes === 0) {
@@ -146,7 +252,7 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
 
     let text = `Você possui **${pending.totalPendentes} cotações ativas aguardando fechamento comercial**.\n\n`;
     if (pending.semAtualizacao48h > 0) {
-      text += `🚨 **${pending.semAtualizacao48h} cotações estão sem atualização há mais de 48 horas!**\n`;
+      text += `⚠️ **${pending.semAtualizacao48h} cotações estão sem atualização há mais de 48 horas!**\n`;
       if (pending.exemplos48h.length > 0) {
         text += '\nExemplos prioritários para contato:\n';
         pending.exemplos48h.forEach((item: any) => {
@@ -154,13 +260,13 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
         });
       }
     } else {
-      text += 'Todas as cotações pendentes tiveram interações nas últimas 48 horas.';
+      text += 'Todas as cotações pendentes tiveram interações recentes nas últimas 48 horas.';
     }
 
     return { answer: text, sourceFunction: 'get_pending_quotes', data: pending };
   }
 
-  // 6. VENDAS / CONVERSÕES
+  // 5. VENDAS / CONVERSÕES
   if (p.includes('quantas vendas') || p.includes('total de vendas') || p.includes('vendas fiz') || p.includes('vendas tivemos') || p.includes('convertidas')) {
     const sales = await get_sales_metrics(ctx, periodType);
     return {
@@ -170,7 +276,7 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
     };
   }
 
-  // 7. VOLUME DE COTAÇÕES
+  // 6. VOLUME DE COTAÇÕES
   if (p.includes('quantas cotações') || p.includes('quantas cotacoes') || p.includes('total de cotações') || p.includes('volume de cotações')) {
     const qMetrics = await get_quote_metrics(ctx, periodType);
     return {
@@ -180,7 +286,7 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
     };
   }
 
-  // 8. VEÍCULOS MAIS COTADOS
+  // 7. VEÍCULOS MAIS COTADOS
   if (p.includes('veículo') || p.includes('veiculo') || p.includes('mais cotado') || p.includes('modelos')) {
     const topV = await get_top_vehicles(ctx, 5);
     if (topV.topVeiculos.length === 0) {
@@ -193,22 +299,21 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
     return { answer: text, sourceFunction: 'get_top_vehicles', data: topV };
   }
 
-  // 9. PLANOS MAIS COTADOS
+  // 8. PLANOS MAIS COTADOS
   if (p.includes('plano') || p.includes('planos')) {
     const topP = await get_top_plans(ctx, 5);
     if (topP.topPlanos.length === 0) {
       return { answer: 'Não tenho esse dado registrado no Cote AI (nenhum plano cotado ainda).' };
     }
-    let text = `📋 **Planos mais cotados e aceitos:**\n\n`;
+    let text = `🛡️ **Planos mais cotados e aceitos:**\n\n`;
     topP.topPlanos.forEach((pItem, idx) => {
       text += `${idx + 1}. **${pItem.plano}**: ${pItem.cotacoes} cotações | ${pItem.convertidas} convertidas (${pItem.taxaConversao}%)\n`;
     });
     return { answer: text, sourceFunction: 'get_top_plans', data: topP };
   }
 
-  // 10. ANÁLISE DE CONSULTORES (Exclusivo Manager)
+  // 9. ANÁLISE DE CONSULTORES (Exclusivo Manager)
   if (ctx.role === 'manager' && (p.includes('consultor') || p.includes('consultores') || p.includes('equipe') || p.includes('atenção') || p.includes('atencao') || p.includes('desempenho'))) {
-    // Tenta identificar se o gestor pediu um nome específico
     let targetName: string | undefined = undefined;
     const words = p.split(/\s+/);
     const triggerIndex = words.findIndex((w) => w === 'do' || w === 'da' || w === 'de');
@@ -232,7 +337,6 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
       };
     }
 
-    // Visão geral de consultores
     let text = `👥 **Desempenho da equipe comercial em ${result.periodo}:**\n\n`;
     if (result.topConsultorCotacoes) {
       text += `• **Maior volume de cotações:** ${result.topConsultorCotacoes.nome} (${result.topConsultorCotacoes.cotacoes} cotações)\n`;
@@ -253,20 +357,65 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
     return { answer: text, sourceFunction: 'get_consultant_performance', data: result };
   }
 
-  // 11. PIPELINE GERAL
+  // 10. PIPELINE GERAL
   if (p.includes('pipeline') || p.includes('funil') || p.includes('etapas')) {
     const pipe = await get_quote_pipeline(ctx);
     const d = pipe.pipeline;
     return {
-      answer: `📊 **Pipeline Comercial Ativo:**\n\n• **Novas:** ${d.nova.count} (${formatCurrency(d.nova.valor)}/mês)\n• **Em Negociação:** ${d.negociacao.count} (${formatCurrency(d.negociacao.valor)}/mês)\n• **Proposta Enviada:** ${d.proposta_enviada.count} (${formatCurrency(d.proposta_enviada.valor)}/mês)\n• **Convertidas:** ${d.convertida.count} (${formatCurrency(d.convertida.valor)}/mês)\n• **Não Convertidas:** ${d.nao_convertida.count}`,
+      answer: `🎯 **Pipeline Comercial Ativo:**\n\n• **Novas:** ${d.nova.count} (${formatCurrency(d.nova.valor)}/mês)\n• **Em Negociação:** ${d.negociacao.count} (${formatCurrency(d.negociacao.valor)}/mês)\n• **Proposta Enviada:** ${d.proposta_enviada.count} (${formatCurrency(d.proposta_enviada.valor)}/mês)\n• **Convertidas:** ${d.convertida.count} (${formatCurrency(d.convertida.valor)}/mês)\n• **Não Convertidas:** ${d.nao_convertida.count}`,
       sourceFunction: 'get_quote_pipeline',
       data: pipe,
     };
   }
 
-  // 12. PERGUNTAS SEM DADOS / NÃO REGISTRADO (REGRA 10)
+  // 11. SAUDAÇÕES
+  if (p === 'oi' || p === 'olá' || p === 'ola' || p === 'bom dia' || p === 'boa tarde' || p === 'boa noite') {
+    const nome = ctx.consultantName ? ctx.consultantName.split(' ')[0] : (ctx.role === 'manager' ? 'Gestor' : 'Consultor');
+    return {
+      answer: `Olá, **${nome}**! Como posso te ajudar hoje? Você pode me perguntar sobre o **resumo de hoje**, **suas vendas**, **taxa de conversão** ou **cotações pendentes**.`,
+    };
+  }
+
+  // 12. FALLBACK FACTUAL
   return {
     answer: 'Não tenho esse dado registrado no Cote AI. Você pode me perguntar sobre cotações, vendas, taxa de conversão, cotações pendentes, comparativos de períodos ou resumo da operação.',
   };
 }
 
+/**
+ * Ponto de entrada principal do Assistente IA
+ */
+export async function processAiQuery(prompt: string, ctx: AiContext): Promise<AiResponse> {
+  const p = prompt.toLowerCase().trim();
+
+  // 1. VERIFICAÇÃO DE ESCOPO PARA CONSULTOR
+  if (ctx.role === 'consultor') {
+    const prohibitedTerms = [
+      'outros consultores', 'outro consultor', 'ranking geral', 'toda a associação',
+      'todos os consultores', 'qual consultor', 'quem vendeu mais', 'equipe toda', 'geral da associação'
+    ];
+    for (const term of prohibitedTerms) {
+      if (p.includes(term)) {
+        return {
+          answer: 'Como seu assistente pessoal no Cote AI, tenho acesso exclusivamente aos seus próprios dados comerciais, clientes e cotações. Não possuo permissão para consultar métricas de outros consultores ou da associação.',
+        };
+      }
+    }
+  }
+
+  // 2. Coleta snapshot de dados reais do CRM
+  const contextData = await gatherFactualContext(ctx);
+
+  // 3. Tenta processar com GPT-4o-mini
+  const gptAnswer = await callGpt4oMini(prompt, ctx, contextData);
+  if (gptAnswer) {
+    return {
+      answer: gptAnswer,
+      model: 'gpt-4o-mini',
+      data: contextData,
+    };
+  }
+
+  // 4. Fallback imediato para o motor determinístico factual
+  return runDeterministicQuery(prompt, ctx);
+}

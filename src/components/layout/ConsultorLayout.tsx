@@ -300,6 +300,19 @@ const ConsultorLayout = () => {
           </button>
         </div>
       </nav>
+
+      {/* Assistente Flutuante Cote AI (Consultor) */}
+      <CoteAiAssistantModal
+        isOpen={assistantOpen}
+        onClose={() => setAssistantOpen(false)}
+        context={{
+          role: 'consultor',
+          associationId: associationData?.id || '',
+          consultantId: consultor?.id,
+          consultantName: consultor?.nome,
+        }}
+        accentHex={accentHex}
+      />
     </div>
   );
 };
