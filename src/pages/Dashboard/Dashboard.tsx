@@ -1,9 +1,10 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Users, FileText, CheckCircle2, Car, Bike, Truck, Loader2, DollarSign } from 'lucide-react';
+import { TrendingUp, Users, FileText, CheckCircle2, Car, Bike, Truck, Loader2, DollarSign, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { normalizeCommercialStatus } from '../../utils/crmStatus';
+import { CoteAiAssistantModal } from '../../components/assistant/CoteAiAssistantModal';
 import { useAssociation } from '../../contexts/AssociationContext';
 import { getThemeConfig } from '../../utils/themePresets';
 
@@ -56,6 +57,7 @@ const StatCard = ({ title, value, change, icon: Icon, delay, accentHex }: any) =
 const Dashboard = () => {
   const { associationData } = useAssociation();
   const [loading, setLoading] = useState(true);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   
   const [kpis, setKpis] = useState({ total: 0, converted: 0, conversionRate: '0.0' });
   const [chartData, setChartData] = useState<any[]>([]);
@@ -212,6 +214,43 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
+                    {/* Banner Cote AI Manager */}
+          <div className="glass-card p-4 rounded-2xl border border-white/10 bg-gradient-to-r from-indigo-900/30 via-[#0d162f]/90 to-blue-900/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative overflow-hidden shadow-xl">
+            <div className="flex items-center space-x-3.5 relative z-10">
+              <div
+                className="w-11 h-11 rounded-2xl flex items-center justify-center border font-black text-white shrink-0 shadow-lg"
+                style={{
+                  backgroundColor: `${accentHex}25`,
+                  borderColor: `${accentHex}50`,
+                  color: accentHex,
+                }}
+              >
+                <Sparkles size={22} className="animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-base font-black text-white uppercase tracking-tight flex items-center gap-2">
+                  Cote AI Manager • Analista Comercial Inteligente
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                    Online
+                  </span>
+                </h4>
+                <p className="text-xs text-zinc-300 mt-0.5">
+                  Converse por áudio ou texto para gerar o resumo da operação de hoje, comparar períodos e avaliar o desempenho da equipe.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsAssistantOpen(true)}
+              className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-black transition-all hover:scale-105 active:scale-95 shadow-md flex items-center gap-2 shrink-0 relative z-10"
+              style={{ backgroundColor: accentHex }}
+            >
+              <Sparkles size={15} className="fill-black" />
+              <span>Abrir Cote AI Manager</span>
+            </button>
+          </div>
+
           {/* KPI Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <StatCard title="CotaÃ§Ãµes Totais" value={formatNumber(kpis.total)} change="Geradas pela associaÃ§Ã£o" icon={FileText} delay={0.1} accentHex={accentHex} />
@@ -418,4 +457,6 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+
 
