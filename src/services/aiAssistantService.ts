@@ -15,13 +15,63 @@ export interface PeriodFilter {
   label: string;
 }
 
-// Helpers de Período
-export function getPeriodDates(periodType: 'hoje' | 'ontem' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'mes_passado' | 'tudo'): PeriodFilter {
+export type PeriodType =
+  | 'hoje'
+  | 'ontem'
+  | 'esta_semana'
+  | 'semana_passada'
+  | 'este_mes'
+  | 'mes_passado'
+  | 'tudo'
+  | 'janeiro'
+  | 'fevereiro'
+  | 'março'
+  | 'marco'
+  | 'abril'
+  | 'maio'
+  | 'junho'
+  | 'julho'
+  | 'agosto'
+  | 'setembro'
+  | 'outubro'
+  | 'novembro'
+  | 'dezembro';
+
+// Helpers de Período com suporte a todos os meses históricos da plataforma
+export function getPeriodDates(periodType: PeriodType | string = 'este_mes'): PeriodFilter {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
   const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-  switch (periodType) {
+  // Mapeamento de meses individuais
+  const monthsIdx: Record<string, number> = {
+    janeiro: 0,
+    fevereiro: 1,
+    março: 2,
+    marco: 2,
+    abril: 3,
+    maio: 4,
+    junho: 5,
+    julho: 6,
+    agosto: 7,
+    setembro: 8,
+    outubro: 9,
+    novembro: 10,
+    dezembro: 11,
+  };
+
+  const pLower = String(periodType || '').toLowerCase().trim();
+
+  if (pLower in monthsIdx) {
+    const mIdx = monthsIdx[pLower];
+    const year = now.getFullYear();
+    const startOfMonth = new Date(year, mIdx, 1, 0, 0, 0);
+    const endOfMonth = new Date(year, mIdx + 1, 0, 23, 59, 59, 999);
+    const MONTH_LABELS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    return { startDate: startOfMonth, endDate: endOfMonth, label: `em ${MONTH_LABELS[mIdx]}` };
+  }
+
+  switch (pLower) {
     case 'hoje':
       return { startDate: startOfToday, endDate: endOfToday, label: 'hoje' };
 
@@ -64,7 +114,7 @@ export function getPeriodDates(periodType: 'hoje' | 'ontem' | 'esta_semana' | 's
 
     case 'tudo':
     default:
-      return { label: 'histórico completo' };
+      return { label: 'no total acumulado' };
   }
 }
 
@@ -503,4 +553,53 @@ export async function get_daily_summary(ctx: AiContext, dateType: 'hoje' | 'onte
     totalPendentes: pendingData.totalPendentes,
   };
 }
+/**
+ * 11. get_historical_summary
+ * Acesso completo ao histórico de todas as cotações já geradas na plataforma por mês
+ */
+export async function get_historical_summary(ctx: AiContext) {
+  const quotes = await fetchSecureQuotes(ctx);
 
+  const MONTHS = [
+    'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+    'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+  ];
+
+  const monthMap: Record<string, { key: string; name: string; mes: string; ano: number; count: number; convertidas: number }> = {};
+  let totalConvertidas = 0;
+
+  quotes.forEach((q) => {
+    const d = new Date(q.created_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const name = `${MONTHS[d.getMonth()]} de ${d.getFullYear()}`;
+    if (!monthMap[key]) {
+      monthMap[key] = { key, name, mes: MONTHS[d.getMonth()], ano: d.getFullYear(), count: 0, convertidas: 0 };
+    }
+    monthMap[key].count++;
+    const s = normalizeCommercialStatus(q.status);
+    if (s === 'convertida') {
+      monthMap[key].convertidas++;
+      totalConvertidas++;
+    }
+  });
+
+  const sortedMonths = Object.values(monthMap).sort((a, b) => a.key.localeCompare(b.key));
+  const totalGeral = quotes.length;
+  const recorde = [...sortedMonths].sort((a, b) => b.count - a.count)[0] || null;
+
+  const now = new Date();
+  const mesAtualKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const mesPassadoKey = `${now.getFullYear()}-${String(now.getMonth()).padStart(2, '0')}`;
+
+  const mesAtualData = monthMap[mesAtualKey] || (sortedMonths.length > 0 ? sortedMonths[sortedMonths.length - 1] : null);
+  const mesPassadoData = monthMap[mesPassadoKey] || (sortedMonths.length >= 2 ? sortedMonths[sortedMonths.length - 2] : null);
+
+  return {
+    totalGeral,
+    totalConvertidas,
+    meses: sortedMonths,
+    mesPassado: mesPassadoData,
+    mesAtual: mesAtualData,
+    recorde,
+  };
+}

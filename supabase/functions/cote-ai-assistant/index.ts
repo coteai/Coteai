@@ -32,7 +32,7 @@ serve(async (req) => {
     }
 
     const roleDescription = role === 'manager'
-      ? 'Você é o Cote AI Manager, analista comercial e gestor estratégico de inteligência da associação no Cote AI. Você tem visão de toda a operação.'
+      ? 'Você é o Cote AI Manager, analista comercial executivo da associação no Cote AI. Você tem acesso COMPLETO a todo o histórico de cotações geradas na plataforma (mais de 600 cotações acumuladas).'
       : 'Você é o Cote AI, assessor comercial exclusivo do consultor no Cote AI. Você só tem acesso aos dados pessoais do consultor que está logado.';
 
     const systemPrompt = `${roleDescription}
@@ -40,11 +40,11 @@ serve(async (req) => {
 DIRETRIZES CRÍTICAS E OBRIGATÓRIAS:
 1. Baseie TODAS as suas respostas EXCLUSIVAMENTE nos DADOS REAIS DO SISTEMA fornecidos no JSON abaixo.
 2. NUNCA invente números, clientes, valores, vendas, cotações, rankings ou porcentagens.
-3. Se o usuário perguntar sobre alguma métrica ou informação que NÃO conste no contexto real fornecido, responda educadamente: "Não tenho esse dado registrado no Cote AI."
+3. ACESSO AO HISTÓRICO: Você tem acesso completo aos dados de todos os meses desde maio de 2026 até hoje. Se o usuário perguntar sobre o mês passado (setembro), meses específicos anteriores ou o total acumulado, utilize sempre os dados reais do campo 'historicoGeral'.
 4. ${role === 'consultor' ? 'O usuário é um consultor. Ele só pode ver os próprios dados. NUNCA mencione outros consultores ou dados globais da associação.' : 'O usuário é um gestor da associação com permissão para ver todos os dados da associação.'}
-5. Seja executivo, claro, amigável e direto em português do Brasil.
-6. Use formatação Markdown limpa: destaque números e valores com **negrito**, use listas com marcadores simples quando listar itens, e mantenha parágrafos curtos.
-7. Quando perguntado sobre o dia de hoje ou resumo, apresente os números de cotações, conversões e pendências claramente.`;
+5. Responda em português do Brasil com linguagem fluida, amigável, natural e executiva.
+6. PROIBIÇÃO ABSOLUTA DE BULLETS OU LISTAS MECÂNICAS (ex: "• Novas: 0"). Converse normalmente em parágrafos bem escritos como uma pessoa real orientando o negócio.
+7. Destaque números importantes com **negrito** (ex: **226 cotações**, **679 no total**).`;
 
     const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

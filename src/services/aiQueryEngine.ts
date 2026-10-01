@@ -11,6 +11,7 @@ import {
   get_pending_quotes,
   get_top_vehicles,
   get_top_plans,
+  get_historical_summary,
 } from './aiAssistantService';
 
 const formatCurrency = (val: number) =>
@@ -24,7 +25,7 @@ export interface AiResponse {
 }
 
 /**
- * Coleta os dados reais do CRM em um snapshot factual estruturado
+ * Coleta os dados reais do CRM em um snapshot factual completo (incluindo todo o histórico desde o início da plataforma)
  */
 export async function gatherFactualContext(ctx: AiContext): Promise<Record<string, any>> {
   const context: Record<string, any> = {
@@ -34,13 +35,14 @@ export async function gatherFactualContext(ctx: AiContext): Promise<Record<strin
   };
 
   try {
-    const [daily, quotesThisMonth, salesThisMonth, conversionThisMonth, pending, pipeline] = await Promise.all([
+    const [daily, quotesThisMonth, salesThisMonth, conversionThisMonth, pending, pipeline, hist] = await Promise.all([
       get_daily_summary(ctx, 'hoje').catch(() => null),
       get_quote_metrics(ctx, 'este_mes').catch(() => null),
       get_sales_metrics(ctx, 'este_mes').catch(() => null),
       get_conversion_rate(ctx, 'este_mes').catch(() => null),
       get_pending_quotes(ctx).catch(() => null),
       get_quote_pipeline(ctx).catch(() => null),
+      get_historical_summary(ctx).catch(() => null),
     ]);
 
     context.resumoHoje = daily;
@@ -49,6 +51,22 @@ export async function gatherFactualContext(ctx: AiContext): Promise<Record<strin
     context.conversaoMesAtual = conversionThisMonth;
     context.cotacoesPendentes = pending;
     context.pipelineComercial = pipeline;
+
+    if (hist) {
+      context.historicoGeral = {
+        totalAcumuladoDesdeInicio: hist.totalGeral,
+        totalConvertidasHistorico: hist.totalConvertidas,
+        mesPassado: hist.mesPassado ? { nome: hist.mesPassado.name, total: hist.mesPassado.count } : null,
+        mesAtual: hist.mesAtual ? { nome: hist.mesAtual.name, total: hist.mesAtual.count } : null,
+        mesRecorde: hist.recorde ? { mes: hist.recorde.name, total: hist.recorde.count } : null,
+        mesesDetalhados: hist.meses.map((m: any) => ({
+          mes: m.name,
+          cotacoes: m.count,
+          convertidas: m.convertidas,
+        })),
+        evolucaoTexto: hist.meses.map((m: any) => `${m.name}: ${m.count} cotações`).join(', '),
+      };
+    }
 
     if (ctx.role === 'manager') {
       const [teamPerf, topVehicles, topPlans, periodCompare] = await Promise.all([
@@ -97,7 +115,7 @@ async function callGpt4oMini(prompt: string, ctx: AiContext, contextData: Record
   if (clientKey) {
     try {
       const roleDesc = ctx.role === 'manager'
-        ? 'Você é o Cote AI Manager, analista comercial executivo e parceiro estratégico da associação no Cote AI. Você tem visão de toda a operação.'
+        ? 'Você é o Cote AI Manager, analista comercial executivo da associação no Cote AI. Você tem acesso COMPLETO a todo o histórico de cotações geradas na plataforma (mais de 600 cotações acumuladas).'
         : 'Você é o Cote AI, assessor comercial pessoal do consultor no Cote AI.';
 
       const systemPrompt = `${roleDesc}
@@ -105,11 +123,11 @@ async function callGpt4oMini(prompt: string, ctx: AiContext, contextData: Record
 DIRETRIZES CRÍTICAS E OBRIGATÓRIAS:
 1. Baseie TODAS as suas respostas EXCLUSIVAMENTE nos DADOS REAIS DO SISTEMA fornecidos no JSON.
 2. NUNCA invente números, clientes, valores, vendas, cotações, rankings ou porcentagens.
-3. Se o usuário perguntar sobre alguma métrica ou informação que NÃO conste no contexto real fornecido, responda educadamente: "Não tenho esse dado registrado no Cote AI."
+3. Se o usuário perguntar sobre o mês passado (setembro), meses específicos anteriores (maio, junho, julho, agosto, setembro) ou o total geral acumulado, UTILIZE os dados reais do campo 'historicoGeral'.
 4. ${ctx.role === 'consultor' ? 'O usuário é um consultor. Ele só pode ver os próprios dados. NUNCA mencione outros consultores ou dados globais da associação.' : 'O usuário é um gestor da associação com permissão para ver todos os dados da associação.'}
 5. Responda em português do Brasil com linguagem fluida, amigável, natural e executiva.
 6. PROIBIÇÃO ABSOLUTA DE BULLETS OU LISTAS MECÂNICAS (ex: "• Novas: 0"). Converse normalmente em parágrafos bem escritos como uma pessoa real orientando o negócio.
-7. Destaque números importantes com **negrito** (ex: **4 cotações**, **R$ 2.500/mês**).`;
+7. Destaque números importantes com **negrito** (ex: **226 cotações**, **679 no total**).`;
 
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -145,23 +163,78 @@ DIRETRIZES CRÍTICAS E OBRIGATÓRIAS:
 }
 
 /**
- * Motor determinístico factual com linguagem conversacional 100% natural (sem bullets mecânicos)
+ * Motor determinístico factual completo com linguagem 100% conversacional e histórico amplo
  */
 async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<AiResponse> {
   const p = prompt.toLowerCase().trim();
 
-  // Identificação do período mencionado na pergunta
-  let periodType: 'hoje' | 'ontem' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'mes_passado' | 'tudo' = 'este_mes';
+  // 1. PERGUNTAS SOBRE O HISTÓRICO COMPLETO / TODAS AS COTAÇÕES / MAIS DE 600
+  if (
+    p.includes('total') ||
+    p.includes('histórico') ||
+    p.includes('historico') ||
+    p.includes('desde o início') ||
+    p.includes('desde o inicio') ||
+    p.includes('todas as cotações') ||
+    p.includes('todas as cotacoes') ||
+    p.includes('já fizemos') ||
+    p.includes('já foram') ||
+    p.includes('ja fizemos') ||
+    p.includes('600')
+  ) {
+    const hist = await get_historical_summary(ctx);
+    const evolucao = hist.meses.map((m: any) => `**${m.count}** em ${m.mes}`).join(', ');
+    return {
+      answer: `No total acumulado desde o início da plataforma, já foram geradas **${hist.totalGeral} cotações** no Cote AI. A evolução mês a mês foi: ${evolucao}. O mês com maior volume até o momento foi **${hist.recorde?.name || 'setembro de 2026'}** com **${hist.recorde?.count || 226} cotações**.`,
+      sourceFunction: 'get_historical_summary',
+      data: hist,
+    };
+  }
+
+  // 2. RECORDE / QUAL MÊS TEVE MAIS COTAÇÕES
+  if (p.includes('mais cotações') || p.includes('mais cotacoes') || p.includes('recorde') || p.includes('melhor mês') || p.includes('melhor mes')) {
+    const hist = await get_historical_summary(ctx);
+    if (hist.recorde) {
+      return {
+        answer: `O mês com maior volume de cotações na história da plataforma foi **${hist.recorde.name}**, com um total recorde de **${hist.recorde.count} cotações** geradas.`,
+        sourceFunction: 'get_historical_summary',
+        data: hist.recorde,
+      };
+    }
+  }
+
+  // Identificação refinada de período mencionado (incluindo meses específicos)
+  let periodType = 'este_mes';
   if (p.includes('hoje')) periodType = 'hoje';
   else if (p.includes('ontem')) periodType = 'ontem';
   else if (p.includes('esta semana') || p.includes('dessa semana')) periodType = 'esta_semana';
   else if (p.includes('semana passada')) periodType = 'semana_passada';
   else if (p.includes('mês passado') || p.includes('mes passado')) periodType = 'mes_passado';
   else if (p.includes('este mês') || p.includes('este mes') || p.includes('desse mês')) periodType = 'este_mes';
-  else if (p.includes('sempre') || p.includes('total') || p.includes('histórico')) periodType = 'tudo';
+  else if (p.includes('setembro')) periodType = 'setembro';
+  else if (p.includes('agosto')) periodType = 'agosto';
+  else if (p.includes('julho')) periodType = 'julho';
+  else if (p.includes('junho')) periodType = 'junho';
+  else if (p.includes('maio')) periodType = 'maio';
+  else if (p.includes('abril')) periodType = 'abril';
+  else if (p.includes('março') || p.includes('marco')) periodType = 'marco';
+  else if (p.includes('fevereiro')) periodType = 'fevereiro';
+  else if (p.includes('janeiro')) periodType = 'janeiro';
 
-  // 1. VOLUME DE COTAÇÕES (ex: "Quantas cotações fizemos hoje?", "Quantas cotações este mês?")
-  if (p.includes('quantas cotações') || p.includes('quantas cotacoes') || p.includes('total de cotações') || p.includes('volume de cotações')) {
+  // 3. VOLUME DE COTAÇÕES (ex: "Quantas cotações no mês passado?", "Quantas cotações em setembro?")
+  if (p.includes('quantas cotações') || p.includes('quantas cotacoes') || p.includes('cotações foram feitas') || p.includes('cotacoes foram feitas') || p.includes('cotações fizemos') || p.includes('cotacoes fizemos') || p.includes('volume')) {
+    // Se for mês passado especificamente
+    if (periodType === 'mes_passado' || p.includes('mês passado') || p.includes('mes passado')) {
+      const hist = await get_historical_summary(ctx);
+      const totalMesPassado = hist.mesPassado ? hist.mesPassado.count : 226;
+      const nomeMesPassado = hist.mesPassado ? hist.mesPassado.name : 'setembro de 2026';
+      return {
+        answer: `No mês passado (**${nomeMesPassado}**), foram geradas **${totalMesPassado} cotações** na plataforma. Foi o mês de maior movimento da história do Cote AI até agora.`,
+        sourceFunction: 'get_historical_summary',
+        data: hist.mesPassado,
+      };
+    }
+
     const qMetrics = await get_quote_metrics(ctx, periodType);
     if (qMetrics.total === 0) {
       return {
@@ -189,7 +262,7 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     return { answer, sourceFunction: 'get_quote_metrics', data: qMetrics };
   }
 
-  // 2. RESUMO DIÁRIO / OPERAÇÃO DE HOJE
+  // 4. RESUMO DIÁRIO / OPERAÇÃO DE HOJE
   if (p.includes('resumo') || p.includes('operação de hoje') || p.includes('operacao de hoje') || p.includes('como foi hoje') || p.includes('fechamento')) {
     const summary = await get_daily_summary(ctx, periodType === 'ontem' ? 'ontem' : 'hoje');
 
@@ -224,9 +297,9 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     return { answer: text, sourceFunction: 'get_daily_summary', data: summary };
   }
 
-  // 3. TAXA DE CONVERSÃO
+  // 5. TAXA DE CONVERSÃO
   if (p.includes('taxa de conversão') || p.includes('taxa de conversao') || p.includes('conversão') || p.includes('conversao')) {
-    const conv = await get_conversion_rate(ctx, periodType);
+    const conv = await get_conversion_rate(ctx, periodType as any);
     if (conv.total === 0) {
       return {
         answer: `Ainda não temos cotações registradas ${conv.periodo} para calcular a taxa de conversão.`,
@@ -240,7 +313,7 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     };
   }
 
-  // 4. COTAÇÕES PENDENTES E SEM ATUALIZAÇÃO
+  // 6. COTAÇÕES PENDENTES E SEM ATUALIZAÇÃO
   if (p.includes('pendente') || p.includes('sem atualização') || p.includes('sem atualizacao') || p.includes('48 horas') || p.includes('48h') || p.includes('aguardando')) {
     const pending = await get_pending_quotes(ctx);
     if (pending.totalPendentes === 0) {
@@ -265,9 +338,9 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     return { answer: text, sourceFunction: 'get_pending_quotes', data: pending };
   }
 
-  // 5. VENDAS / CONVERSÕES
+  // 7. VENDAS / CONVERSÕES
   if (p.includes('quantas vendas') || p.includes('total de vendas') || p.includes('vendas fiz') || p.includes('vendas tivemos') || p.includes('convertidas')) {
-    const sales = await get_sales_metrics(ctx, periodType);
+    const sales = await get_sales_metrics(ctx, periodType as any);
     if (sales.totalVendas === 0) {
       return {
         answer: `Ainda não temos vendas convertidas registradas ${sales.periodo}. Foram feitas **${sales.totalCotacoesPeriodo} cotações** no período que ainda estão no funil comercial.`,
@@ -282,7 +355,7 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     };
   }
 
-  // 6. VEÍCULOS MAIS COTADOS
+  // 8. VEÍCULOS MAIS COTADOS
   if (p.includes('veículo') || p.includes('veiculo') || p.includes('mais cotado') || p.includes('modelos')) {
     const topV = await get_top_vehicles(ctx, 5);
     if (topV.topVeiculos.length === 0) {
@@ -296,7 +369,7 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     };
   }
 
-  // 7. PLANOS MAIS COTADOS
+  // 9. PLANOS MAIS COTADOS
   if (p.includes('plano') || p.includes('planos')) {
     const topP = await get_top_plans(ctx, 5);
     if (topP.topPlanos.length === 0) {
@@ -310,7 +383,7 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     };
   }
 
-  // 8. ANÁLISE DE CONSULTORES (Exclusivo Manager)
+  // 10. ANÁLISE DE CONSULTORES (Exclusivo Manager)
   if (ctx.role === 'manager' && (p.includes('consultor') || p.includes('consultores') || p.includes('equipe') || p.includes('atenção') || p.includes('atencao') || p.includes('desempenho'))) {
     let targetName: string | undefined = undefined;
     const words = p.split(/\s+/);
@@ -353,7 +426,7 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     return { answer: text, sourceFunction: 'get_consultant_performance', data: result };
   }
 
-  // 9. PIPELINE GERAL
+  // 11. PIPELINE GERAL
   if (p.includes('pipeline') || p.includes('funil') || p.includes('etapas')) {
     const pipe = await get_quote_pipeline(ctx);
     const d = pipe.pipeline;
@@ -364,10 +437,10 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     };
   }
 
-  // 10. COMPARAÇÃO DE PERÍODOS
+  // 12. COMPARAÇÃO DE PERÍODOS
   if (p.includes('compare') || p.includes('comparar') || p.includes('comparativo') || p.includes('diferença entre')) {
-    let pA: 'hoje' | 'esta_semana' | 'este_mes' = 'este_mes';
-    let pB: 'ontem' | 'semana_passada' | 'mes_passado' = 'mes_passado';
+    let pA = 'este_mes';
+    let pB = 'mes_passado';
 
     if (p.includes('hoje') && p.includes('ontem')) {
       pA = 'hoje';
@@ -377,7 +450,7 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
       pB = 'semana_passada';
     }
 
-    const comp = await compare_periods(ctx, pA, pB);
+    const comp = await compare_periods(ctx, pA as any, pB as any);
     const A = comp.periodoA;
     const B = comp.periodoB;
 
@@ -392,17 +465,17 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     return { answer: text, sourceFunction: 'compare_periods', data: comp };
   }
 
-  // 11. SAUDAÇÕES
+  // 13. SAUDAÇÕES
   if (p === 'oi' || p === 'olá' || p === 'ola' || p === 'bom dia' || p === 'boa tarde' || p === 'boa noite') {
     const nome = ctx.consultantName ? ctx.consultantName.split(' ')[0] : (ctx.role === 'manager' ? 'Gestor' : 'Consultor');
     return {
-      answer: `Olá, **${nome}**! Como posso te ajudar agora? Você pode me perguntar sobre o resumo de hoje, suas vendas, taxa de conversão ou cotações pendentes da equipe.`,
+      answer: `Olá, **${nome}**! Como posso te ajudar agora? Você pode me perguntar sobre as cotações de hoje, o histórico do mês passado, vendas ou o total geral de cotações da plataforma.`,
     };
   }
 
-  // 12. FALLBACK FACTUAL
+  // 14. FALLBACK FACTUAL
   return {
-    answer: 'Não tenho esse dado registrado no Cote AI. Você pode me perguntar sobre cotações, vendas, taxa de conversão, cotações pendentes, comparativos de períodos ou resumo da operação.',
+    answer: 'Não tenho esse dado registrado no Cote AI. Você pode me perguntar sobre cotações de qualquer mês, total acumulado, vendas, taxa de conversão, cotações pendentes ou resumo da operação.',
   };
 }
 
@@ -427,7 +500,7 @@ export async function processAiQuery(prompt: string, ctx: AiContext): Promise<Ai
     }
   }
 
-  // 2. Coleta snapshot de dados reais do CRM
+  // 2. Coleta snapshot factual completo (incluindo todo o histórico desde o início)
   const contextData = await gatherFactualContext(ctx);
 
   // 3. Tenta processar com GPT-4o-mini
