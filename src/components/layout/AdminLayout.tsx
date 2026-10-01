@@ -152,8 +152,26 @@ const AdminLayout = () => {
               <h2 className="text-xl premium-title uppercase">{associationData?.nome || 'Cote AI'}</h2>
             </div>
           </div>
-          <div className="flex items-center space-x-3 relative z-10">
-                        
+          <div className="flex items-center space-x-2.5 relative z-10">
+            {/* Widget Superior do Assistente */}
+            <button
+              type="button"
+              onClick={() => setAssistantOpen(true)}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border font-bold text-xs uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-md"
+              style={{
+                backgroundColor: `${accentHex}18`,
+                borderColor: `${accentHex}50`,
+                color: accentHex,
+              }}
+              title="Abrir Cote AI Manager"
+            >
+              <Sparkles size={14} className="animate-pulse" />
+              <span className="font-extrabold text-[11px] sm:text-xs">Cote AI Manager</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                IA
+              </span>
+            </button>
+
             <InstallAppButton accentColor={accentHex} />
             <button className="relative p-2 text-zinc-500 hover:text-white transition-colors">
               <Bell size={20} />
