@@ -250,7 +250,11 @@ export async function get_conversion_rate(ctx: AiContext, periodType: 'hoje' | '
 /**
  * 4. get_consultant_performance
  */
-export async function get_consultant_performance(ctx: AiContext, targetConsultantName?: string, periodType: 'este_mes' | 'tudo' = 'este_mes') {
+export async function get_consultant_performance(
+  ctx: AiContext,
+  targetConsultantName?: string,
+  periodType: PeriodType = 'este_mes'
+) {
   // Se for Consultor: responde unicamente pelo próprio usuário
   if (ctx.role === 'consultor') {
     const period = getPeriodDates(periodType);
@@ -287,6 +291,8 @@ export async function get_consultant_performance(ctx: AiContext, targetConsultan
     map[c.id] = { nome: c.nome, cotacoes: 0, convertidas: 0, naoConvertidas: 0, somaValor: 0 };
   });
 
+  let semConsultorCount = 0;
+
   quotes.forEach((q) => {
     const cid = q.consultant_id;
     if (cid && map[cid]) {
@@ -295,6 +301,8 @@ export async function get_consultant_performance(ctx: AiContext, targetConsultan
       if (s === 'convertida') map[cid].convertidas++;
       else if (s === 'nao_convertida') map[cid].naoConvertidas++;
       map[cid].somaValor += Number(q.mensalidade) || 0;
+    } else {
+      semConsultorCount++;
     }
   });
 
@@ -313,7 +321,7 @@ export async function get_consultant_performance(ctx: AiContext, targetConsultan
     };
   });
 
-  // Se o gestor pediu um consultor específico (ex: "João")
+  // Se o gestor pediu um consultor específico (ex: "Alex", "Emily", "Julia")
   if (targetConsultantName) {
     const term = targetConsultantName.toLowerCase();
     const found = list.filter((c) => c.nome.toLowerCase().includes(term));
@@ -322,16 +330,27 @@ export async function get_consultant_performance(ctx: AiContext, targetConsultan
       consultores: found,
       isFiltered: true,
       searchTerm: targetConsultantName,
+      semConsultorCount,
+      totalCotacoesPeriodo: quotes.length,
     };
   }
 
-  // Ordena por conversões decrescente
-  list.sort((a, b) => b.convertidas - a.convertidas || b.taxaConversao - a.taxaConversao);
+  // Ordenações específicas
+  const rankingPorCotacoes = [...list].filter((c) => c.cotacoes > 0).sort((a, b) => b.cotacoes - a.cotacoes);
+  const rankingPorVendas = [...list].filter((c) => c.convertidas > 0).sort((a, b) => b.convertidas - a.convertidas || b.taxaConversao - a.taxaConversao);
+
+  // Ordena lista padrão por volume de cotações
+  list.sort((a, b) => b.cotacoes - a.cotacoes || b.convertidas - a.convertidas);
 
   return {
     periodo: period.label,
     consultores: list,
-    topConsultorCotacoes: [...list].sort((a, b) => b.cotacoes - a.cotacoes)[0] || null,
+    semConsultorCount,
+    totalCotacoesPeriodo: quotes.length,
+    rankingPorCotacoes,
+    rankingPorVendas,
+    topConsultoresCotacoes: rankingPorCotacoes.slice(0, 10),
+    topConsultorCotacoes: rankingPorCotacoes[0] || null,
     topConsultorConversao: [...list].filter((c) => c.cotacoes >= 2).sort((a, b) => b.taxaConversao - a.taxaConversao)[0] || null,
   };
 }

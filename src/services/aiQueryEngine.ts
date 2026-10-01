@@ -69,13 +69,38 @@ export async function gatherFactualContext(ctx: AiContext): Promise<Record<strin
     }
 
     if (ctx.role === 'manager') {
-      const [teamPerf, topVehicles, topPlans, periodCompare] = await Promise.all([
+      const [teamPerfMonth, teamPerfLastMonth, teamPerfAllTime, topVehicles, topPlans, periodCompare] = await Promise.all([
         get_consultant_performance(ctx, undefined, 'este_mes').catch(() => null),
+        get_consultant_performance(ctx, undefined, 'mes_passado').catch(() => null),
+        get_consultant_performance(ctx, undefined, 'tudo').catch(() => null),
         get_top_vehicles(ctx, 5).catch(() => null),
         get_top_plans(ctx, 5).catch(() => null),
         compare_periods(ctx, 'este_mes', 'mes_passado').catch(() => null),
       ]);
-      context.desempenhoEquipe = teamPerf;
+      context.desempenhoEquipe = {
+        mesAtual: {
+          periodo: teamPerfMonth?.periodo,
+          totalCotacoes: teamPerfMonth?.totalCotacoesPeriodo,
+          rankingCotacoes: teamPerfMonth?.rankingPorCotacoes?.map((c: any) => `${c.nome}: ${c.cotacoes} cotações (${c.convertidas} vendas)`),
+        },
+        mesPassado: {
+          periodo: teamPerfLastMonth?.periodo,
+          totalCotacoes: teamPerfLastMonth?.totalCotacoesPeriodo,
+          rankingCotacoes: teamPerfLastMonth?.rankingPorCotacoes?.map((c: any) => `${c.nome}: ${c.cotacoes} cotações (${c.convertidas} vendas)`),
+        },
+        totalHistoricoAcumulado: {
+          periodo: 'Histórico Geral Acumulado da Associação',
+          totalCotacoesGeral: teamPerfAllTime?.totalCotacoesPeriodo,
+          semConsultorAtribuido: teamPerfAllTime?.semConsultorCount,
+          top10ConsultoresCotacoes: teamPerfAllTime?.topConsultoresCotacoes?.map((c: any) => `${c.nome}: ${c.cotacoes} cotações (${c.convertidas} vendas)`),
+          todosConsultores: teamPerfAllTime?.rankingPorCotacoes?.map((c: any) => ({
+            nome: c.nome,
+            cotacoes: c.cotacoes,
+            convertidas: c.convertidas,
+            taxaConversao: c.taxaConversao,
+          })),
+        },
+      };
       context.topVeiculos = topVehicles;
       context.topPlanos = topPlans;
       context.comparativoMesPassado = periodCompare;
@@ -125,6 +150,7 @@ DIRETRIZES CRÍTICAS E OBRIGATÓRIAS:
 2. NUNCA invente números, clientes, valores, vendas, cotações, rankings ou porcentagens.
 3. Se o usuário perguntar sobre o mês passado (setembro), meses específicos anteriores (maio, junho, julho, agosto, setembro) ou o total geral acumulado, UTILIZE os dados reais do campo 'historicoGeral'.
 4. ${ctx.role === 'consultor' ? 'O usuário é um consultor. Ele só pode ver os próprios dados. NUNCA mencione outros consultores ou dados globais da associação.' : 'O usuário é um gestor da associação com permissão para ver todos os dados da associação.'}
+4.1 Se perguntado sobre quais consultores geraram as cotações, ranking da equipe ou a produção individual, utilize os dados reais do campo 'desempenhoEquipe' (que detalha mês atual, mês passado e total acumulado histórico). Responda com os nomes reais e as quantidades exatas de cotações em tom natural e conversacional.
 5. Responda em português do Brasil com linguagem fluida, amigável, natural e executiva.
 6. PROIBIÇÃO ABSOLUTA DE BULLETS OU LISTAS MECÂNICAS (ex: "• Novas: 0"). Converse normalmente em parágrafos bem escritos como uma pessoa real orientando o negócio.
 7. Destaque números importantes com **negrito** (ex: **226 cotações**, **679 no total**).`;
@@ -383,8 +409,21 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
     };
   }
 
-  // 10. ANÁLISE DE CONSULTORES (Exclusivo Manager)
-  if (ctx.role === 'manager' && (p.includes('consultor') || p.includes('consultores') || p.includes('equipe') || p.includes('atenção') || p.includes('atencao') || p.includes('desempenho'))) {
+    // 10. ANÁLISE DE CONSULTORES & RANKING (Exclusivo Manager)
+  if (ctx.role === 'manager' && (
+    p.includes('consultor') ||
+    p.includes('consultores') ||
+    p.includes('equipe') ||
+    p.includes('atenção') ||
+    p.includes('atencao') ||
+    p.includes('desempenho') ||
+    p.includes('quem mais cotou') ||
+    p.includes('quem fez mais') ||
+    p.includes('quem gerou mais') ||
+    p.includes('ranking') ||
+    (p.includes('quem') && p.includes('cota')) ||
+    (p.includes('quais') && p.includes('cota'))
+  )) {
     let targetName: string | undefined = undefined;
     const words = p.split(/\s+/);
     const triggerIndex = words.findIndex((w) => w === 'do' || w === 'da' || w === 'de');
@@ -392,7 +431,17 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
       targetName = words[triggerIndex + 1].replace(/[?,.!]/g, '');
     }
 
-    const result = await get_consultant_performance(ctx, targetName, periodType === 'tudo' ? 'tudo' : 'este_mes');
+    // Identifica período desejado
+    let targetPeriod: PeriodType = 'tudo'; // Padrão para ranking/distribuição: acumulado completo
+    if (p.includes('hoje')) targetPeriod = 'hoje';
+    else if (p.includes('ontem')) targetPeriod = 'ontem';
+    else if (p.includes('esta semana') || p.includes('essa semana')) targetPeriod = 'esta_semana';
+    else if (p.includes('semana passada')) targetPeriod = 'semana_passada';
+    else if (p.includes('este mes') || p.includes('este mês') || p.includes('mes atual') || p.includes('mês atual') || p.includes('outubro')) targetPeriod = 'este_mes';
+    else if (p.includes('mes passado') || p.includes('mês passado') || p.includes('setembro')) targetPeriod = 'mes_passado';
+    else if (periodType && periodType !== 'este_mes') targetPeriod = periodType;
+
+    const result = await get_consultant_performance(ctx, targetName, targetPeriod);
 
     if (result.isFiltered && targetName) {
       if (!result.consultores || result.consultores.length === 0) {
@@ -402,28 +451,47 @@ async function runDeterministicQuery(prompt: string, ctx: AiContext): Promise<Ai
       }
       const c = result.consultores[0];
       return {
-        answer: `Sobre o desempenho de **${c.nome}** (${result.periodo}): gerou **${c.cotacoes} cotações**, convertendo **${c.convertidas} vendas** (${c.taxaConversao}% de conversão) com ticket médio de **${formatCurrency(c.valorMedio)}/mês**.`,
+        answer: `Sobre o consultor **${c.nome}** (${result.periodo}): gerou **${c.cotacoes} cotações** na plataforma${c.convertidas > 0 ? `, convertendo **${c.convertidas} vendas** (${c.taxaConversao}% de conversão) com ticket médio de **${formatCurrency(c.valorMedio)}/mês**` : '.'}`,
         sourceFunction: 'get_consultant_performance',
         data: c,
       };
     }
 
-    let text = `Analisando a equipe comercial em **${result.periodo}**: `;
-    if (result.topConsultorCotacoes) {
-      text += `quem mais cotou foi **${result.topConsultorCotacoes.nome}** com **${result.topConsultorCotacoes.cotacoes} cotações**. `;
-    }
-    if (result.topConsultorConversao && result.topConsultorConversao.convertidas > 0) {
-      text += `A maior taxa de conversão foi de **${result.topConsultorConversao.nome}** com **${result.topConsultorConversao.taxaConversao}%** (${result.topConsultorConversao.convertidas} vendas fechadas). `;
-    }
+    if (targetPeriod === 'tudo') {
+      const topList = result.rankingPorCotacoes?.slice(0, 8) || [];
+      const topStr = topList.map((c: any, i: number) => `${i + 1}º **${c.nome}** (${c.cotacoes} cotações)`).join(', ');
 
-    const consultores = result.consultores || [];
-    const precisandoAtencao = consultores.filter((c: any) => c.cotacoes >= 3 && c.taxaConversao === 0);
-    if (precisandoAtencao.length > 0) {
-      const nomes = precisandoAtencao.map((c: any) => `${c.nome} (${c.cotacoes} cotações)`).join(', ');
-      text += `Vale dar uma atenção especial para ${nomes}, que tiveram bom volume de cotações mas ainda não converteram.`;
-    }
+      const lastMonthResult = await get_consultant_performance(ctx, undefined, 'mes_passado');
+      const topLastMonth = lastMonthResult.topConsultoresCotacoes?.slice(0, 3) || [];
+      const topLastMonthStr = topLastMonth.map((c: any) => `**${c.nome}** (${c.cotacoes})`).join(', ');
 
-    return { answer: text, sourceFunction: 'get_consultant_performance', data: result };
+      let text = `No total acumulado desde o início da plataforma, os consultores que mais geraram cotações são: ${topStr}. `;
+      if (result.semConsultorCount > 0) {
+        text += `Além disso, temos **${result.semConsultorCount} cotações diretas** geradas sem consultor vinculado. `;
+      }
+      if (topLastMonth.length > 0) {
+        text += `Já no mês passado (**setembro**), a liderança de cotações foi de ${topLastMonthStr}.`;
+      }
+      return { answer: text, sourceFunction: 'get_consultant_performance', data: result };
+    } else if (targetPeriod === 'mes_passado' || targetPeriod === 'setembro') {
+      const topList = result.rankingPorCotacoes?.slice(0, 7) || [];
+      const topStr = topList.map((c: any, i: number) => `${i + 1}º **${c.nome}** (${c.cotacoes} cotações)`).join(', ');
+      let text = `No mês passado (**setembro de 2026**), os consultores que mais geraram cotações foram: ${topStr}.`;
+      if (result.semConsultorCount > 0) {
+        text += ` Houve também **${result.semConsultorCount} cotações diretas** sem consultor no período.`;
+      }
+      return { answer: text, sourceFunction: 'get_consultant_performance', data: result };
+    } else {
+      const topList = result.rankingPorCotacoes?.slice(0, 5) || [];
+      let text = `Analisando a equipe comercial em **${result.periodo}**: `;
+      if (topList.length > 0) {
+        const topStr = topList.map((c: any) => `**${c.nome}** (${c.cotacoes} cotações)`).join(', ');
+        text += `os consultores com cotações no período foram: ${topStr}.`;
+      } else {
+        text += `ainda não temos cotações registradas para a equipe neste período específico.`;
+      }
+      return { answer: text, sourceFunction: 'get_consultant_performance', data: result };
+    }
   }
 
   // 11. PIPELINE GERAL
