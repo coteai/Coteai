@@ -48,7 +48,7 @@ const QuotesManager = () => {
         .order('created_at', { ascending: false });
 
       // Fallback gracioso se updated_at ou observacoes ainda nao existirem no banco
-      if (qError && (qError.code === '42703' || String(qError.message || '').includes('does not exist'))) {
+      if (qError && (qError.code === '42703' || qError.code === 'PGRST204' || String(qError.message || '').includes('does not exist') || String(qError.message || '').includes('Could not find'))) {
         const minimalFields = 'id, created_at, status, mensalidade, plano_selecionado, cliente_nome, cliente_whatsapp, placa, modelo, valor_fipe, consultant_id, consultants(id, nome)';
         const retry = await supabase
           .from('quotes')

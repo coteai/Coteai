@@ -356,7 +356,6 @@ const QuoteGenerator = () => {
       planos_cotados: getPlansWithEdits(),
       status: 'nova',
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
 
     let { data: quote, error: quoteError } = await supabase
@@ -365,8 +364,10 @@ const QuoteGenerator = () => {
       .select()
       .single();
 
-    if (quoteError && (quoteError.code === '42703' || String(quoteError.message || '').includes('does not exist'))) {
+    if (quoteError) {
+      console.warn('Tentativa inicial de salvar cotacao falhou, tentando fallback:', quoteError);
       delete insertPayload.updated_at;
+      delete insertPayload.observacoes;
       const retry = await supabase
         .from('quotes')
         .insert(insertPayload)
@@ -378,6 +379,8 @@ const QuoteGenerator = () => {
 
     if (!quoteError && quote) {
       setSavedQuoteId(quote.id);
+    } else if (quoteError) {
+      console.error('Falha ao salvar cotacao no Supabase:', quoteError);
     }
 
     setSaving(false);

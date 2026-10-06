@@ -260,7 +260,7 @@ export async function updateQuoteCommercialStatus(
   }
 
   // Se o erro for falta de coluna (code 42703), tentamos apenas campos base garantidos
-  if (fullError.code === '42703' || String(fullError.message || '').includes('does not exist')) {
+  if (fullError.code === '42703' || fullError.code === 'PGRST204' || String(fullError.message || '').includes('does not exist') || String(fullError.message || '').includes('Could not find')) {
     const minimalPayload: any = {
       status: newStatus,
     };

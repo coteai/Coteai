@@ -52,7 +52,7 @@ const ConsultorVendas = () => {
         .eq('association_id', associationData.id)
         .order('created_at', { ascending: false });
 
-      if (error && (error.code === '42703' || String(error.message || '').includes('does not exist'))) {
+      if (error && (error.code === '42703' || error.code === 'PGRST204' || String(error.message || '').includes('does not exist') || String(error.message || '').includes('Could not find'))) {
         const minimalFields = 'id, created_at, status, mensalidade, plano_selecionado, cliente_nome, cliente_whatsapp, placa, modelo, valor_fipe, consultant_id';
         const retry = await supabase
           .from('quotes')
