@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, Users, FileText, CheckCircle2, Car, Bike, Truck, Loader2, DollarSign, Sparkles } from 'lucide-react';
@@ -140,7 +140,7 @@ const Dashboard = () => {
     const topV = Object.values(vehiclesMap)
       .sort((a: any, b: any) => b.count - a.count)
       .slice(0, 5)
-      .map((v: any, i) => ({ pos: i + 1, name: v.name, tipo: v.tipo === 'moto' ? 'Moto' : v.tipo === 'caminhao' ? 'CaminhÃ£o' : 'Carro', conv: v.count }));
+      .map((v: any, i) => ({ pos: i + 1, name: v.name, tipo: v.tipo === 'moto' ? 'Moto' : v.tipo === 'caminhao' ? 'Caminhão' : 'Carro', conv: v.count }));
     setTopVehicles(topV);
 
     // 5. Plans Distribution
@@ -183,7 +183,7 @@ const Dashboard = () => {
     const segs = [
       { id: 'carro', Icon: Car, name: 'Carros', pct: `${Math.round((segMap.carro.count / totalSeg) * 100)}%`, avg: segMap.carro.count > 0 ? segMap.carro.fipeSum / segMap.carro.count : 0, color: 'bg-blue-500/10 border-blue-500/20 text-blue-400' },
       { id: 'moto', Icon: Bike, name: 'Motos', pct: `${Math.round((segMap.moto.count / totalSeg) * 100)}%`, avg: segMap.moto.count > 0 ? segMap.moto.fipeSum / segMap.moto.count : 0, color: 'bg-orange-500/10 border-orange-500/20 text-orange-400' },
-      { id: 'caminhao', Icon: Truck, name: 'CaminhÃµes', pct: `${Math.round((segMap.caminhao.count / totalSeg) * 100)}%`, avg: segMap.caminhao.count > 0 ? segMap.caminhao.fipeSum / segMap.caminhao.count : 0, color: 'bg-amber-500/10 border-amber-500/20 text-amber-400' },
+      { id: 'caminhao', Icon: Truck, name: 'Caminhões', pct: `${Math.round((segMap.caminhao.count / totalSeg) * 100)}%`, avg: segMap.caminhao.count > 0 ? segMap.caminhao.fipeSum / segMap.caminhao.count : 0, color: 'bg-amber-500/10 border-amber-500/20 text-amber-400' },
     ];
     setSegments(segs);
 
@@ -196,7 +196,7 @@ const Dashboard = () => {
         <div className="absolute -left-20 -top-20 w-64 h-64 bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
         <div className="relative z-10">
           <p className="premium-label mb-1">Monitoramento de Performance</p>
-          <h1 className="premium-title text-2xl md:text-4xl uppercase tracking-tighter">VisÃ£o Global</h1>
+          <h1 className="premium-title text-2xl md:text-4xl uppercase tracking-tighter">Visão Global</h1>
         </div>
         <button 
           onClick={fetchDashboardData}
@@ -218,9 +218,9 @@ const Dashboard = () => {
 
           {/* KPI Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            <StatCard title="CotaÃ§Ãµes Totais" value={formatNumber(kpis.total)} change="Geradas pela associaÃ§Ã£o" icon={FileText} delay={0.1} accentHex={accentHex} />
+            <StatCard title="Cotações Totais" value={formatNumber(kpis.total)} change="Geradas pela associação" icon={FileText} delay={0.1} accentHex={accentHex} />
             <StatCard title="Convertidas" value={formatNumber(kpis.converted)} change="Vendas confirmadas" icon={CheckCircle2} delay={0.2} accentHex={accentHex} />
-            <StatCard title="ConversÃ£o / CotaÃ§Ã£o" value={`${kpis.conversionRate}%`} change="EficiÃªncia de vendas" icon={TrendingUp} delay={0.3} accentHex={accentHex} />
+            <StatCard title="Conversão / Cotação" value={`${kpis.conversionRate}%`} change="Eficiência de vendas" icon={TrendingUp} delay={0.3} accentHex={accentHex} />
             <StatCard title="Planos Ativos" value={formatNumber(kpis.converted)} change="Total convertido" icon={CheckCircle2} delay={0.4} accentHex={accentHex} />
           </div>
 
@@ -237,11 +237,11 @@ const Dashboard = () => {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent pointer-events-none" />
               <div className="mb-4 md:mb-10 relative z-10 flex justify-between items-center">
-                <h3 className="premium-label">Atividade â€” Ãšltimos 14 dias</h3>
+                <h3 className="premium-label">Atividade — Últimos 14 dias</h3>
                 <div className="hidden sm:flex space-x-4">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-blue-500/20 border border-blue-500/40" />
-                    <span className="text-xs text-slate-400 font-bold uppercase">CotaÃ§Ãµes</span>
+                    <span className="text-xs text-slate-400 font-bold uppercase">Cotações</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 rounded-full bg-violet-500/20 border border-violet-500/40" />
@@ -284,7 +284,7 @@ const Dashboard = () => {
                       itemStyle={{ color: '#fff' }}
                       cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
                     />
-                    <Area type="monotone" name="CotaÃ§Ãµes" dataKey="cotacoes" stroke="#3B82F6" strokeWidth={2} fillOpacity={1} fill="url(#colorBlue)" />
+                    <Area type="monotone" name="Cotações" dataKey="cotacoes" stroke="#3B82F6" strokeWidth={2} fillOpacity={1} fill="url(#colorBlue)" />
                     <Area type="monotone" name="Convertidas" dataKey="convertidas" stroke="#8B5CF6" strokeWidth={2} fillOpacity={1} fill="url(#colorViolet)" />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -301,7 +301,7 @@ const Dashboard = () => {
             >
               <div className="absolute inset-0 bg-gradient-to-bl from-violet-500/5 via-transparent to-transparent pointer-events-none" />
               <div className="mb-8 relative z-10">
-                <h3 className="premium-label">LideranÃ§a de Vendas</h3>
+                <h3 className="premium-label">Liderança de Vendas</h3>
               </div>
  
               <div className="flex-1 space-y-3 relative z-10">
@@ -331,24 +331,24 @@ const Dashboard = () => {
           {/* Analytics Row */}
           <div className="pt-6 md:pt-12 relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-            <p className="premium-label mb-4 md:mb-8 text-center italic opacity-60">Insights AvanÃ§ados Cote AI</p>
+            <p className="premium-label mb-4 md:mb-8 text-center italic opacity-60">Insights Avançados Cote AI</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
 
             {/* Most Quoted Vehicles */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="glass-card p-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)` }}>
               <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 via-transparent to-transparent pointer-events-none" />
-              <h3 className="premium-label mb-10 relative z-10">VeÃ­culos em Alta</h3>
+              <h3 className="premium-label mb-10 relative z-10">Veículos em Alta</h3>
               <div className="space-y-2 relative z-10">
                 {topVehicles.length > 0 ? topVehicles.map((v) => (
                   <div key={v.pos} className="flex items-center justify-between p-4 rounded-xl hover:bg-white/[0.03] transition-all border border-white/5 hover:border-blue-500/20 bg-black/20 group relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <div className="flex items-center space-x-4 relative z-10">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center border border-white/10 ${v.pos === 1 ? 'bg-blue-500/20 text-blue-400 border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-white/5 text-zinc-500'}`}>
-                         {v.tipo === 'Moto' ? <Bike size={18} /> : v.tipo === 'CaminhÃ£o' ? <Truck size={18} /> : <Car size={18} />}
+                         {v.tipo === 'Moto' ? <Bike size={18} /> : v.tipo === 'Caminhão' ? <Truck size={18} /> : <Car size={18} />}
                       </div>
                       <div>
                         <p className="font-sans font-bold text-slate-200 text-sm truncate max-w-[140px] group-hover:text-white transition-colors">{v.name}</p>
-                        <p className="font-sans text-[0.6rem] text-zinc-500 uppercase tracking-widest font-bold">Top {v.pos} â€¢ {v.tipo}</p>
+                        <p className="font-sans text-[0.6rem] text-zinc-500 uppercase tracking-widest font-bold">Top {v.pos} • {v.tipo}</p>
                       </div>
                     </div>
                     <div className="relative z-10 bg-blue-500/10 px-3 py-1 rounded-lg border border-blue-500/20">
@@ -356,7 +356,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                 )) : (
-                  <div className="text-center text-sm text-zinc-500 py-8">Nenhum veÃ­culo cotado.</div>
+                  <div className="text-center text-sm text-zinc-500 py-8">Nenhum veículo cotado.</div>
                 )}
               </div>
             </motion.div>
@@ -380,14 +380,14 @@ const Dashboard = () => {
                       </div>
                     </div>
                   )) : (
-                     <div className="text-center text-sm text-zinc-500 py-8">Nenhuma conversÃ£o ainda.</div>
+                     <div className="text-center text-sm text-zinc-500 py-8">Nenhuma conversão ainda.</div>
                   )}
                 </div>
               </div>
               {plansDist.length > 0 && (
                 <div className="mt-12 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
                   <p className="font-sans text-[0.65rem] text-slate-400 leading-relaxed text-center italic">
-                    O plano "{plansDist[0].name}" representa {plansDist[0].pct}% das suas conversÃµes totais.
+                    O plano "{plansDist[0].name}" representa {plansDist[0].pct}% das suas conversões totais.
                   </p>
                 </div>
               )}
@@ -396,7 +396,7 @@ const Dashboard = () => {
             {/* Categories */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="glass-card p-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)` }}>
               <div className="absolute inset-0 bg-gradient-to-tl from-blue-500/5 via-transparent to-transparent pointer-events-none" />
-              <h3 className="premium-label mb-10 relative z-10">SegmentaÃ§Ã£o Geral</h3>
+              <h3 className="premium-label mb-10 relative z-10">Segmentação Geral</h3>
               <div className="flex flex-col space-y-6 relative z-10">
                 {segments.map(({ id, Icon, name, pct, avg, color }) => (
                   <div key={id} className="flex items-center space-x-5 p-4 rounded-2xl hover:bg-white/[0.03] transition-all border border-transparent hover:border-white/5">

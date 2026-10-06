@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Briefcase, Zap, LogOut, Bell, Settings, MoreHorizontal, X, Sparkles } from 'lucide-react';
 import { CoteAiAssistantModal } from '../assistant/CoteAiAssistantModal';
@@ -29,7 +29,7 @@ const ConsultorLayout = () => {
   const sidebarItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/consultor', end: true },
     { name: 'Minhas Vendas', icon: <Briefcase size={20} />, path: '/consultor/vendas' },
-    { name: 'ConfiguraÃ§Ãµes', icon: <Settings size={20} />, path: '/consultor/config' },
+    { name: 'Configurações', icon: <Settings size={20} />, path: '/consultor/config' },
   ];
 
   // 2 items on LEFT of FAB
@@ -59,7 +59,7 @@ const ConsultorLayout = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)]">
-      {/* â”€â”€ Sidebar (Desktop) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Sidebar (Desktop) ───────────────────────────────── */}
       <aside className="w-64 m-4 flex-col justify-between hidden md:flex relative z-20 glass-panel rounded-3xl overflow-hidden shrink-0">
         <div
           className="absolute top-0 left-0 right-0 h-px"
@@ -82,7 +82,7 @@ const ConsultorLayout = () => {
               {({ isActive }) => (
                 <>
                   <Zap size={18} className={isActive ? 'fill-white text-white' : 'fill-black text-black'} />
-                  <span>Nova CotaÃ§Ã£o</span>
+                  <span>Nova Cotação</span>
                 </>
               )}
             </NavLink>
@@ -130,7 +130,7 @@ const ConsultorLayout = () => {
         </div>
       </aside>
 
-      {/* â”€â”€ Main Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Main Content ────────────────────────────────────── */}
       <main
         className="flex-1 flex flex-col h-full overflow-hidden relative z-10 px-4 pb-4 md:p-4 md:pl-0"
         style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}
@@ -205,7 +205,7 @@ const ConsultorLayout = () => {
         </div>
       </main>
 
-      {/* â”€â”€ Mobile Bottom Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Mobile Bottom Navigation ────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50">
         {/* More popup */}
         {moreMenuOpen && (
@@ -278,7 +278,7 @@ const ConsultorLayout = () => {
               <Zap size={26} className="fill-white" />
             </NavLink>
             <span className="text-[9px] font-bold mt-1.5 uppercase tracking-wider" style={{ color: accentHex }}>
-              CotaÃ§Ã£o
+              Cotação
             </span>
           </div>
 

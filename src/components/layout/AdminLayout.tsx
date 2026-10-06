@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Settings, LogOut, Bell, Briefcase, Zap,
@@ -31,8 +31,8 @@ const AdminLayout = () => {
     { name: 'Vendas', icon: <Briefcase size={20} />, path: '/sales' },
     { name: 'Equipe', icon: <Users size={20} />, path: '/consultants' },
     { name: 'Planos', icon: <ListTree size={20} />, path: '/plans' },
-    { name: 'PrecificaÃ§Ã£o', icon: <Calculator size={20} />, path: '/pricing' },
-    { name: 'ConfiguraÃ§Ãµes', icon: <Settings size={20} />, path: '/config' },
+    { name: 'Precificação', icon: <Calculator size={20} />, path: '/pricing' },
+    { name: 'Configurações', icon: <Settings size={20} />, path: '/config' },
   ];
 
   // LEFT of FAB (2 items)
@@ -49,8 +49,8 @@ const AdminLayout = () => {
   // Inside "..." menu
   const moreItems = [
     { name: 'Planos', icon: <ListTree size={18} />, path: '/plans' },
-    { name: 'PrecificaÃ§Ã£o', icon: <Calculator size={18} />, path: '/pricing' },
-    { name: 'ConfiguraÃ§Ãµes', icon: <Settings size={18} />, path: '/config' },
+    { name: 'Precificação', icon: <Calculator size={18} />, path: '/pricing' },
+    { name: 'Configurações', icon: <Settings size={18} />, path: '/config' },
   ];
 
   useEffect(() => {
@@ -65,7 +65,7 @@ const AdminLayout = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)]">
-      {/* â”€â”€ Sidebar (Desktop) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Sidebar (Desktop) ────────────────────────────────── */}
       <aside className="w-64 m-4 flex-col justify-between hidden md:flex relative z-20 glass-panel rounded-3xl overflow-hidden shrink-0">
         <div
           className="absolute top-0 left-0 right-0 h-px"
@@ -88,7 +88,7 @@ const AdminLayout = () => {
               {({ isActive }) => (
                 <>
                   <Zap size={18} className={isActive ? 'fill-white text-white' : 'fill-black text-black'} />
-                  <span>Nova CotaÃ§Ã£o</span>
+                  <span>Nova Cotação</span>
                 </>
               )}
             </NavLink>
@@ -136,7 +136,7 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      {/* â”€â”€ Main Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Main Content ─────────────────────────────────────── */}
       <main
         className="flex-1 flex flex-col h-full overflow-hidden relative z-10 px-4 pb-4 md:p-4 md:pl-0"
         style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}
@@ -204,7 +204,7 @@ const AdminLayout = () => {
         </div>
       </main>
 
-      {/* â”€â”€ Mobile Bottom Nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Mobile Bottom Nav ────────────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50">
         {/* More popup */}
         {moreMenuOpen && (
@@ -280,7 +280,7 @@ const AdminLayout = () => {
               <Zap size={26} className="fill-white" />
             </NavLink>
             <span className="text-[9px] font-bold mt-1.5 uppercase tracking-wider" style={{ color: accentHex }}>
-              CotaÃ§Ã£o
+              Cotação
             </span>
           </div>
 
