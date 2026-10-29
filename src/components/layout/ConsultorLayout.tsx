@@ -1,25 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-<<<<<<< HEAD
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Settings, LogOut, Bell, Briefcase, Zap,
   MoreHorizontal, X, Sparkles, ShieldAlert
 } from 'lucide-react';
-=======
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Zap, LogOut, Bell, Settings, MoreHorizontal, X, Sparkles } from 'lucide-react';
-import { CoteAiAssistantModal } from '../assistant/CoteAiAssistantModal';
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
 import Logo from '../common/Logo';
 import InstallAppButton from '../common/InstallAppButton';
 import { useAssociation } from '../../contexts/AssociationContext';
-<<<<<<< HEAD
 import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { CoteAiAssistantModal } from '../assistant/CoteAiAssistantModal';
-=======
-import { getThemeConfig } from '../../utils/themePresets';
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
 
 const ConsultorLayout = () => {
   const location = useLocation();
@@ -39,6 +29,7 @@ const ConsultorLayout = () => {
   const mainNavItems = [
     { name: 'Painel', icon: <LayoutDashboard size={20} />, path: '/consultor', end: true },
     { name: 'Minhas Vendas', icon: <Briefcase size={20} />, path: '/consultor/vendas' },
+    { name: 'Meus Eventos', icon: <ShieldAlert size={20} />, path: '/consultor/eventos' },
     { name: 'Configurações', icon: <Settings size={20} />, path: '/consultor/config' },
   ];
 
@@ -48,7 +39,6 @@ const ConsultorLayout = () => {
     { name: 'Vendas', icon: <Briefcase size={22} />, path: '/consultor/vendas' },
   ];
 
-<<<<<<< HEAD
   const bottomRight = [
     { name: 'Config', icon: <Settings size={22} />, path: '/consultor/config' },
   ];
@@ -57,16 +47,6 @@ const ConsultorLayout = () => {
     { name: 'Meus Eventos', icon: <ShieldAlert size={18} />, path: '/consultor/eventos' },
     { name: 'Configurações', icon: <Settings size={18} />, path: '/consultor/config' },
   ];
-=======
-  // 2 items on RIGHT of FAB
-  const bottomRight = [
-    { name: 'Config', icon: <Settings size={22} />, path: '/consultor/config' },
-    // "More" button replaces 4th slot
-  ];
-
-  // Items inside "..." menu
-  const moreItems: { name: string; icon: JSX.Element; path: string }[] = [];
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -80,11 +60,7 @@ const ConsultorLayout = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)]">
-<<<<<<< HEAD
       {/* ── Sidebar (Desktop) ────────────────────────────────── */}
-=======
-      {/* ── Sidebar (Desktop) ───────────────────────────────── */}
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
       <aside className="w-64 m-4 flex-col justify-between hidden md:flex relative z-20 glass-panel rounded-3xl overflow-hidden shrink-0">
         <div
           className="absolute top-0 left-0 right-0 h-px"
@@ -122,7 +98,7 @@ const ConsultorLayout = () => {
                     }`}
                     style={isActive ? { borderColor: `${accentHex}33`, boxShadow: `0 0 20px ${accentShadow}` } : {}}
                   >
-                    <div className={isActive ? '' : 'text-slate-500 group-hover:text-slate-300'} style={isActive ? { color: accentHex } : {}}>
+                    <div className={`${isActive ? theme.colors.primary : 'text-slate-500 group-hover:text-slate-300'}`}>
                       {item.icon}
                     </div>
                     <span className="font-sans font-semibold text-sm tracking-wide">{item.name}</span>
@@ -155,16 +131,11 @@ const ConsultorLayout = () => {
         </div>
       </aside>
 
-<<<<<<< HEAD
       {/* ── Main Content ─────────────────────────────────────── */}
-=======
-      {/* ── Main Content ────────────────────────────────────── */}
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
       <main
         className="flex-1 flex flex-col h-full overflow-hidden relative z-10 px-4 pb-4 md:p-4 md:pl-0"
         style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}
       >
-        {/* Header */}
         <header className="h-14 md:h-16 mb-4 flex items-center justify-between px-4 md:px-8 glass-panel rounded-2xl relative overflow-hidden shrink-0">
           <div
             className="absolute top-0 left-0 w-full h-full pointer-events-none"
@@ -353,5 +324,3 @@ const ConsultorLayout = () => {
 };
 
 export default ConsultorLayout;
-
-

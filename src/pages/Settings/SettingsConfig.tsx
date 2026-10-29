@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Settings as SettingsIcon, Palette, Loader2, CheckCircle2 } from 'lucide-react';
+import { Settings as SettingsIcon, Palette, Loader2, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { THEMES, type ThemeId } from '../../utils/themePresets';
 import { useAssociation } from '../../contexts/AssociationContext';
+import { EventStagesConfigModal } from '../../components/events/EventStagesConfigModal';
 
 const SettingsConfig = () => {
   const { associationData, loading, refreshAssociation } = useAssociation();
   const [selectedTheme, setSelectedTheme] = useState<ThemeId>((associationData?.tema_cor as ThemeId) || 'blue');
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [isStagesModalOpen, setIsStagesModalOpen] = useState(false);
 
   useEffect(() => {
     if (associationData?.tema_cor) {
@@ -113,7 +115,6 @@ const SettingsConfig = () => {
           </div>
         </div>
 
-<<<<<<< HEAD
         {/* Info Card Exemplo & Atalho Etapas */}
         <div className="glass-card p-8 flex flex-col h-max space-y-6">
            <div>
@@ -121,34 +122,24 @@ const SettingsConfig = () => {
              <div className="flex-1 bg-[#0E1629] border border-white/5 rounded-xl p-6 flex flex-col justify-center items-center relative overflow-hidden">
                <div className="absolute top-0 right-0 w-[200px] h-[200px] rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" 
                     style={{ backgroundColor: THEMES[selectedTheme].colors.glowHex, opacity: 0.2 }}></div>
-=======
-        {/* Info Card Exemplo */}
-        <div className="glass-card p-8 flex flex-col h-max">
-           <h3 className="premium-label mb-4">Preview do Tema</h3>
-           <div className="flex-1 bg-[#0E1629] border border-white/5 rounded-xl p-6 flex flex-col justify-center items-center relative overflow-hidden">
-             
-             {/* Glow decorativo de fundo pra mostrar o tema */}
-             <div className="absolute top-0 right-0 w-[200px] h-[200px] rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" 
-                  style={{ backgroundColor: THEMES[selectedTheme].colors.glowHex, opacity: 0.2 }}></div>
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
 
-             <h4 
-               className="premium-title text-2xl uppercase tracking-tighter mb-2 z-10" 
-               style={{
-                 background: `linear-gradient(to right, ${THEMES[selectedTheme].colors.glowHex}, #fff)`,
-                 WebkitBackgroundClip: 'text',
-                 WebkitTextFillColor: 'transparent'
-               }}>
-               {associationData?.nome || 'Sua Associação'}
-             </h4>
-             <p className="text-xs text-zinc-500 z-10 text-center">Este esquema de cor será aplicado nas cotações e propostas PDF geradas pela equipe.</p>
-             
-             <div className="mt-8 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-white shadow-lg w-full text-center z-10"
-                  style={{ backgroundColor: THEMES[selectedTheme].colors.glowHex }}>
-               Botão Exemplo
+               <h4 
+                 className="premium-title text-2xl uppercase tracking-tighter mb-2 z-10" 
+                 style={{
+                   background: `linear-gradient(to right, ${THEMES[selectedTheme].colors.glowHex}, #fff)`,
+                   WebkitBackgroundClip: 'text',
+                   WebkitTextFillColor: 'transparent'
+                 }}>
+                 {associationData?.nome || 'Sua Associação'}
+               </h4>
+               <p className="text-xs text-zinc-500 z-10 text-center">Este esquema de cor será aplicado nas cotações e propostas PDF geradas pela equipe.</p>
+               
+               <div className="mt-8 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-white shadow-lg w-full text-center z-10"
+                    style={{ backgroundColor: THEMES[selectedTheme].colors.glowHex }}>
+                 Botão Exemplo
+               </div>
              </div>
            </div>
-<<<<<<< HEAD
 
            {/* Atalho para Etapas de Sinistro */}
            <div className="p-4 rounded-xl border border-white/10 bg-white/[0.02] space-y-2">
@@ -170,11 +161,12 @@ const SettingsConfig = () => {
         </div>
 
       </div>
-=======
-        </div>
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
 
-      </div>
+      <EventStagesConfigModal
+        isOpen={isStagesModalOpen}
+        onClose={() => setIsStagesModalOpen(false)}
+        associationId={associationData?.id || ''}
+      />
     </div>
   );
 };

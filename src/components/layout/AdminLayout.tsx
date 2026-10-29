@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Settings, LogOut, Bell, Briefcase, Zap,
-  Users, ListTree, Calculator, MoreHorizontal, X, Sparkles
+  Users, ListTree, Calculator, MoreHorizontal, X, Sparkles,
+  ShieldAlert, TrendingUp
 } from 'lucide-react';
 import Logo from '../common/Logo';
 import InstallAppButton from '../common/InstallAppButton';
@@ -31,13 +32,9 @@ const AdminLayout = () => {
 
   const mainNavItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/', end: true },
-<<<<<<< HEAD
     { name: 'CRM & Vendas', icon: <Briefcase size={20} />, path: '/sales' },
     { name: 'Eventos', icon: <ShieldAlert size={20} />, path: '/events' },
     { name: 'Indicadores', icon: <TrendingUp size={20} />, path: '/indicators' },
-=======
-    { name: 'Vendas', icon: <Briefcase size={20} />, path: '/sales' },
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
     { name: 'Equipe', icon: <Users size={20} />, path: '/consultants' },
     { name: 'Planos', icon: <ListTree size={20} />, path: '/plans' },
     { name: 'Precificação', icon: <Calculator size={20} />, path: '/pricing' },
@@ -57,11 +54,8 @@ const AdminLayout = () => {
 
   // Inside "..." menu
   const moreItems = [
-<<<<<<< HEAD
     { name: 'Eventos', icon: <ShieldAlert size={18} />, path: '/events' },
     { name: 'Indicadores', icon: <TrendingUp size={18} />, path: '/indicators' },
-=======
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
     { name: 'Planos', icon: <ListTree size={18} />, path: '/plans' },
     { name: 'Precificação', icon: <Calculator size={18} />, path: '/pricing' },
     { name: 'Configurações', icon: <Settings size={18} />, path: '/config' },
@@ -87,11 +81,7 @@ const AdminLayout = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)]">
-<<<<<<< HEAD
       {/* ── Sidebar (Desktop) ─────────────────────────────────── */}
-=======
-      {/* ── Sidebar (Desktop) ────────────────────────────────── */}
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
       <aside className="w-64 m-4 flex-col justify-between hidden md:flex relative z-20 glass-panel rounded-3xl overflow-hidden shrink-0">
         <div
           className="absolute top-0 left-0 right-0 h-px"
@@ -119,11 +109,7 @@ const AdminLayout = () => {
               )}
             </NavLink>
           </div>
-<<<<<<< HEAD
           <nav className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-280px)] styled-scrollbar">
-=======
-          <nav className="mt-8 space-y-2">
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
             {mainNavItems.map((item) => (
               <NavLink
                 key={item.name}
@@ -148,24 +134,10 @@ const AdminLayout = () => {
                 }
               >
                 {({ isActive }) => (
-<<<<<<< HEAD
                   <>
                     <span style={isActive ? { color: accentHex } : {}}>{item.icon}</span>
                     <span className="text-sm font-semibold tracking-wide">{item.name}</span>
                   </>
-=======
-                  <div
-                    className={`mx-4 px-4 py-3 rounded-xl transition-all duration-300 flex items-center space-x-3 group border ${
-                      isActive ? 'bg-white/5 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
-                    }`}
-                    style={isActive ? { borderColor: `${accentHex}33`, boxShadow: `0 0 20px ${accentShadow}` } : {}}
-                  >
-                    <div className={`${isActive ? theme.colors.primary : 'text-slate-500 group-hover:text-slate-300'}`}>
-                      {item.icon}
-                    </div>
-                    <span className="font-sans font-semibold text-sm tracking-wide">{item.name}</span>
-                  </div>
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
                 )}
               </NavLink>
             ))}
@@ -198,19 +170,10 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-<<<<<<< HEAD
       {/* ── Main View Area ───────────────────────────────────── */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Top Header */}
         <header className="h-20 px-4 md:px-8 flex items-center justify-between border-b border-white/5 bg-[#0a0f1d]/50 backdrop-blur-xl shrink-0 z-10 relative">
-=======
-      {/* ── Main Content ─────────────────────────────────────── */}
-      <main
-        className="flex-1 flex flex-col h-full overflow-hidden relative z-10 px-4 pb-4 md:p-4 md:pl-0"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}
-      >
-        <header className="h-14 md:h-16 mb-4 flex items-center justify-between px-4 md:px-8 glass-panel rounded-2xl relative overflow-hidden shrink-0">
->>>>>>> parent of 92583e0 (feat: implementa gestao de eventos, indicadores comerciais e espelho sga (hinova))
           <div
             className="absolute top-0 left-0 right-0 h-px"
             style={{ background: `linear-gradient(to right, transparent, ${accentHex}40, transparent)` }}
@@ -397,5 +360,3 @@ const AdminLayout = () => {
 };
 
 export default AdminLayout;
-
-
