@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import type { AiContext, PeriodType } from './aiAssistantService';
 import {
-  
+  getPeriodDates,
   get_sales_metrics,
   get_quote_metrics,
   get_conversion_rate,
@@ -188,7 +188,7 @@ DIRETRIZES CRÍTICAS E OBRIGATÓRIAS:
       ];
 
       // Adiciona últimas interações para contexto
-      history.slice(-6).forEach((m: any) => {
+      history.slice(-6).forEach((m) => {
         conversationMessages.push({
           role: m.sender === 'user' ? 'user' : 'assistant',
           content: m.text,
@@ -281,7 +281,7 @@ export async function runDeterministicQuery(
         const topStr = topLast.map((c: any) => `**${c.nome}** (${c.cotacoes} cotações)`).join(', ');
         ans += ` Os consultores líderes em cotações foram: ${topStr}.`;
       }
-      if ((perfLast.semConsultorCount || 0) > 0) {
+      if (perfLast.semConsultorCount > 0) {
         ans += ` Além disso, foram feitas **${perfLast.semConsultorCount} cotações diretas** pelo simulador sem consultor vinculado.`;
       }
     }
@@ -296,7 +296,7 @@ export async function runDeterministicQuery(
   if (p.includes('agosto')) {
     const q = await get_quote_metrics(ctx, 'agosto');
     return {
-      answer: `No mês de **agosto de 2026**, foram geradas **${q.total} cotações** na plataforma (com ticket médio de ${formatCurrency((q as any).ticketMedio || 0)}/mês).`,
+      answer: `No mês de **agosto de 2026**, foram geradas **${q.total} cotações** na plataforma (com ticket médio de ${formatCurrency(q.ticketMedio)}/mês).`,
       sourceFunction: 'get_quote_metrics',
       data: q,
     };
@@ -518,14 +518,14 @@ export async function runDeterministicQuery(
     const sales = await get_sales_metrics(ctx, periodType);
     if (sales.totalVendas === 0) {
       return {
-        answer: `Ainda não temos vendas concluídas ${sales.periodo}. No entanto, temos **${sales.totalCotacoesPeriodo} cotações geradas** no mesmo período com potencial de fechamento no CRM.`,
+        answer: `Ainda não temos vendas concluídas ${sales.periodo}. No entanto, temos **${sales.totalCotacoes} cotações geradas** no mesmo período com potencial de fechamento no CRM.`,
         sourceFunction: 'get_sales_metrics',
         data: sales,
       };
     }
 
     return {
-      answer: `Concluímos **${sales.totalVendas} ${sales.totalVendas === 1 ? 'venda' : 'vendas'}** ${sales.periodo}, somando um total de **${formatCurrency(sales.mensalidadeTotal)}/mês** em mensalidades ativadas, com ticket médio de **${formatCurrency(sales.ticketMedio)}/mês** por associado.`,
+      answer: `Concluímos **${sales.totalVendas} ${sales.totalVendas === 1 ? 'venda' : 'vendas'}** ${sales.periodo}, somando um total de **${formatCurrency(sales.faturamentoTotal)}/mês** em mensalidades ativadas, com ticket médio de **${formatCurrency(sales.ticketMedio)}/mês** por associado.`,
       sourceFunction: 'get_sales_metrics',
       data: sales,
     };
@@ -535,7 +535,7 @@ export async function runDeterministicQuery(
   if (p.includes('conversão') || p.includes('conversao') || p.includes('taxa')) {
     const conv = await get_conversion_rate(ctx, periodType);
     return {
-      answer: `Nossa taxa de conversão ${conv.periodo} está em **${conv.taxaConversao}%**, com **${conv.convertidas} vendas** fechadas a partir de **${conv.total} cotações geradas**.`,
+      answer: `Nossa taxa de conversão ${conv.periodo} está em **${conv.taxaConversao}%**, com **${conv.convertidas} vendas** fechadas a partir de **${conv.totalCotacoes} cotações geradas**.`,
       sourceFunction: 'get_conversion_rate',
       data: conv,
     };
@@ -564,7 +564,7 @@ export async function runDeterministicQuery(
   // 8. VEÍCULOS MAIS COTADOS
   if (p.includes('veículo') || p.includes('veiculo') || p.includes('veículos') || p.includes('veiculos') || p.includes('carro') || p.includes('moto') || p.includes('modelo')) {
     const topV = await get_top_vehicles(ctx, 5);
-    if (topV.topVeiculos.length === 0) {
+    if (topV.veiculos.length === 0) {
       return {
         answer: 'Ainda não temos modelos de veículos com cotações registradas no período para gerar o ranking.',
         sourceFunction: 'get_top_vehicles',
@@ -572,7 +572,7 @@ export async function runDeterministicQuery(
       };
     }
 
-    const lista = topV.topVeiculos.map((v: any, i: number) => `${i + 1}º **${v.modelo}** (${v.cotacoes} cotações)`).join(', ');
+    const lista = topV.veiculos.map((v: any, i: number) => `${i + 1}º **${v.modelo}** (${v.cotacoes} cotações)`).join(', ');
     return {
       answer: `Os veículos mais cotados até agora são: ${lista}.`,
       sourceFunction: 'get_top_vehicles',
@@ -583,7 +583,7 @@ export async function runDeterministicQuery(
   // 9. PLANOS MAIS COTADOS
   if (p.includes('plano') || p.includes('planos') || p.includes('mais cotado') || p.includes('mais vendido')) {
     const topP = await get_top_plans(ctx, 5);
-    if (topP.topPlanos.length === 0) {
+    if (topP.planos.length === 0) {
       return {
         answer: 'Ainda não temos dados consolidados de planos cotados.',
         sourceFunction: 'get_top_plans',
@@ -591,7 +591,7 @@ export async function runDeterministicQuery(
       };
     }
 
-    const lista = topP.topPlanos.map((p: any, i: number) => `${i + 1}º **${p.plano}** (${p.cotacoes} cotações)`).join(', ');
+    const lista = topP.planos.map((p: any, i: number) => `${i + 1}º **${p.plano}** (${p.cotacoes} cotações)`).join(', ');
     return {
       answer: `Os planos com maior procura são: ${lista}.`,
       sourceFunction: 'get_top_plans',
@@ -654,18 +654,18 @@ export async function runDeterministicQuery(
       const topLastMonthStr = topLastMonth.map((c: any) => `**${c.nome}** (${c.cotacoes})`).join(', ');
 
       let text = `No total acumulado desde o início da plataforma, os consultores que mais geraram cotações são: ${topStr}. `;
-      if ((result.semConsultorCount || 0) > 0) {
+      if (result.semConsultorCount > 0) {
         text += `Além disso, temos **${result.semConsultorCount} cotações diretas** geradas sem consultor vinculado. `;
       }
       if (topLastMonth.length > 0) {
         text += `Já no mês passado (**setembro**), a liderança de cotações foi de ${topLastMonthStr}.`;
       }
       return { answer: text, sourceFunction: 'get_consultant_performance', data: result };
-    } else if (targetPeriod === 'mes_passado' || (targetPeriod as string) === 'setembro') {
+    } else if (targetPeriod === 'mes_passado' || targetPeriod === 'setembro') {
       const topList = result.rankingPorCotacoes?.slice(0, 7) || [];
       const topStr = topList.map((c: any, i: number) => `${i + 1}º **${c.nome}** (${c.cotacoes} cotações)`).join(', ');
       let text = `No mês passado (**setembro de 2026**), os consultores que mais geraram cotações foram: ${topStr}.`;
-      if ((result.semConsultorCount || 0) > 0) {
+      if (result.semConsultorCount > 0) {
         text += ` Houve também **${result.semConsultorCount} cotações diretas** sem consultor no período.`;
       }
       return { answer: text, sourceFunction: 'get_consultant_performance', data: result };

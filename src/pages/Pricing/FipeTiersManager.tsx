@@ -40,7 +40,7 @@ type Tier = {
   coberturas: Coverage[];
 };
 
-const formatCurrency = (val: any) =>
+const formatCurrency = (val) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val || 0);
 
 const FipeTiersManager = ({ associationId, groupId }: { associationId: string; groupId: string }) => {
@@ -82,10 +82,10 @@ const FipeTiersManager = ({ associationId, groupId }: { associationId: string; g
     setSaving(true);
     setError('');
     try {
-      const mensalidade = (editingTier as any).mensalidade !== '' && editingTier.mensalidade !== null
+      const mensalidade = editingTier.mensalidade !== '' && editingTier.mensalidade !== null
         ? parseFloat(String(editingTier.mensalidade).replace(',', '.')) || null
         : null;
-      const franquia_percentual = (editingTier as any).franquia_percentual !== '' && editingTier.franquia_percentual !== null
+      const franquia_percentual = editingTier.franquia_percentual !== '' && editingTier.franquia_percentual !== null
         ? parseFloat(String(editingTier.franquia_percentual).replace(',', '.')) || null
         : null;
       const fipe_min = parseFloat(String((editingTier as any).fipe_min || '0').replace(',', '.')) || 0;

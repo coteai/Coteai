@@ -6,21 +6,20 @@ import { useAssociation } from '../../contexts/AssociationContext';
 import PlansManager from './PlansManager';
 import FipeTiersManager from './FipeTiersManager';
 
-const formatCurrency = (val: any) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val || 0);
+const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val || 0);
 
 const PricingPage = () => {
   const [activeTab, setActiveTab] = useState('import'); 
-  const [plans, setPlans] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [data, setData] = useState<any>({});
-  const [editing, setEditing] = useState<any>(null);
+  const [plans, setPlans] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [data, setData] = useState({});
+  const [editing, setEditing] = useState(null);
   const { associationData } = useAssociation();
-  const [customAssocId, setAssociationId] = useState<string>('');
-  const associationId = associationData?.id || customAssocId;
+  const associationId = associationData?.id;
   const [isLoading, setIsLoading] = useState(true);
   
   // Groups State
-  const [vehicleGroups, setVehicleGroups] = useState<any[]>([]);
+  const [vehicleGroups, setVehicleGroups] = useState([]);
   const [activeGroupId, setActiveGroupId] = useState('');
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [newGroupState, setNewGroupState] = useState({ nome: '', base_type: 'carro', pricing_mode: 'plans' });
@@ -30,14 +29,14 @@ const PricingPage = () => {
   const groupDropdownRef = useRef<HTMLDivElement>(null);
 
   // Computed helpers
-  const activeGroup: any = vehicleGroups.find((g: any) => g.id === activeGroupId);
+  const activeGroup = vehicleGroups.find(g => g.id === activeGroupId);
   
   // States for Builder
   const [builderPlans, setBuilderPlans] = useState([{ name: 'Básico', franchise: '' }, { name: 'VIP', franchise: '' }]);
-  const [builderSegments, setBuilderSegments] = useState<any[]>([
+  const [builderSegments, setBuilderSegments] = useState([
     { min: 0, max: 100000, step: 5000 }
   ]);
-  const [builderPrices, setBuilderPrices] = useState<any>({});
+  const [builderPrices, setBuilderPrices] = useState({});
   const [builderError, setBuilderError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -196,27 +195,27 @@ const PricingPage = () => {
       : 0;
     setBuilderSegments(prev => [...prev, { min: lastMax, max: lastMax + 500000, step: 50000 }]);
     setBuilderPrices({});
-    
+    setBuilderFranchises({});
   };
 
-  const removeSegment = (idx: any) => {
+  const removeSegment = (idx) => {
     if (builderSegments.length <= 1) return;
     setBuilderSegments(prev => prev.filter((_, i) => i !== idx));
     setBuilderPrices({});
-    
+    setBuilderFranchises({});
   };
 
-  const updateSegment = (idx: any, field: any, value: any) => {
+  const updateSegment = (idx, field, value) => {
     setBuilderSegments(prev => prev.map((s, i) => i === idx ? { ...s, [field]: Number(value) } : s));
     setBuilderPrices({});
-    
+    setBuilderFranchises({});
   };
 
-  const updatePlanName = (idx: any, name: any) => {
+  const updatePlanName = (idx, name) => {
     setBuilderPlans(prev => prev.map((p, i) => i === idx ? { ...p, name } : p));
   };
 
-  const updatePlanFranchise = (idx: any, franchise: any) => {
+  const updatePlanFranchise = (idx, franchise) => {
     setBuilderPlans(prev => prev.map((p, i) => i === idx ? { ...p, franchise } : p));
   };
 
@@ -224,12 +223,12 @@ const PricingPage = () => {
     setBuilderPlans(prev => [...prev, { name: `Plano ${prev.length + 1}`, franchise: '' }]);
   };
 
-  const removePlan = (idx: any) => {
+  const removePlan = (idx) => {
     if (builderPlans.length <= 1) return;
     setBuilderPlans(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const setPrice = (rowIdx: any, planIdx: any, value: any) => {
+  const setPrice = (rowIdx, planIdx, value) => {
     setBuilderPrices(prev => ({
       ...prev,
       [`${rowIdx}_${planIdx}`]: value

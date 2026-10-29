@@ -1,16 +1,17 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Search, FileText, Loader2, RefreshCw,
-  LayoutGrid, ListFilter, ChevronRight
+  Search, CheckCircle2, XCircle, Clock, FileText, User, Loader2, RefreshCw,
+  Sparkles, Send, TrendingUp, LayoutGrid, ListFilter, Filter, ChevronRight
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAssociation } from '../../contexts/AssociationContext';
-import type { CrmMetrics } from '../../utils/crmStatus';
+import type { CommercialStatus, CrmMetrics } from '../../utils/crmStatus';
 import {
   COMMERCIAL_STATUSES,
   normalizeCommercialStatus,
   calculateCrmMetrics,
+  getTimeSinceLastUpdate,
   updateQuoteCommercialStatus,
 } from '../../utils/crmStatus';
 import { CrmPipeline } from '../../components/crm/CrmPipeline';
@@ -40,15 +41,11 @@ const QuotesManager = () => {
       // Otimização de Performance: busca apenas os campos necessários (sem planos_cotados que é pesado)
       const selectFields = 'id, created_at, updated_at, status, mensalidade, plano_selecionado, cliente_nome, cliente_whatsapp, placa, modelo, valor_fipe, consultant_id, observacoes, consultants(id, nome)';
       
-      let qData: any = null;
-      let qError: any = null;
-      const initialFetch = await supabase
+      let { data: qData, error: qError } = await supabase
         .from('quotes')
         .select(selectFields)
         .eq('association_id', assocId)
         .order('created_at', { ascending: false });
-      qData = initialFetch.data;
-      qError = initialFetch.error;
 
       // Fallback gracioso se updated_at ou observacoes ainda nao existirem no banco
       if (qError && (qError.code === '42703' || qError.code === 'PGRST204' || String(qError.message || '').includes('does not exist') || String(qError.message || '').includes('Could not find'))) {
@@ -58,7 +55,7 @@ const QuotesManager = () => {
           .select(minimalFields)
           .eq('association_id', assocId)
           .order('created_at', { ascending: false });
-        qData = retry.data as any;
+        qData = retry.data;
         qError = retry.error;
       }
 

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Settings as SettingsIcon, Palette, Loader2, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { THEMES, type ThemeId } from '../../utils/themePresets';
@@ -54,11 +54,12 @@ const SettingsConfig = () => {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="premium-title text-3xl md:text-4xl uppercase tracking-tighter mb-2">Configurações Gerais</h1>
-          <p className="text-slate-400">Personalize a identidade visual, fluxo de sinistros e dados da sua Associação.</p>
+          <p className="text-slate-400">Personalize a identidade visual e dados da sua Associação.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
         {/* Identidade Visual Card */}
         <div className="md:col-span-2 glass-card p-8">
           <div className="flex items-center space-x-3 mb-6 border-b border-white/5 pb-4">
@@ -68,14 +69,13 @@ const SettingsConfig = () => {
           
           <p className="text-zinc-400 text-sm mb-8">
             Escolha um tema padrão para as propostas em PDF e para o funil de cotação. 
-            Isso garante que seu material estará adequado às cores da sua Associação <strong className="text-white">{associationData?.nome}</strong>.
+            Isso garante que seu material estará adequado as cores da sua Associação <strong className="text-white">{associationData?.nome}</strong>.
           </p>
 
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
              {Object.values(THEMES).map(theme => (
                <button 
                  key={theme.id}
-                 type="button"
                  onClick={() => setSelectedTheme(theme.id)}
                  className={`relative flex flex-col p-4 rounded-xl border transition-all text-left ${
                    selectedTheme === theme.id 
@@ -106,17 +106,16 @@ const SettingsConfig = () => {
 
           <div className="flex justify-end">
              <button
-                type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 flex items-center space-x-2 transition-all shadow-lg"
+                className="premium-button flex items-center space-x-2"
              >
-                {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <><SettingsIcon size={16} /> <span>Salvar Tema</span></>}
+                {saving ? <Loader2 className="animate-spin w-5 h-5" /> : <><SettingsIcon size={18} /> <span>Salvar Tema</span></>}
              </button>
           </div>
         </div>
 
-        {/* Info Card Exemplo */}
+        {/* Info Card Exemplo & Atalho Etapas */}
         <div className="glass-card p-8 flex flex-col h-max space-y-6">
            <div>
              <h3 className="premium-label mb-4">Preview do Tema</h3>
@@ -143,23 +142,24 @@ const SettingsConfig = () => {
            </div>
 
            {/* Atalho para Etapas de Sinistro */}
-           <div className="p-5 rounded-2xl border border-white/5 bg-white/[0.02] space-y-3">
+           <div className="p-4 rounded-xl border border-white/10 bg-white/[0.02] space-y-2">
              <div className="flex items-center space-x-2 text-white font-bold text-sm">
                <ShieldAlert size={18} className="text-blue-400" />
                <span>Etapas de Sinistro</span>
              </div>
              <p className="text-xs text-zinc-400">
-               Configure o fluxo padrão de eventos (vistoria, orçamento, reparo) e avisos automáticos por WhatsApp.
+               Configure o fluxo padrão de eventos e avisos automáticos por WhatsApp.
              </p>
              <button
                type="button"
                onClick={() => setIsStagesModalOpen(true)}
-               className="w-full py-2 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition-all"
+               className="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-white/10 hover:bg-white/15 border border-white/10 transition-all"
              >
-               Gerenciar Etapas de Eventos
+               Configurar Etapas de Sinistro
              </button>
            </div>
         </div>
+
       </div>
 
       <EventStagesConfigModal
@@ -172,4 +172,3 @@ const SettingsConfig = () => {
 };
 
 export default SettingsConfig;
-

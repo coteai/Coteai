@@ -1,53 +1,50 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Briefcase, Zap, LogOut, Bell, Settings,
+  LayoutDashboard, Settings, LogOut, Bell, Briefcase, Zap,
   MoreHorizontal, X, Sparkles, ShieldAlert
 } from 'lucide-react';
-import { CoteAiAssistantModal } from '../assistant/CoteAiAssistantModal';
 import Logo from '../common/Logo';
 import InstallAppButton from '../common/InstallAppButton';
-import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
 import { useAssociation } from '../../contexts/AssociationContext';
+import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
+import { useNavigate } from 'react-router-dom';
+import { CoteAiAssistantModal } from '../assistant/CoteAiAssistantModal';
 
 const ConsultorLayout = () => {
-  const { consultor, logout } = useConsultorAuth();
-  const { associationData, theme } = useAssociation();
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { associationData, theme } = useAssociation();
+  const { consultor, logout } = useConsultorAuth();
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/consultor/login');
-  };
+  const handleLogout = () => { logout(); navigate('/consultor/login'); };
 
   const accentHex = theme.colors.glowHex;
   const accentShadow = theme.colors.shadow;
   const bgClass = theme.colors.bg;
 
-  const sidebarItems = [
-    { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/consultor', end: true },
+  const mainNavItems = [
+    { name: 'Painel', icon: <LayoutDashboard size={20} />, path: '/consultor', end: true },
     { name: 'Minhas Vendas', icon: <Briefcase size={20} />, path: '/consultor/vendas' },
     { name: 'Meus Eventos', icon: <ShieldAlert size={20} />, path: '/consultor/eventos' },
     { name: 'Configurações', icon: <Settings size={20} />, path: '/consultor/config' },
   ];
 
-  // 2 items on LEFT of FAB
+  // Mobile bottom bar (Preservada exatamente como o original)
   const bottomLeft = [
     { name: 'Painel', icon: <LayoutDashboard size={22} />, path: '/consultor', end: true },
     { name: 'Vendas', icon: <Briefcase size={22} />, path: '/consultor/vendas' },
   ];
 
-  // 1 item on RIGHT of FAB
   const bottomRight = [
-    { name: 'Eventos', icon: <ShieldAlert size={22} />, path: '/consultor/eventos' },
+    { name: 'Config', icon: <Settings size={22} />, path: '/consultor/config' },
   ];
 
-  // Items inside "..." menu
   const moreItems = [
+    { name: 'Meus Eventos', icon: <ShieldAlert size={18} />, path: '/consultor/eventos' },
     { name: 'Configurações', icon: <Settings size={18} />, path: '/consultor/config' },
   ];
 
@@ -63,7 +60,7 @@ const ConsultorLayout = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)]">
-      {/* Sidebar (Desktop) */}
+      {/* ── Sidebar (Desktop) ────────────────────────────────── */}
       <aside className="w-64 m-4 flex-col justify-between hidden md:flex relative z-20 glass-panel rounded-3xl overflow-hidden shrink-0">
         <div
           className="absolute top-0 left-0 right-0 h-px"
@@ -92,7 +89,7 @@ const ConsultorLayout = () => {
             </NavLink>
           </div>
           <nav className="mt-8 space-y-2">
-            {sidebarItems.map((item) => (
+            {mainNavItems.map((item) => (
               <NavLink key={item.name} to={item.path} end={item.end}>
                 {({ isActive }) => (
                   <div
@@ -121,7 +118,7 @@ const ConsultorLayout = () => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white truncate">{consultor?.nome}</p>
-              <p className="text-xs text-zinc-600 truncate">{consultor?.email}</p>
+              <p className="text-xs text-zinc-600 truncate">Consultor</p>
             </div>
           </div>
           <button
@@ -134,7 +131,7 @@ const ConsultorLayout = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* ── Main Content ─────────────────────────────────────── */}
       <main
         className="flex-1 flex flex-col h-full overflow-hidden relative z-10 px-4 pb-4 md:p-4 md:pl-0"
         style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}
@@ -208,7 +205,7 @@ const ConsultorLayout = () => {
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
+      {/* ── Mobile Bottom Navigation ────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50">
         {/* More popup */}
         {moreMenuOpen && (
@@ -285,7 +282,7 @@ const ConsultorLayout = () => {
             </span>
           </div>
 
-          {/* RIGHT: Eventos */}
+          {/* RIGHT: Config */}
           {bottomRight.map((item) => (
             <NavLink
               key={item.name}
