@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Users, FileText, CheckCircle2, Car, Bike, Truck, Loader2, DollarSign, Sparkles } from 'lucide-react';
+import { TrendingUp, Users, FileText, CheckCircle2, Car, Bike, Truck, Loader2, DollarSign, Sparkles, ShieldAlert, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { normalizeCommercialStatus } from '../../utils/crmStatus';
 // CoteAiAssistantModal is hosted in AdminLayout
@@ -215,6 +216,40 @@ const Dashboard = () => {
       ) : (
         <>
                     
+
+          {/* Quick Access Modules */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+            <Link to="/events" className="p-5 rounded-2xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/15 transition-all flex items-center justify-between group shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                  <ShieldAlert size={26} />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500 text-white">Novo Módulo</span>
+                    <h3 className="text-base font-extrabold text-white">Gestão de Eventos (Sinistros)</h3>
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-1">Acompanhe vistorias, orçamentos de oficinas, peças e entregas</p>
+                </div>
+              </div>
+              <ArrowRight size={20} className="text-blue-400 group-hover:translate-x-1 transition-transform shrink-0" />
+            </Link>
+            <Link to="/indicators" className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15 transition-all flex items-center justify-between group shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                  <TrendingUp size={26} />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500 text-white">Novo Módulo</span>
+                    <h3 className="text-base font-extrabold text-white">Indicadores Comerciais & SGA</h3>
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-1">Churn, sinistralidade, ticket médio, rentabilidade e qualidade da base</p>
+                </div>
+              </div>
+              <ArrowRight size={20} className="text-emerald-400 group-hover:translate-x-1 transition-transform shrink-0" />
+            </Link>
+          </div>
 
           {/* KPI Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
