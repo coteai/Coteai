@@ -45,7 +45,7 @@ const ConsultorVendas = () => {
       // Otimização de Performance: campos necessários leves
       const selectFields = 'id, created_at, updated_at, status, mensalidade, plano_selecionado, cliente_nome, cliente_whatsapp, placa, modelo, valor_fipe, consultant_id, observacoes';
       
-      let { data, error } = await supabase
+      let { data, error }: { data: any; error: any } = await supabase
         .from('quotes')
         .select(selectFields)
         .eq('consultant_id', consultor.id)

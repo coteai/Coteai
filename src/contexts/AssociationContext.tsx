@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { THEMES, getThemeConfig, type ThemeConfig } from '../utils/themePresets';
 
@@ -69,10 +69,10 @@ export const AssociationProvider = ({ children }: { children: ReactNode }) => {
   const proposalTheme = getThemeConfig(associationData?.tema_cor);
   const theme = THEMES.blue;
 
-  // Fixar o tema do sistema sempre em Azul (padrão) para o dashboard, 
+  // Fixar o tema do sistema sempre em Azul (padrÃ£o) para o dashboard, 
   // enquanto exportamos o 'theme' selecionado para ser usado apenas na proposta.
   useEffect(() => {
-    // Valores fixos do tema Azul (Safira) para evitar qualquer problema de importação circular ou estado (TELA AZUL)
+    // Valores fixos do tema Azul (Safira) para evitar qualquer problema de importaÃ§Ã£o circular ou estado (TELA AZUL)
     const glowHex = '#3b82f6';
     const shadow = 'rgba(59,130,246,0.25)';
 
@@ -82,7 +82,7 @@ export const AssociationProvider = ({ children }: { children: ReactNode }) => {
         root.style.setProperty('--color-primary-theme', glowHex);
         root.style.setProperty('--color-shadow-theme', shadow);
         
-        // Criar versões com opacidade para o background e glows
+        // Criar versÃµes com opacidade para o background e glows
         root.style.setProperty('--color-glow-low', `${glowHex}1A`);
         root.style.setProperty('--color-glow-mid', `${glowHex}33`);
       }
@@ -113,3 +113,4 @@ export const useAssociation = () => {
   }
   return context;
 };
+

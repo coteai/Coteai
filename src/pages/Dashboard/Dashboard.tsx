@@ -67,7 +67,7 @@ const Dashboard = () => {
   const [segments, setSegments] = useState<any[]>([]);
 
   const themeConfig = getThemeConfig(associationData?.theme || 'emerald');
-  const accentHex = themeConfig.primary;
+  const accentHex = themeConfig.colors.glowHex;
 
   useEffect(() => {
     if (associationData?.id) {

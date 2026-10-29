@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAssociation } from './AssociationContext';
 
@@ -54,7 +54,7 @@ export const ConsultorAuthProvider = ({ children }: { children: ReactNode }) => 
       .single();
 
     if (error || !data) {
-      return { error: 'E-mail não encontrado.' };
+      return { error: 'E-mail nÃ£o encontrado.' };
     }
 
     if (!data.ativo) {
@@ -112,3 +112,4 @@ export const useConsultorAuth = () => {
   if (!context) throw new Error('useConsultorAuth must be used within ConsultorAuthProvider');
   return context;
 };
+

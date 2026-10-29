@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Settings, LogOut, Bell, Briefcase, Zap,
-  Users, ListTree, Calculator, MoreHorizontal, X, Sparkles
+  Users, ListTree, Calculator, MoreHorizontal, X, Sparkles,
+  ShieldAlert, TrendingUp
 } from 'lucide-react';
 import Logo from '../common/Logo';
 import InstallAppButton from '../common/InstallAppButton';
@@ -28,6 +29,8 @@ const AdminLayout = () => {
 
   const mainNavItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/', end: true },
+    { name: 'Eventos', icon: <ShieldAlert size={20} />, path: '/events' },
+    { name: 'Indicadores', icon: <TrendingUp size={20} />, path: '/indicators' },
     { name: 'Vendas', icon: <Briefcase size={20} />, path: '/sales' },
     { name: 'Equipe', icon: <Users size={20} />, path: '/consultants' },
     { name: 'Planos', icon: <ListTree size={20} />, path: '/plans' },
@@ -38,16 +41,18 @@ const AdminLayout = () => {
   // LEFT of FAB (2 items)
   const bottomLeft = [
     { name: 'Painel', icon: <LayoutDashboard size={22} />, path: '/', end: true },
-    { name: 'Vendas', icon: <Briefcase size={22} />, path: '/sales' },
+    { name: 'Eventos', icon: <ShieldAlert size={22} />, path: '/events' },
   ];
 
   // RIGHT of FAB (1 visible + More button = 2 slots)
   const bottomRight = [
-    { name: 'Equipe', icon: <Users size={22} />, path: '/consultants' },
+    { name: 'Indicadores', icon: <TrendingUp size={22} />, path: '/indicators' },
   ];
 
   // Inside "..." menu
   const moreItems = [
+    { name: 'Vendas', icon: <Briefcase size={18} />, path: '/sales' },
+    { name: 'Equipe', icon: <Users size={18} />, path: '/consultants' },
     { name: 'Planos', icon: <ListTree size={18} />, path: '/plans' },
     { name: 'Precificação', icon: <Calculator size={18} />, path: '/pricing' },
     { name: 'Configurações', icon: <Settings size={18} />, path: '/config' },
@@ -65,7 +70,7 @@ const AdminLayout = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)]">
-      {/* ── Sidebar (Desktop) ────────────────────────────────── */}
+      {/* Sidebar (Desktop) */}
       <aside className="w-64 m-4 flex-col justify-between hidden md:flex relative z-20 glass-panel rounded-3xl overflow-hidden shrink-0">
         <div
           className="absolute top-0 left-0 right-0 h-px"
@@ -93,12 +98,12 @@ const AdminLayout = () => {
               )}
             </NavLink>
           </div>
-          <nav className="mt-8 space-y-2">
+          <nav className="mt-6 space-y-1.5 max-h-[calc(100vh-280px)] overflow-y-auto styled-scrollbar">
             {mainNavItems.map((item) => (
               <NavLink key={item.name} to={item.path} end={item.end}>
                 {({ isActive }) => (
                   <div
-                    className={`mx-4 px-4 py-3 rounded-xl transition-all duration-300 flex items-center space-x-3 group border ${
+                    className={`mx-4 px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center space-x-3 group border ${
                       isActive ? 'bg-white/5 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
                     }`}
                     style={isActive ? { borderColor: `${accentHex}33`, boxShadow: `0 0 20px ${accentShadow}` } : {}}
@@ -136,7 +141,7 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      {/* ── Main Content ─────────────────────────────────────── */}
+      {/* Main Content */}
       <main
         className="flex-1 flex flex-col h-full overflow-hidden relative z-10 px-4 pb-4 md:p-4 md:pl-0"
         style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}
@@ -204,7 +209,7 @@ const AdminLayout = () => {
         </div>
       </main>
 
-      {/* ── Mobile Bottom Nav ────────────────────────────────── */}
+      {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50">
         {/* More popup */}
         {moreMenuOpen && (
@@ -284,7 +289,7 @@ const AdminLayout = () => {
             </span>
           </div>
 
-          {/* RIGHT: Equipe */}
+          {/* RIGHT: Indicadores */}
           {bottomRight.map((item) => (
             <NavLink
               key={item.name}
@@ -328,5 +333,3 @@ const AdminLayout = () => {
 };
 
 export default AdminLayout;
-
-

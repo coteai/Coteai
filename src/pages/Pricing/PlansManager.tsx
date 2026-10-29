@@ -37,6 +37,7 @@ type Coverage = { key: string; label: string; param?: string; custom?: boolean }
 type Plan = {
   id?: string;
   association_id: string;
+  group_id?: string;
   tipo_veiculo: string;
   nome: string;
   descricao: string;

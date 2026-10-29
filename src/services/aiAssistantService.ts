@@ -1,5 +1,5 @@
 ﻿import { supabase } from '@/lib/supabase';
-import type { CommercialStatus } from '../utils/crmStatus';
+
 import { normalizeCommercialStatus } from '../utils/crmStatus';
 
 export interface AiContext {
@@ -175,7 +175,7 @@ async function fetchSecureQuotes(ctx: AiContext, period?: PeriodFilter): Promise
 /**
  * 1. get_sales_metrics
  */
-export async function get_sales_metrics(ctx: AiContext, periodType: 'hoje' | 'ontem' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'mes_passado' | 'tudo' = 'este_mes') {
+export async function get_sales_metrics(ctx: AiContext, periodType: PeriodType = 'este_mes') {
   const period = getPeriodDates(periodType);
   const quotes = await fetchSecureQuotes(ctx, period);
 
@@ -196,7 +196,7 @@ export async function get_sales_metrics(ctx: AiContext, periodType: 'hoje' | 'on
 /**
  * 2. get_quote_metrics
  */
-export async function get_quote_metrics(ctx: AiContext, periodType: 'hoje' | 'ontem' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'mes_passado' | 'tudo' = 'este_mes') {
+export async function get_quote_metrics(ctx: AiContext, periodType: PeriodType = 'este_mes') {
   const period = getPeriodDates(periodType);
   const quotes = await fetchSecureQuotes(ctx, period);
 
@@ -229,7 +229,7 @@ export async function get_quote_metrics(ctx: AiContext, periodType: 'hoje' | 'on
 /**
  * 3. get_conversion_rate
  */
-export async function get_conversion_rate(ctx: AiContext, periodType: 'hoje' | 'ontem' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'mes_passado' | 'tudo' = 'este_mes') {
+export async function get_conversion_rate(ctx: AiContext, periodType: PeriodType = 'este_mes') {
   const period = getPeriodDates(periodType);
   const quotes = await fetchSecureQuotes(ctx, period);
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface SuperAdminSession {
@@ -47,7 +47,7 @@ export const SuperAdminAuthProvider = ({ children }: { children: ReactNode }) =>
       .single();
 
     if (error || !data) {
-      return { error: 'E-mail não encontrado.' };
+      return { error: 'E-mail nÃ£o encontrado.' };
     }
 
     if (data.senha !== senha) {
@@ -77,3 +77,4 @@ export const useSuperAdminAuth = () => {
   if (!context) throw new Error('useSuperAdminAuth must be used within SuperAdminAuthProvider');
   return context;
 };
+

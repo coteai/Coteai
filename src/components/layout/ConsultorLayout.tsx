@@ -1,12 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Zap, LogOut, Bell, Settings, MoreHorizontal, X, Sparkles } from 'lucide-react';
+import {
+  LayoutDashboard, Briefcase, Zap, LogOut, Bell, Settings,
+  MoreHorizontal, X, Sparkles, ShieldAlert
+} from 'lucide-react';
 import { CoteAiAssistantModal } from '../assistant/CoteAiAssistantModal';
 import Logo from '../common/Logo';
 import InstallAppButton from '../common/InstallAppButton';
 import { useConsultorAuth } from '../../contexts/ConsultorAuthContext';
 import { useAssociation } from '../../contexts/AssociationContext';
-import { getThemeConfig } from '../../utils/themePresets';
 
 const ConsultorLayout = () => {
   const { consultor, logout } = useConsultorAuth();
@@ -29,6 +31,7 @@ const ConsultorLayout = () => {
   const sidebarItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/consultor', end: true },
     { name: 'Minhas Vendas', icon: <Briefcase size={20} />, path: '/consultor/vendas' },
+    { name: 'Meus Eventos', icon: <ShieldAlert size={20} />, path: '/consultor/eventos' },
     { name: 'Configurações', icon: <Settings size={20} />, path: '/consultor/config' },
   ];
 
@@ -38,14 +41,15 @@ const ConsultorLayout = () => {
     { name: 'Vendas', icon: <Briefcase size={22} />, path: '/consultor/vendas' },
   ];
 
-  // 2 items on RIGHT of FAB
+  // 1 item on RIGHT of FAB
   const bottomRight = [
-    { name: 'Config', icon: <Settings size={22} />, path: '/consultor/config' },
-    // "More" button replaces 4th slot
+    { name: 'Eventos', icon: <ShieldAlert size={22} />, path: '/consultor/eventos' },
   ];
 
   // Items inside "..." menu
-  const moreItems: { name: string; icon: JSX.Element; path: string }[] = [];
+  const moreItems = [
+    { name: 'Configurações', icon: <Settings size={18} />, path: '/consultor/config' },
+  ];
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -59,7 +63,7 @@ const ConsultorLayout = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)]">
-      {/* ── Sidebar (Desktop) ───────────────────────────────── */}
+      {/* Sidebar (Desktop) */}
       <aside className="w-64 m-4 flex-col justify-between hidden md:flex relative z-20 glass-panel rounded-3xl overflow-hidden shrink-0">
         <div
           className="absolute top-0 left-0 right-0 h-px"
@@ -97,7 +101,7 @@ const ConsultorLayout = () => {
                     }`}
                     style={isActive ? { borderColor: `${accentHex}33`, boxShadow: `0 0 20px ${accentShadow}` } : {}}
                   >
-                    <div className={isActive ? '' : 'text-slate-500 group-hover:text-slate-300'} style={isActive ? { color: accentHex } : {}}>
+                    <div className={`${isActive ? theme.colors.primary : 'text-slate-500 group-hover:text-slate-300'}`}>
                       {item.icon}
                     </div>
                     <span className="font-sans font-semibold text-sm tracking-wide">{item.name}</span>
@@ -130,12 +134,11 @@ const ConsultorLayout = () => {
         </div>
       </aside>
 
-      {/* ── Main Content ────────────────────────────────────── */}
+      {/* Main Content */}
       <main
         className="flex-1 flex flex-col h-full overflow-hidden relative z-10 px-4 pb-4 md:p-4 md:pl-0"
         style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}
       >
-        {/* Header */}
         <header className="h-14 md:h-16 mb-4 flex items-center justify-between px-4 md:px-8 glass-panel rounded-2xl relative overflow-hidden shrink-0">
           <div
             className="absolute top-0 left-0 w-full h-full pointer-events-none"
@@ -205,7 +208,7 @@ const ConsultorLayout = () => {
         </div>
       </main>
 
-      {/* ── Mobile Bottom Navigation ────────────────────────── */}
+      {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50">
         {/* More popup */}
         {moreMenuOpen && (
@@ -282,7 +285,7 @@ const ConsultorLayout = () => {
             </span>
           </div>
 
-          {/* RIGHT: Config */}
+          {/* RIGHT: Eventos */}
           {bottomRight.map((item) => (
             <NavLink
               key={item.name}
@@ -324,5 +327,3 @@ const ConsultorLayout = () => {
 };
 
 export default ConsultorLayout;
-
-

@@ -271,12 +271,12 @@ interface Props {
   defaultOpen?: boolean;
 }
 
-const containerVariants = {
+const containerVariants: any = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.08 } },
 };
 
-const cardVariants = {
+const cardVariants: any = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
 };

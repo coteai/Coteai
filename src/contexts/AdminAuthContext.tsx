@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAssociation } from './AssociationContext';
 
@@ -43,7 +43,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       return { error: 'Preencha e-mail e senha.' };
     }
 
-    // Busca a associação por admin_email
+    // Busca a associaÃ§Ã£o por admin_email
     const { data, error } = await supabase
       .from('associations')
       .select('id, nome, slug, admin_email, admin_senha, status')
@@ -51,11 +51,11 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       .single();
 
     if (error || !data) {
-      return { error: 'Administrador não encontrado.' };
+      return { error: 'Administrador nÃ£o encontrado.' };
     }
 
     if (data.status !== 'active') {
-      return { error: 'Associação suspensa. Contate o suporte.' };
+      return { error: 'AssociaÃ§Ã£o suspensa. Contate o suporte.' };
     }
 
     if (data.admin_senha !== senha) {
@@ -85,3 +85,4 @@ export const useAdminAuth = () => {
   if (!context) throw new Error('useAdminAuth must be used within AdminAuthProvider');
   return context;
 };
+

@@ -17,7 +17,8 @@ type Consultant = {
 
 const ConsultantsManager = () => {
   const { associationData } = useAssociation();
-  const associationId = associationData?.id;
+  const [customAssocId, setAssociationId] = useState<string>('');
+  const associationId = associationData?.id || customAssocId;
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingConsultant, setEditingConsultant] = useState<Partial<Consultant> | null>(null);
