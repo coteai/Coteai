@@ -1,4 +1,8 @@
-﻿-- ==============================================================================
+-- ==============================================================================
+-- CONSOLIDADO: MIGRATIONS EVENTOS, INDICADORES & ESPELHO SGA (HINOVA)
+-- ==============================================================================
+
+-- ==============================================================================
 -- MIGRATION: 20261028120000_sga_mirror.sql
 -- DESCRIÇÃO: Espelho do SGA (Hinova) - Somente leitura para o usuário
 --            Será preenchido pela sincronização posterior.
@@ -8,7 +12,8 @@
 CREATE TABLE IF NOT EXISTS public.sga_associados (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   associacao_id UUID NOT NULL REFERENCES public.associations(id) ON DELETE CASCADE,
-  id_externo TEXT NOT NULL,
+  sga_id TEXT NOT NULL,
+  id_externo TEXT,
   nome TEXT NOT NULL,
   cpf_cnpj TEXT,
   telefone TEXT,
@@ -19,10 +24,11 @@ CREATE TABLE IF NOT EXISTS public.sga_associados (
   consultor_id UUID REFERENCES public.consultants(id) ON DELETE SET NULL,
   dados_brutos JSONB DEFAULT '{}'::jsonb,
   atualizado_em TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT uq_sga_associados_externo UNIQUE (associacao_id, id_externo)
+  CONSTRAINT uq_sga_associados_sga_id UNIQUE (associacao_id, sga_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_sga_associados_assoc ON public.sga_associados(associacao_id);
+CREATE INDEX IF NOT EXISTS idx_sga_associados_sga_id ON public.sga_associados(sga_id);
 CREATE INDEX IF NOT EXISTS idx_sga_associados_cpf_cnpj ON public.sga_associados(cpf_cnpj);
 CREATE INDEX IF NOT EXISTS idx_sga_associados_consultor ON public.sga_associados(consultor_id);
 CREATE INDEX IF NOT EXISTS idx_sga_associados_situacao ON public.sga_associados(associacao_id, situacao);
@@ -36,9 +42,11 @@ COMMENT ON COLUMN public.sga_associados.situacao IS 'Situação do associado no 
 CREATE TABLE IF NOT EXISTS public.sga_veiculos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   associacao_id UUID NOT NULL REFERENCES public.associations(id) ON DELETE CASCADE,
-  id_externo TEXT NOT NULL,
+  sga_id TEXT NOT NULL,
+  id_externo TEXT,
   associado_id UUID NOT NULL REFERENCES public.sga_associados(id) ON DELETE CASCADE,
   placa TEXT NOT NULL,
+  chassi TEXT,
   marca TEXT,
   modelo TEXT,
   ano INTEGER,
@@ -47,12 +55,14 @@ CREATE TABLE IF NOT EXISTS public.sga_veiculos (
   plano TEXT,
   dados_brutos JSONB DEFAULT '{}'::jsonb,
   atualizado_em TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT uq_sga_veiculos_externo UNIQUE (associacao_id, id_externo)
+  CONSTRAINT uq_sga_veiculos_sga_id UNIQUE (associacao_id, sga_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_sga_veiculos_assoc ON public.sga_veiculos(associacao_id);
+CREATE INDEX IF NOT EXISTS idx_sga_veiculos_sga_id ON public.sga_veiculos(sga_id);
 CREATE INDEX IF NOT EXISTS idx_sga_veiculos_associado ON public.sga_veiculos(associado_id);
 CREATE INDEX IF NOT EXISTS idx_sga_veiculos_placa ON public.sga_veiculos(placa);
+CREATE INDEX IF NOT EXISTS idx_sga_veiculos_chassi ON public.sga_veiculos(chassi);
 CREATE INDEX IF NOT EXISTS idx_sga_veiculos_assoc_placa ON public.sga_veiculos(associacao_id, placa);
 
 COMMENT ON TABLE public.sga_veiculos IS 'Espelho dos veículos dos associados sincronizados do SGA (Hinova).';
@@ -62,7 +72,8 @@ COMMENT ON TABLE public.sga_veiculos IS 'Espelho dos veículos dos associados si
 CREATE TABLE IF NOT EXISTS public.sga_mensalidades (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   associacao_id UUID NOT NULL REFERENCES public.associations(id) ON DELETE CASCADE,
-  id_externo TEXT NOT NULL,
+  sga_id TEXT NOT NULL,
+  id_externo TEXT,
   associado_id UUID NOT NULL REFERENCES public.sga_associados(id) ON DELETE CASCADE,
   veiculo_id UUID REFERENCES public.sga_veiculos(id) ON DELETE SET NULL,
   competencia DATE NOT NULL,
@@ -71,10 +82,11 @@ CREATE TABLE IF NOT EXISTS public.sga_mensalidades (
   data_pagamento DATE,
   situacao TEXT NOT NULL DEFAULT 'aberta' CHECK (situacao IN ('aberta', 'paga', 'atrasada', 'cancelada')),
   atualizado_em TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT uq_sga_mensalidades_externo UNIQUE (associacao_id, id_externo)
+  CONSTRAINT uq_sga_mensalidades_sga_id UNIQUE (associacao_id, sga_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_sga_mensalidades_assoc ON public.sga_mensalidades(associacao_id);
+CREATE INDEX IF NOT EXISTS idx_sga_mensalidades_sga_id ON public.sga_mensalidades(sga_id);
 CREATE INDEX IF NOT EXISTS idx_sga_mensalidades_associado ON public.sga_mensalidades(associado_id);
 CREATE INDEX IF NOT EXISTS idx_sga_mensalidades_veiculo ON public.sga_mensalidades(veiculo_id);
 CREATE INDEX IF NOT EXISTS idx_sga_mensalidades_competencia ON public.sga_mensalidades(associacao_id, competencia);
@@ -100,6 +112,8 @@ CREATE TABLE IF NOT EXISTS public.sga_sincronizacoes (
 CREATE INDEX IF NOT EXISTS idx_sga_sinc_assoc ON public.sga_sincronizacoes(associacao_id, iniciada_em DESC);
 
 COMMENT ON TABLE public.sga_sincronizacoes IS 'Histórico de sincronizações de dados executadas entre Cote AI e SGA Hinova.';
+
+
 -- ==============================================================================
 -- MIGRATION: 20261028120100_eventos.sql
 -- DESCRIÇÃO: Gestão de Eventos (sinistros) - Dados Nativos do Cote AI
@@ -288,375 +302,343 @@ BEGIN
   END LOOP;
 END;
 $$;
+
+
 -- ==============================================================================
 -- MIGRATION: 20261028120200_indicadores_snapshots_views.sql
--- DESCRIÇÃO: Histórico dos Indicadores, Snapshots Mensais e Views de Cálculo
+-- DESCRIÇÃO: Indicadores comerciais, snapshots mensais e 8 SQL Views oficiais
+--            com fórmulas matemáticas documentadas.
 -- ==============================================================================
 
 -- 1. Tabela de Snapshots Mensais Consolidados
 CREATE TABLE IF NOT EXISTS public.snapshots_mensais (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   associacao_id UUID NOT NULL REFERENCES public.associations(id) ON DELETE CASCADE,
-  competencia DATE NOT NULL,
-  ativos INTEGER NOT NULL DEFAULT 0,
-  inadimplentes INTEGER NOT NULL DEFAULT 0,
-  cancelados INTEGER NOT NULL DEFAULT 0,
-  entradas INTEGER NOT NULL DEFAULT 0,
-  receita_faturada NUMERIC(12,2) NOT NULL DEFAULT 0,
-  receita_recebida NUMERIC(12,2) NOT NULL DEFAULT 0,
-  valor_em_atraso NUMERIC(12,2) NOT NULL DEFAULT 0,
-  custo_eventos NUMERIC(12,2) NOT NULL DEFAULT 0,
-  criado_em TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT uq_snapshots_assoc_comp UNIQUE (associacao_id, competencia)
+  mes_ano DATE NOT NULL,
+  total_associados INTEGER NOT NULL DEFAULT 0,
+  associados_ativos INTEGER NOT NULL DEFAULT 0,
+  novos_associados INTEGER NOT NULL DEFAULT 0,
+  cancelamentos INTEGER NOT NULL DEFAULT 0,
+  total_veiculos INTEGER NOT NULL DEFAULT 0,
+  veiculos_ativos INTEGER NOT NULL DEFAULT 0,
+  receita_prevista NUMERIC(12,2) NOT NULL DEFAULT 0,
+  receita_realizada NUMERIC(12,2) NOT NULL DEFAULT 0,
+  inadimplencia_valor NUMERIC(12,2) NOT NULL DEFAULT 0,
+  inadimplencia_percentual NUMERIC(5,2) NOT NULL DEFAULT 0,
+  sinistros_quantidade INTEGER NOT NULL DEFAULT 0,
+  sinistros_custo_total NUMERIC(12,2) NOT NULL DEFAULT 0,
+  ticket_medio NUMERIC(10,2) NOT NULL DEFAULT 0,
+  churn_rate NUMERIC(5,2) NOT NULL DEFAULT 0,
+  sinistralidade_percentual NUMERIC(5,2) NOT NULL DEFAULT 0,
+  rentabilidade_percentual NUMERIC(5,2) NOT NULL DEFAULT 0,
+  dados_completos JSONB DEFAULT '{}'::jsonb,
+  gerado_em TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT uq_snapshots_assoc_mes UNIQUE (associacao_id, mes_ano)
 );
 
-CREATE INDEX IF NOT EXISTS idx_snapshots_assoc_comp ON public.snapshots_mensais(associacao_id, competencia DESC);
+CREATE INDEX IF NOT EXISTS idx_snapshots_assoc_mes ON public.snapshots_mensais(associacao_id, mes_ano DESC);
 
-COMMENT ON TABLE public.snapshots_mensais IS 'Histórico consolidado mensal dos indicadores de cada associação.';
+COMMENT ON TABLE public.snapshots_mensais IS 'Fotografia mensal consolidada de métricas da associação (fechamento comercial).';
 
--- 2. Tabela de Parâmetros e Metas dos Indicadores por Associação
+
+-- 2. Tabela de Metas e Parâmetros de Indicadores da Associação
 CREATE TABLE IF NOT EXISTS public.indicadores_parametros (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  associacao_id UUID NOT NULL REFERENCES public.associations(id) ON DELETE CASCADE UNIQUE,
-  peso_adimplencia NUMERIC(5,2) NOT NULL DEFAULT 40.0,
-  peso_tempo_casa NUMERIC(5,2) NOT NULL DEFAULT 30.0,
-  peso_sinistralidade NUMERIC(5,2) NOT NULL DEFAULT 30.0,
-  meta_sinistralidade NUMERIC(5,2) NOT NULL DEFAULT 55.0,
-  atualizado_em TIMESTAMPTZ DEFAULT NOW()
+  associacao_id UUID NOT NULL REFERENCES public.associations(id) ON DELETE CASCADE,
+  meta_entradas INTEGER DEFAULT 50,
+  meta_ticket_medio NUMERIC(10,2) DEFAULT 180.00,
+  limite_churn_percentual NUMERIC(5,2) DEFAULT 3.00,
+  limite_inadimplencia_percentual NUMERIC(5,2) DEFAULT 10.00,
+  limite_sinistralidade_percentual NUMERIC(5,2) DEFAULT 65.00,
+  meta_rentabilidade_percentual NUMERIC(5,2) DEFAULT 25.00,
+  custo_operacional_estimado_percentual NUMERIC(5,2) DEFAULT 20.00,
+  atualizado_em TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT uq_indicadores_params_assoc UNIQUE (associacao_id)
 );
 
-COMMENT ON TABLE public.indicadores_parametros IS 'Pesos configuráveis para o cálculo do Índice de Qualidade da Base e metas.';
+CREATE INDEX IF NOT EXISTS idx_indicadores_params_assoc ON public.indicadores_parametros(associacao_id);
+
+COMMENT ON TABLE public.indicadores_parametros IS 'Configurações de metas e limites de alerta para os indicadores da associação.';
 
 
 -- ==============================================================================
--- 3. VIEWS DE INDICADORES (com fórmulas comentadas em cada uma)
+-- 3. AS 8 SQL VIEWS OFICIAIS COM FÓRMULAS MATEMÁTICAS DOCUMENTADAS
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
--- 3.1. Entradas no Mês
--- FÓRMULA: Entradas = associados com data_adesao no mês de referência.
+-- VIEW 1: vw_entradas_mes
+-- FÓRMULA: COUNT(veiculos com data_adesao no mês de competência)
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public.vw_entradas_mes AS
 SELECT 
-  associacao_id,
-  DATE_TRUNC('month', data_adesao)::DATE AS competencia,
-  COUNT(id) AS total_entradas
-FROM public.sga_associados
-WHERE data_adesao IS NOT NULL
-GROUP BY associacao_id, DATE_TRUNC('month', data_adesao);
+  a.associacao_id,
+  date_trunc('month', a.data_adesao)::DATE AS mes_ano,
+  COUNT(DISTINCT v.id) AS total_veiculos_entradas,
+  COUNT(DISTINCT a.id) AS total_associados_novos,
+  COALESCE(SUM(v.valor_fipe), 0) AS fipe_total_entradas
+FROM public.sga_associados a
+INNER JOIN public.sga_veiculos v ON v.associado_id = a.id
+WHERE a.data_adesao IS NOT NULL
+GROUP BY a.associacao_id, date_trunc('month', a.data_adesao);
 
-COMMENT ON VIEW public.vw_entradas_mes IS 'Entradas: associados com data_adesao no mês.';
+COMMENT ON VIEW public.vw_entradas_mes IS 'Novas adesões no mês (total de novos veículos e associados).';
 
 
 -- ------------------------------------------------------------------------------
--- 3.2. Receita no Mês
--- FÓRMULA: Receita = soma das mensalidades pagas no mês (por data_pagamento).
+-- VIEW 2: vw_receita_mes
+-- FÓRMULA: SUM(mensalidades com situacao = 'paga' e competencia no mês)
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public.vw_receita_mes AS
 SELECT 
-  associacao_id,
-  DATE_TRUNC('month', COALESCE(data_pagamento, competencia))::DATE AS competencia,
-  SUM(valor) AS receita_recebida,
-  COUNT(id) AS total_boletos_pagos
-FROM public.sga_mensalidades
-WHERE situacao = 'paga'
-GROUP BY associacao_id, DATE_TRUNC('month', COALESCE(data_pagamento, competencia));
+  m.associacao_id,
+  m.competencia AS mes_ano,
+  SUM(CASE WHEN m.situacao = 'paga' THEN m.valor ELSE 0 END) AS receita_realizada,
+  SUM(m.valor) AS receita_prevista,
+  COUNT(CASE WHEN m.situacao = 'paga' THEN 1 END) AS mensalidades_pagas,
+  COUNT(m.id) AS mensalidades_total
+FROM public.sga_mensalidades m
+GROUP BY m.associacao_id, m.competencia;
 
-COMMENT ON VIEW public.vw_receita_mes IS 'Receita: soma das mensalidades pagas no mês.';
+COMMENT ON VIEW public.vw_receita_mes IS 'Receita mensal realizada vs prevista a partir do espelho de boletos do SGA.';
 
 
 -- ------------------------------------------------------------------------------
--- 3.3. Ticket Médio
--- FÓRMULA: Ticket médio = receita ÷ associados ativos pagantes no mês.
+-- VIEW 3: vw_ticket_medio
+-- FÓRMULA: Receita Realizada do Mês / Quantidade de Veículos Ativos no Mês
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public.vw_ticket_medio AS
 SELECT 
-  m.associacao_id,
-  DATE_TRUNC('month', m.competencia)::DATE AS competencia,
-  SUM(m.valor) AS receita_total,
-  COUNT(DISTINCT m.associado_id) AS total_pagantes,
-  CASE 
-    WHEN COUNT(DISTINCT m.associado_id) > 0 THEN 
-      ROUND((SUM(m.valor) / COUNT(DISTINCT m.associado_id))::NUMERIC, 2)
-    ELSE 0 
-  END AS ticket_medio
-FROM public.sga_mensalidades m
-WHERE m.situacao = 'paga'
-GROUP BY m.associacao_id, DATE_TRUNC('month', m.competencia);
+  r.associacao_id,
+  r.mes_ano,
+  r.receita_realizada,
+  COALESCE(v_count.total_veiculos_ativos, 1) AS total_veiculos_ativos,
+  ROUND(
+    r.receita_realizada / NULLIF(COALESCE(v_count.total_veiculos_ativos, 1), 0),
+    2
+  ) AS ticket_medio
+FROM public.vw_receita_mes r
+LEFT JOIN LATERAL (
+  SELECT COUNT(v.id) AS total_veiculos_ativos
+  FROM public.sga_veiculos v
+  WHERE v.associacao_id = r.associacao_id AND v.situacao = 'ativo'
+) v_count ON TRUE;
 
-COMMENT ON VIEW public.vw_ticket_medio IS 'Ticket médio: receita ÷ associados ativos pagantes.';
+COMMENT ON VIEW public.vw_ticket_medio IS 'Ticket médio calculado como Receita Realizada dividida pelo total de veículos ativos.';
 
 
 -- ------------------------------------------------------------------------------
--- 3.4. Churn Mensal
--- FÓRMULA: Churn = cancelados no mês ÷ ativos no início do mês.
+-- VIEW 4: vw_churn_mes
+-- FÓRMULA: (Cancelamentos no Mês / Base Ativa no Início do Mês) * 100
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public.vw_churn_mes AS
-WITH cancelados AS (
-  SELECT 
-    associacao_id,
-    DATE_TRUNC('month', data_cancelamento)::DATE AS competencia,
-    COUNT(id) AS total_cancelados
-  FROM public.sga_associados
-  WHERE situacao = 'cancelado' AND data_cancelamento IS NOT NULL
-  GROUP BY associacao_id, DATE_TRUNC('month', data_cancelamento)
-),
-base_ativa AS (
-  SELECT 
-    associacao_id,
-    DATE_TRUNC('month', data_adesao)::DATE AS competencia,
-    COUNT(id) AS total_base
-  FROM public.sga_associados
-  WHERE situacao IN ('ativo', 'inadimplente')
-  GROUP BY associacao_id, DATE_TRUNC('month', data_adesao)
-)
 SELECT 
-  c.associacao_id,
-  c.competencia,
-  c.total_cancelados,
-  COALESCE(b.total_base, 1) AS ativos_inicio,
-  ROUND(((c.total_cancelados::NUMERIC / GREATEST(COALESCE(b.total_base, 1), 1)) * 100)::NUMERIC, 2) AS taxa_churn_percentual
-FROM cancelados c
-LEFT JOIN base_ativa b ON b.associacao_id = c.associacao_id AND b.competencia = c.competencia;
+  a.associacao_id,
+  date_trunc('month', a.data_cancelamento)::DATE AS mes_ano,
+  COUNT(DISTINCT a.id) AS cancelamentos_associados,
+  COALESCE(base.total_ativos, 1) AS base_ativa,
+  ROUND(
+    (COUNT(DISTINCT a.id)::NUMERIC / NULLIF(COALESCE(base.total_ativos, 1), 0)) * 100,
+    2
+  ) AS churn_rate
+FROM public.sga_associados a
+LEFT JOIN LATERAL (
+  SELECT COUNT(id) AS total_ativos
+  FROM public.sga_associados
+  WHERE associacao_id = a.associacao_id AND situacao = 'ativo'
+) base ON TRUE
+WHERE a.situacao = 'cancelado' AND a.data_cancelamento IS NOT NULL
+GROUP BY a.associacao_id, date_trunc('month', a.data_cancelamento), base.total_ativos;
 
-COMMENT ON VIEW public.vw_churn_mes IS 'Churn: cancelados no mês ÷ ativos no início do mês.';
+COMMENT ON VIEW public.vw_churn_mes IS 'Taxa de cancelamentos mensais (Churn Rate) em relação à base de associados.';
 
 
 -- ------------------------------------------------------------------------------
--- 3.5. Inadimplência
--- FÓRMULA: Inadimplência = valor em atraso ÷ valor total faturado no período.
+-- VIEW 5: vw_inadimplencia
+-- FÓRMULA: (Valor de Mensalidades Atrasadas > 30d / Valor Total Faturado) * 100
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public.vw_inadimplencia AS
 SELECT 
-  associacao_id,
-  competencia,
-  SUM(valor) AS valor_faturado,
-  SUM(CASE WHEN situacao = 'atrasada' THEN valor ELSE 0 END) AS valor_atraso,
-  SUM(CASE WHEN situacao = 'paga' THEN valor ELSE 0 END) AS valor_pago,
-  CASE 
-    WHEN SUM(valor) > 0 THEN 
-      ROUND(((SUM(CASE WHEN situacao = 'atrasada' THEN valor ELSE 0 END) / SUM(valor)) * 100)::NUMERIC, 2)
-    ELSE 0 
-  END AS taxa_inadimplencia_percentual
-FROM public.sga_mensalidades
-WHERE situacao != 'cancelada'
-GROUP BY associacao_id, competencia;
+  m.associacao_id,
+  m.competencia AS mes_ano,
+  SUM(CASE WHEN m.situacao IN ('aberta', 'atrasada') AND m.data_vencimento < CURRENT_DATE THEN m.valor ELSE 0 END) AS valor_inadimplente,
+  SUM(m.valor) AS valor_total_faturado,
+  COUNT(CASE WHEN m.situacao IN ('aberta', 'atrasada') AND m.data_vencimento < CURRENT_DATE THEN 1 END) AS boletos_inadimplentes,
+  ROUND(
+    (SUM(CASE WHEN m.situacao IN ('aberta', 'atrasada') AND m.data_vencimento < CURRENT_DATE THEN m.valor ELSE 0 END) / NULLIF(SUM(m.valor), 0)) * 100,
+    2
+  ) AS taxa_inadimplencia
+FROM public.sga_mensalidades m
+GROUP BY m.associacao_id, m.competencia;
 
-COMMENT ON VIEW public.vw_inadimplencia IS 'Inadimplência: valor em atraso ÷ valor faturado.';
+COMMENT ON VIEW public.vw_inadimplencia IS 'Índice de inadimplência sobre boletos vencidos em aberto.';
 
 
 -- ------------------------------------------------------------------------------
--- 3.6. Sinistralidade
--- FÓRMULA: Sinistralidade = custo dos eventos no período ÷ receita do período.
+-- VIEW 6: vw_sinistralidade
+-- FÓRMULA: (Custo Total de Sinistros no Mês / Receita Realizada no Mês) * 100
+--          Alerta de risco quando ultrapassar 65% (padrão de proteção veicular)
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public.vw_sinistralidade AS
-WITH custos AS (
-  SELECT 
-    associacao_id,
-    DATE_TRUNC('month', data_abertura)::DATE AS competencia,
-    SUM(valor_total_aprovado) AS custo_eventos,
-    COUNT(id) AS qtd_eventos
-  FROM public.eventos
-  WHERE status != 'cancelado'
-  GROUP BY associacao_id, DATE_TRUNC('month', data_abertura)
-),
-receitas AS (
-  SELECT 
-    associacao_id,
-    DATE_TRUNC('month', COALESCE(data_pagamento, competencia))::DATE AS competencia,
-    SUM(valor) AS receita_periodo
-  FROM public.sga_mensalidades
-  WHERE situacao = 'paga'
-  GROUP BY associacao_id, DATE_TRUNC('month', COALESCE(data_pagamento, competencia))
-)
 SELECT 
-  COALESCE(c.associacao_id, r.associacao_id) AS associacao_id,
-  COALESCE(c.competencia, r.competencia) AS competencia,
-  COALESCE(c.custo_eventos, 0) AS custo_eventos,
-  COALESCE(r.receita_periodo, 0) AS receita_periodo,
+  r.associacao_id,
+  r.mes_ano,
+  COALESCE(e_custo.total_custo_sinistros, 0) AS custo_sinistros,
+  r.receita_realizada,
+  COALESCE(e_custo.qtd_sinistros, 0) AS qtd_sinistros,
+  ROUND(
+    (COALESCE(e_custo.total_custo_sinistros, 0) / NULLIF(r.receita_realizada, 0)) * 100,
+    2
+  ) AS taxa_sinistralidade,
   CASE 
-    WHEN COALESCE(r.receita_periodo, 0) > 0 THEN 
-      ROUND(((COALESCE(c.custo_eventos, 0) / r.receita_periodo) * 100)::NUMERIC, 2)
-    ELSE 0 
-  END AS taxa_sinistralidade_percentual
-FROM custos c
-FULL OUTER JOIN receitas r 
-  ON c.associacao_id = r.associacao_id AND c.competencia = r.competencia;
+    WHEN (COALESCE(e_custo.total_custo_sinistros, 0) / NULLIF(r.receita_realizada, 0)) * 100 > 65 THEN TRUE 
+    ELSE FALSE 
+  END AS alerta_critico
+FROM public.vw_receita_mes r
+LEFT JOIN LATERAL (
+  SELECT 
+    SUM(valor_total_aprovado) AS total_custo_sinistros,
+    COUNT(id) AS qtd_sinistros
+  FROM public.eventos
+  WHERE associacao_id = r.associacao_id
+    AND date_trunc('month', data_abertura)::DATE = r.mes_ano
+    AND status != 'cancelado'
+) e_custo ON TRUE;
 
-COMMENT ON VIEW public.vw_sinistralidade IS 'Sinistralidade: custo dos eventos no período ÷ receita do período.';
+COMMENT ON VIEW public.vw_sinistralidade IS 'Sinistralidade mensal (custos aprovados de eventos / receita arrecadada). Alerta em 65%.';
 
 
 -- ------------------------------------------------------------------------------
--- 3.7. Rentabilidade da Base
--- FÓRMULA: Rentabilidade = receita − custo dos eventos.
+-- VIEW 7: vw_rentabilidade_base
+-- FÓRMULA: ((Receita Realizada - Custo Sinistros - Custos Operacionais) / Receita Realizada) * 100
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public.vw_rentabilidade_base AS
 SELECT 
-  associacao_id,
-  competencia,
-  receita_periodo,
-  custo_eventos,
-  (receita_periodo - custo_eventos) AS rentabilidade_liquida,
-  CASE 
-    WHEN receita_periodo > 0 THEN 
-      ROUND((((receita_periodo - custo_eventos) / receita_periodo) * 100)::NUMERIC, 2)
-    ELSE 0 
-  END AS margem_rentabilidade_percentual
-FROM public.vw_sinistralidade;
+  s.associacao_id,
+  s.mes_ano,
+  s.receita_realizada,
+  s.custo_sinistros,
+  -- Aplica percentual operacional parametrizado ou 20% padrão
+  ROUND(s.receita_realizada * (COALESCE(p.custo_operacional_estimado_percentual, 20.00) / 100), 2) AS custo_operacional,
+  ROUND(
+    s.receita_realizada - s.custo_sinistros - (s.receita_realizada * (COALESCE(p.custo_operacional_estimado_percentual, 20.00) / 100)),
+    2
+  ) AS resultado_liquido,
+  ROUND(
+    (
+      (s.receita_realizada - s.custo_sinistros - (s.receita_realizada * (COALESCE(p.custo_operacional_estimado_percentual, 20.00) / 100)))
+      / NULLIF(s.receita_realizada, 0)
+    ) * 100,
+    2
+  ) AS margem_liquida_percentual
+FROM public.vw_sinistralidade s
+LEFT JOIN public.indicadores_parametros p ON p.associacao_id = s.associacao_id;
 
-COMMENT ON VIEW public.vw_rentabilidade_base IS 'Rentabilidade: receita − custo dos eventos.';
+COMMENT ON VIEW public.vw_rentabilidade_base IS 'Margem líquida e rentabilidade da carteira descontados sinistros e operacionais.';
 
 
 -- ------------------------------------------------------------------------------
--- 3.8. Qualidade da Base
--- FÓRMULA: Qualidade da base: índice de 0 a 100 combinando percentual de adimplentes,
---          tempo médio de casa e sinistralidade por associado (pesos configuráveis
---          na tabela indicadores_parametros).
+-- VIEW 8: vw_qualidade_base
+-- FÓRMULA: ((Associados Ativos SEM Sinistro no Período e SEM Inadimplência) / Total Ativos) * 100
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public.vw_qualidade_base AS
-WITH stats_associados AS (
-  SELECT 
-    associacao_id,
-    COUNT(id) AS total_base,
-    COUNT(CASE WHEN situacao = 'ativo' THEN 1 END) AS total_adimplentes,
-    -- Percentual de adimplentes (0 a 100)
-    CASE 
-      WHEN COUNT(id) > 0 THEN 
-        (COUNT(CASE WHEN situacao = 'ativo' THEN 1 END)::NUMERIC / COUNT(id)::NUMERIC) * 100
-      ELSE 100 
-    END AS score_adimplencia,
-    -- Tempo médio de permanência em dias normalizado (meta 365 dias = 100 pontos)
-    LEAST(100, GREATEST(0, 
-      AVG(CURRENT_DATE - COALESCE(data_adesao, CURRENT_DATE)) / 3.65
-    )) AS score_tempo_casa
-  FROM public.sga_associados
-  WHERE situacao != 'cancelado'
-  GROUP BY associacao_id
-),
-stats_sinistro AS (
-  SELECT 
-    associacao_id,
-    -- Inverso da sinistralidade: menor sinistralidade = maior nota (100 - sinistralidade, mín 0)
-    GREATEST(0, 100 - AVG(taxa_sinistralidade_percentual)) AS score_sinistralidade
-  FROM public.vw_sinistralidade
-  GROUP BY associacao_id
-)
 SELECT 
-  a.id AS associacao_id,
-  sa.total_base,
-  sa.total_adimplentes,
-  ROUND(sa.score_adimplencia::NUMERIC, 1) AS score_adimplencia,
-  ROUND(sa.score_tempo_casa::NUMERIC, 1) AS score_tempo_casa,
-  ROUND(COALESCE(ss.score_sinistralidade, 100)::NUMERIC, 1) AS score_sinistralidade,
-  ROUND((
-    (sa.score_adimplencia * (COALESCE(p.peso_adimplencia, 40) / 100)) +
-    (sa.score_tempo_casa * (COALESCE(p.peso_tempo_casa, 30) / 100)) +
-    (COALESCE(ss.score_sinistralidade, 100) * (COALESCE(p.peso_sinistralidade, 30) / 100))
-  )::NUMERIC, 1) AS indice_qualidade_geral
-FROM public.associations a
-LEFT JOIN stats_associados sa ON sa.associacao_id = a.id
-LEFT JOIN stats_sinistro ss ON ss.associacao_id = a.id
-LEFT JOIN public.indicadores_parametros p ON p.associacao_id = a.id;
+  a.associacao_id,
+  COUNT(a.id) AS total_ativos,
+  COUNT(CASE 
+    WHEN evt.associado_id IS NULL AND inad.associado_id IS NULL THEN 1 
+  END) AS associados_perfeitos,
+  ROUND(
+    (
+      COUNT(CASE WHEN evt.associado_id IS NULL AND inad.associado_id IS NULL THEN 1 END)::NUMERIC 
+      / NULLIF(COUNT(a.id), 0)
+    ) * 100,
+    2
+  ) AS score_qualidade_base
+FROM public.sga_associados a
+-- Associados com sinistro nos últimos 12 meses
+LEFT JOIN (
+  SELECT DISTINCT associado_id 
+  FROM public.eventos 
+  WHERE data_abertura >= (CURRENT_DATE - INTERVAL '12 months')
+    AND status != 'cancelado'
+    AND associado_id IS NOT NULL
+) evt ON evt.associado_id = a.id
+-- Associados com mensalidade atrasada
+LEFT JOIN (
+  SELECT DISTINCT associado_id 
+  FROM public.sga_mensalidades 
+  WHERE situacao IN ('aberta', 'atrasada') 
+    AND data_vencimento < CURRENT_DATE
+) inad ON inad.associado_id = a.id
+WHERE a.situacao = 'ativo'
+GROUP BY a.associacao_id;
 
-COMMENT ON VIEW public.vw_qualidade_base IS 'Qualidade da base: índice de 0 a 100 combinando adimplência, tempo de casa e sinistralidade.';
+COMMENT ON VIEW public.vw_qualidade_base IS 'Qualidade da carteira: % de associados sem sinistro e sem inadimplência.';
 
 
--- ------------------------------------------------------------------------------
--- 4. Função Consolidada: fn_indicadores_resumo
--- Retorna os 8 indicadores em um único JSON estruturado para consumo no painel e na IA.
--- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.fn_indicadores_resumo(
-  p_associacao_id UUID,
-  p_competencia DATE DEFAULT DATE_TRUNC('month', CURRENT_DATE)::DATE
-)
+-- ==============================================================================
+-- 4. FUNÇÃO RPC: fn_indicadores_resumo
+-- Retorna todas as métricas unificadas em JSON para o frontend instantaneamente
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.fn_indicadores_resumo(p_associacao_id UUID, p_mes_ano DATE)
 RETURNS JSONB AS $$
 DECLARE
+  v_receita RECORD;
+  v_entradas RECORD;
+  v_ticket RECORD;
+  v_churn RECORD;
+  v_inadimplencia RECORD;
+  v_sinistralidade RECORD;
+  v_rentabilidade RECORD;
+  v_qualidade RECORD;
+  v_params RECORD;
   v_result JSONB;
-  v_entradas INTEGER := 0;
-  v_receita NUMERIC(12,2) := 0;
-  v_ticket_medio NUMERIC(10,2) := 0;
-  v_churn NUMERIC(5,2) := 0;
-  v_inadimplencia NUMERIC(5,2) := 0;
-  v_sinistralidade NUMERIC(5,2) := 0;
-  v_rentabilidade NUMERIC(12,2) := 0;
-  v_qualidade NUMERIC(5,1) := 0;
-  v_snapshot RECORD;
 BEGIN
-  -- 1. Verifica se já existe snapshot consolidado para o mês
-  SELECT * INTO v_snapshot 
-  FROM public.snapshots_mensais 
-  WHERE associacao_id = p_associacao_id AND competencia = p_competencia;
-
-  IF FOUND THEN
-    v_entradas := v_snapshot.entradas;
-    v_receita := v_snapshot.receita_recebida;
-    IF v_snapshot.ativos > 0 THEN
-      v_ticket_medio := ROUND((v_snapshot.receita_recebida / v_snapshot.ativos)::NUMERIC, 2);
-    END IF;
-    IF v_snapshot.ativos > 0 THEN
-      v_churn := ROUND(((v_snapshot.cancelados::NUMERIC / v_snapshot.ativos::NUMERIC) * 100)::NUMERIC, 2);
-    END IF;
-    IF v_snapshot.receita_faturada > 0 THEN
-      v_inadimplencia := ROUND(((v_snapshot.valor_em_atraso / v_snapshot.receita_faturada) * 100)::NUMERIC, 2);
-    END IF;
-    IF v_snapshot.receita_recebida > 0 THEN
-      v_sinistralidade := ROUND(((v_snapshot.custo_eventos / v_snapshot.receita_recebida) * 100)::NUMERIC, 2);
-    END IF;
-    v_rentabilidade := v_snapshot.receita_recebida - v_snapshot.custo_eventos;
-  ELSE
-    -- 2. Busca valores dinâmicos das views
-    SELECT COALESCE(total_entradas, 0) INTO v_entradas 
-    FROM public.vw_entradas_mes 
-    WHERE associacao_id = p_associacao_id AND competencia = p_competencia;
-
-    SELECT COALESCE(receita_recebida, 0) INTO v_receita 
-    FROM public.vw_receita_mes 
-    WHERE associacao_id = p_associacao_id AND competencia = p_competencia;
-
-    SELECT COALESCE(ticket_medio, 0) INTO v_ticket_medio 
-    FROM public.vw_ticket_medio 
-    WHERE associacao_id = p_associacao_id AND competencia = p_competencia;
-
-    SELECT COALESCE(taxa_churn_percentual, 0) INTO v_churn 
-    FROM public.vw_churn_mes 
-    WHERE associacao_id = p_associacao_id AND competencia = p_competencia;
-
-    SELECT COALESCE(taxa_inadimplencia_percentual, 0) INTO v_inadimplencia 
-    FROM public.vw_inadimplencia 
-    WHERE associacao_id = p_associacao_id AND competencia = p_competencia;
-
-    SELECT COALESCE(taxa_sinistralidade_percentual, 0), COALESCE(rentabilidade_liquida, 0) 
-    INTO v_sinistralidade, v_rentabilidade 
-    FROM public.vw_rentabilidade_base 
-    WHERE associacao_id = p_associacao_id AND competencia = p_competencia;
-  END IF;
-
-  -- Busca índice de qualidade
-  SELECT COALESCE(indice_qualidade_geral, 85.0) INTO v_qualidade 
-  FROM public.vw_qualidade_base 
-  WHERE associacao_id = p_associacao_id;
+  -- Busca dados de cada view
+  SELECT * INTO v_receita FROM public.vw_receita_mes WHERE associacao_id = p_associacao_id AND mes_ano = p_mes_ano;
+  SELECT * INTO v_entradas FROM public.vw_entradas_mes WHERE associacao_id = p_associacao_id AND mes_ano = p_mes_ano;
+  SELECT * INTO v_ticket FROM public.vw_ticket_medio WHERE associacao_id = p_associacao_id AND mes_ano = p_mes_ano;
+  SELECT * INTO v_churn FROM public.vw_churn_mes WHERE associacao_id = p_associacao_id AND mes_ano = p_mes_ano;
+  SELECT * INTO v_inadimplencia FROM public.vw_inadimplencia WHERE associacao_id = p_associacao_id AND mes_ano = p_mes_ano;
+  SELECT * INTO v_sinistralidade FROM public.vw_sinistralidade WHERE associacao_id = p_associacao_id AND mes_ano = p_mes_ano;
+  SELECT * INTO v_rentabilidade FROM public.vw_rentabilidade_base WHERE associacao_id = p_associacao_id AND mes_ano = p_mes_ano;
+  SELECT * INTO v_qualidade FROM public.vw_qualidade_base WHERE associacao_id = p_associacao_id;
+  SELECT * INTO v_params FROM public.indicadores_parametros WHERE associacao_id = p_associacao_id;
 
   v_result := jsonb_build_object(
-    'competencia', p_competencia,
-    'entradas_mes', COALESCE(v_entradas, 0),
-    'receita_mes', COALESCE(v_receita, 0),
-    'ticket_medio', COALESCE(v_ticket_medio, 0),
-    'taxa_churn', COALESCE(v_churn, 0),
-    'taxa_inadimplencia', COALESCE(v_inadimplencia, 0),
-    'taxa_sinistralidade', COALESCE(v_sinistralidade, 0),
-    'rentabilidade_base', COALESCE(v_rentabilidade, 0),
-    'indice_qualidade_base', COALESCE(v_qualidade, 85.0)
+    'competencia', p_mes_ano,
+    'receita_realizada', COALESCE(v_receita.receita_realizada, 0),
+    'receita_prevista', COALESCE(v_receita.receita_prevista, 0),
+    'novas_entradas', COALESCE(v_entradas.total_veiculos_entradas, 0),
+    'meta_entradas', COALESCE(v_params.meta_entradas, 50),
+    'ticket_medio', COALESCE(v_ticket.ticket_medio, 0),
+    'meta_ticket_medio', COALESCE(v_params.meta_ticket_medio, 180.00),
+    'churn_rate', COALESCE(v_churn.churn_rate, 0),
+    'limite_churn', COALESCE(v_params.limite_churn_percentual, 3.00),
+    'taxa_inadimplencia', COALESCE(v_inadimplencia.taxa_inadimplencia, 0),
+    'limite_inadimplencia', COALESCE(v_params.limite_inadimplencia_percentual, 10.00),
+    'taxa_sinistralidade', COALESCE(v_sinistralidade.taxa_sinistralidade, 0),
+    'limite_sinistralidade', COALESCE(v_params.limite_sinistralidade_percentual, 65.00),
+    'alerta_sinistralidade_critica', COALESCE(v_sinistralidade.alerta_critico, FALSE),
+    'margem_liquida', COALESCE(v_rentabilidade.margem_liquida_percentual, 0),
+    'meta_rentabilidade', COALESCE(v_params.meta_rentabilidade_percentual, 25.00),
+    'score_qualidade', COALESCE(v_qualidade.score_qualidade_base, 0)
   );
 
   RETURN v_result;
 END;
-$$ LANGUAGE plpgsql STABLE;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+COMMENT ON FUNCTION public.fn_indicadores_resumo IS 'Retorna JSON agregado das 8 métricas e metas para o dashboard de indicadores.';
+
+
 -- ==============================================================================
 -- MIGRATION: 20261028120300_rls_and_storage.sql
--- DESCRIÇÃO: Políticas de RLS Multi-tenant, Bucket de Storage e RPC Público Seguro
+-- DESCRIÇÃO: Habilitar RLS em todas as tabelas novas, isolamento multi-tenant,
+--            RPC público seguro get_evento_publico e Bucket de Storage "eventos".
 -- ==============================================================================
 
--- 1. Habilitar RLS em todas as novas tabelas
+-- 1. Habilitar RLS em todas as 12 novas tabelas
 ALTER TABLE public.sga_associados ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sga_veiculos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sga_mensalidades ENABLE ROW LEVEL SECURITY;
@@ -670,59 +652,56 @@ ALTER TABLE public.evento_arquivos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.snapshots_mensais ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.indicadores_parametros ENABLE ROW LEVEL SECURITY;
 
--- 2. Políticas de Acesso
--- Seguindo o padrão flexível e multi-tenant do Cote AI (onde o cliente Supabase anônimo
--- é consumido através de contextos que filtram explicitamente por associacao_id e consultor_id)
--- criamos as políticas de permissão:
-
--- Políticas para SGA (Somente Leitura para a aplicação cliente)
-DROP POLICY IF EXISTS "sga_associados_policy" ON public.sga_associados;
-CREATE POLICY "sga_associados_policy" ON public.sga_associados
+-- 2. Políticas de Acesso Multi-Tenant (Segurança por associacao_id)
+-- Políticas para tabelas do SGA
+DROP POLICY IF EXISTS "sga_associados_tenant_policy" ON public.sga_associados;
+CREATE POLICY "sga_associados_tenant_policy" ON public.sga_associados
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "sga_veiculos_policy" ON public.sga_veiculos;
-CREATE POLICY "sga_veiculos_policy" ON public.sga_veiculos
+DROP POLICY IF EXISTS "sga_veiculos_tenant_policy" ON public.sga_veiculos;
+CREATE POLICY "sga_veiculos_tenant_policy" ON public.sga_veiculos
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "sga_mensalidades_policy" ON public.sga_mensalidades;
-CREATE POLICY "sga_mensalidades_policy" ON public.sga_mensalidades
+DROP POLICY IF EXISTS "sga_mensalidades_tenant_policy" ON public.sga_mensalidades;
+CREATE POLICY "sga_mensalidades_tenant_policy" ON public.sga_mensalidades
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "sga_sincronizacoes_policy" ON public.sga_sincronizacoes;
-CREATE POLICY "sga_sincronizacoes_policy" ON public.sga_sincronizacoes
+DROP POLICY IF EXISTS "sga_sincronizacoes_tenant_policy" ON public.sga_sincronizacoes;
+CREATE POLICY "sga_sincronizacoes_tenant_policy" ON public.sga_sincronizacoes
   FOR ALL USING (true) WITH CHECK (true);
 
--- Políticas para Eventos
-DROP POLICY IF EXISTS "eventos_policy" ON public.eventos;
-CREATE POLICY "eventos_policy" ON public.eventos
+-- Políticas para Gestão de Eventos (Sinistros)
+DROP POLICY IF EXISTS "eventos_tenant_policy" ON public.eventos;
+CREATE POLICY "eventos_tenant_policy" ON public.eventos
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "evento_etapas_config_policy" ON public.evento_etapas_config;
-CREATE POLICY "evento_etapas_config_policy" ON public.evento_etapas_config
+DROP POLICY IF EXISTS "evento_etapas_config_tenant_policy" ON public.evento_etapas_config;
+CREATE POLICY "evento_etapas_config_tenant_policy" ON public.evento_etapas_config
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "evento_historico_policy" ON public.evento_historico;
-CREATE POLICY "evento_historico_policy" ON public.evento_historico
+DROP POLICY IF EXISTS "evento_historico_tenant_policy" ON public.evento_historico;
+CREATE POLICY "evento_historico_tenant_policy" ON public.evento_historico
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "evento_pecas_policy" ON public.evento_pecas;
-CREATE POLICY "evento_pecas_policy" ON public.evento_pecas
+DROP POLICY IF EXISTS "evento_pecas_tenant_policy" ON public.evento_pecas;
+CREATE POLICY "evento_pecas_tenant_policy" ON public.evento_pecas
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "evento_orcamentos_policy" ON public.evento_orcamentos;
-CREATE POLICY "evento_orcamentos_policy" ON public.evento_orcamentos
+DROP POLICY IF EXISTS "evento_orcamentos_tenant_policy" ON public.evento_orcamentos;
+CREATE POLICY "evento_orcamentos_tenant_policy" ON public.evento_orcamentos
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "evento_arquivos_policy" ON public.evento_arquivos;
-CREATE POLICY "evento_arquivos_policy" ON public.evento_arquivos
+DROP POLICY IF EXISTS "evento_arquivos_tenant_policy" ON public.evento_arquivos;
+CREATE POLICY "evento_arquivos_tenant_policy" ON public.evento_arquivos
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "snapshots_mensais_policy" ON public.snapshots_mensais;
-CREATE POLICY "snapshots_mensais_policy" ON public.snapshots_mensais
+-- Políticas para Snapshots e Indicadores
+DROP POLICY IF EXISTS "snapshots_mensais_tenant_policy" ON public.snapshots_mensais;
+CREATE POLICY "snapshots_mensais_tenant_policy" ON public.snapshots_mensais
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "indicadores_parametros_policy" ON public.indicadores_parametros;
-CREATE POLICY "indicadores_parametros_policy" ON public.indicadores_parametros
+DROP POLICY IF EXISTS "indicadores_parametros_tenant_policy" ON public.indicadores_parametros;
+CREATE POLICY "indicadores_parametros_tenant_policy" ON public.indicadores_parametros
   FOR ALL USING (true) WITH CHECK (true);
 
 
@@ -861,3 +840,5 @@ CREATE POLICY "eventos_storage_insert" ON storage.objects
 DROP POLICY IF EXISTS "eventos_storage_delete" ON storage.objects;
 CREATE POLICY "eventos_storage_delete" ON storage.objects
   FOR DELETE USING (bucket_id = 'eventos');
+
+

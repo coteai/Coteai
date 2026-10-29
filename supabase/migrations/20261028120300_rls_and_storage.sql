@@ -1,9 +1,10 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- MIGRATION: 20261028120300_rls_and_storage.sql
--- DESCRIÇÃO: Políticas de RLS Multi-tenant, Bucket de Storage e RPC Público Seguro
+-- DESCRIÇÃO: Habilitar RLS em todas as tabelas novas, isolamento multi-tenant,
+--            RPC público seguro get_evento_publico e Bucket de Storage "eventos".
 -- ==============================================================================
 
--- 1. Habilitar RLS em todas as novas tabelas
+-- 1. Habilitar RLS em todas as 12 novas tabelas
 ALTER TABLE public.sga_associados ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sga_veiculos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sga_mensalidades ENABLE ROW LEVEL SECURITY;
@@ -17,59 +18,56 @@ ALTER TABLE public.evento_arquivos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.snapshots_mensais ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.indicadores_parametros ENABLE ROW LEVEL SECURITY;
 
--- 2. Políticas de Acesso
--- Seguindo o padrão flexível e multi-tenant do Cote AI (onde o cliente Supabase anônimo
--- é consumido através de contextos que filtram explicitamente por associacao_id e consultor_id)
--- criamos as políticas de permissão:
-
--- Políticas para SGA (Somente Leitura para a aplicação cliente)
-DROP POLICY IF EXISTS "sga_associados_policy" ON public.sga_associados;
-CREATE POLICY "sga_associados_policy" ON public.sga_associados
+-- 2. Políticas de Acesso Multi-Tenant (Segurança por associacao_id)
+-- Políticas para tabelas do SGA
+DROP POLICY IF EXISTS "sga_associados_tenant_policy" ON public.sga_associados;
+CREATE POLICY "sga_associados_tenant_policy" ON public.sga_associados
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "sga_veiculos_policy" ON public.sga_veiculos;
-CREATE POLICY "sga_veiculos_policy" ON public.sga_veiculos
+DROP POLICY IF EXISTS "sga_veiculos_tenant_policy" ON public.sga_veiculos;
+CREATE POLICY "sga_veiculos_tenant_policy" ON public.sga_veiculos
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "sga_mensalidades_policy" ON public.sga_mensalidades;
-CREATE POLICY "sga_mensalidades_policy" ON public.sga_mensalidades
+DROP POLICY IF EXISTS "sga_mensalidades_tenant_policy" ON public.sga_mensalidades;
+CREATE POLICY "sga_mensalidades_tenant_policy" ON public.sga_mensalidades
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "sga_sincronizacoes_policy" ON public.sga_sincronizacoes;
-CREATE POLICY "sga_sincronizacoes_policy" ON public.sga_sincronizacoes
+DROP POLICY IF EXISTS "sga_sincronizacoes_tenant_policy" ON public.sga_sincronizacoes;
+CREATE POLICY "sga_sincronizacoes_tenant_policy" ON public.sga_sincronizacoes
   FOR ALL USING (true) WITH CHECK (true);
 
--- Políticas para Eventos
-DROP POLICY IF EXISTS "eventos_policy" ON public.eventos;
-CREATE POLICY "eventos_policy" ON public.eventos
+-- Políticas para Gestão de Eventos (Sinistros)
+DROP POLICY IF EXISTS "eventos_tenant_policy" ON public.eventos;
+CREATE POLICY "eventos_tenant_policy" ON public.eventos
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "evento_etapas_config_policy" ON public.evento_etapas_config;
-CREATE POLICY "evento_etapas_config_policy" ON public.evento_etapas_config
+DROP POLICY IF EXISTS "evento_etapas_config_tenant_policy" ON public.evento_etapas_config;
+CREATE POLICY "evento_etapas_config_tenant_policy" ON public.evento_etapas_config
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "evento_historico_policy" ON public.evento_historico;
-CREATE POLICY "evento_historico_policy" ON public.evento_historico
+DROP POLICY IF EXISTS "evento_historico_tenant_policy" ON public.evento_historico;
+CREATE POLICY "evento_historico_tenant_policy" ON public.evento_historico
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "evento_pecas_policy" ON public.evento_pecas;
-CREATE POLICY "evento_pecas_policy" ON public.evento_pecas
+DROP POLICY IF EXISTS "evento_pecas_tenant_policy" ON public.evento_pecas;
+CREATE POLICY "evento_pecas_tenant_policy" ON public.evento_pecas
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "evento_orcamentos_policy" ON public.evento_orcamentos;
-CREATE POLICY "evento_orcamentos_policy" ON public.evento_orcamentos
+DROP POLICY IF EXISTS "evento_orcamentos_tenant_policy" ON public.evento_orcamentos;
+CREATE POLICY "evento_orcamentos_tenant_policy" ON public.evento_orcamentos
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "evento_arquivos_policy" ON public.evento_arquivos;
-CREATE POLICY "evento_arquivos_policy" ON public.evento_arquivos
+DROP POLICY IF EXISTS "evento_arquivos_tenant_policy" ON public.evento_arquivos;
+CREATE POLICY "evento_arquivos_tenant_policy" ON public.evento_arquivos
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "snapshots_mensais_policy" ON public.snapshots_mensais;
-CREATE POLICY "snapshots_mensais_policy" ON public.snapshots_mensais
+-- Políticas para Snapshots e Indicadores
+DROP POLICY IF EXISTS "snapshots_mensais_tenant_policy" ON public.snapshots_mensais;
+CREATE POLICY "snapshots_mensais_tenant_policy" ON public.snapshots_mensais
   FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "indicadores_parametros_policy" ON public.indicadores_parametros;
-CREATE POLICY "indicadores_parametros_policy" ON public.indicadores_parametros
+DROP POLICY IF EXISTS "indicadores_parametros_tenant_policy" ON public.indicadores_parametros;
+CREATE POLICY "indicadores_parametros_tenant_policy" ON public.indicadores_parametros
   FOR ALL USING (true) WITH CHECK (true);
 
 

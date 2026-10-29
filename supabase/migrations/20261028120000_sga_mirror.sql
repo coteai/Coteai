@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- MIGRATION: 20261028120000_sga_mirror.sql
 -- DESCRIÇÃO: Espelho do SGA (Hinova) - Somente leitura para o usuário
 --            Será preenchido pela sincronização posterior.
@@ -8,7 +8,8 @@
 CREATE TABLE IF NOT EXISTS public.sga_associados (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   associacao_id UUID NOT NULL REFERENCES public.associations(id) ON DELETE CASCADE,
-  id_externo TEXT NOT NULL,
+  sga_id TEXT NOT NULL,
+  id_externo TEXT,
   nome TEXT NOT NULL,
   cpf_cnpj TEXT,
   telefone TEXT,
@@ -19,10 +20,11 @@ CREATE TABLE IF NOT EXISTS public.sga_associados (
   consultor_id UUID REFERENCES public.consultants(id) ON DELETE SET NULL,
   dados_brutos JSONB DEFAULT '{}'::jsonb,
   atualizado_em TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT uq_sga_associados_externo UNIQUE (associacao_id, id_externo)
+  CONSTRAINT uq_sga_associados_sga_id UNIQUE (associacao_id, sga_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_sga_associados_assoc ON public.sga_associados(associacao_id);
+CREATE INDEX IF NOT EXISTS idx_sga_associados_sga_id ON public.sga_associados(sga_id);
 CREATE INDEX IF NOT EXISTS idx_sga_associados_cpf_cnpj ON public.sga_associados(cpf_cnpj);
 CREATE INDEX IF NOT EXISTS idx_sga_associados_consultor ON public.sga_associados(consultor_id);
 CREATE INDEX IF NOT EXISTS idx_sga_associados_situacao ON public.sga_associados(associacao_id, situacao);
@@ -36,9 +38,11 @@ COMMENT ON COLUMN public.sga_associados.situacao IS 'Situação do associado no 
 CREATE TABLE IF NOT EXISTS public.sga_veiculos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   associacao_id UUID NOT NULL REFERENCES public.associations(id) ON DELETE CASCADE,
-  id_externo TEXT NOT NULL,
+  sga_id TEXT NOT NULL,
+  id_externo TEXT,
   associado_id UUID NOT NULL REFERENCES public.sga_associados(id) ON DELETE CASCADE,
   placa TEXT NOT NULL,
+  chassi TEXT,
   marca TEXT,
   modelo TEXT,
   ano INTEGER,
@@ -47,12 +51,14 @@ CREATE TABLE IF NOT EXISTS public.sga_veiculos (
   plano TEXT,
   dados_brutos JSONB DEFAULT '{}'::jsonb,
   atualizado_em TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT uq_sga_veiculos_externo UNIQUE (associacao_id, id_externo)
+  CONSTRAINT uq_sga_veiculos_sga_id UNIQUE (associacao_id, sga_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_sga_veiculos_assoc ON public.sga_veiculos(associacao_id);
+CREATE INDEX IF NOT EXISTS idx_sga_veiculos_sga_id ON public.sga_veiculos(sga_id);
 CREATE INDEX IF NOT EXISTS idx_sga_veiculos_associado ON public.sga_veiculos(associado_id);
 CREATE INDEX IF NOT EXISTS idx_sga_veiculos_placa ON public.sga_veiculos(placa);
+CREATE INDEX IF NOT EXISTS idx_sga_veiculos_chassi ON public.sga_veiculos(chassi);
 CREATE INDEX IF NOT EXISTS idx_sga_veiculos_assoc_placa ON public.sga_veiculos(associacao_id, placa);
 
 COMMENT ON TABLE public.sga_veiculos IS 'Espelho dos veículos dos associados sincronizados do SGA (Hinova).';
@@ -62,7 +68,8 @@ COMMENT ON TABLE public.sga_veiculos IS 'Espelho dos veículos dos associados si
 CREATE TABLE IF NOT EXISTS public.sga_mensalidades (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   associacao_id UUID NOT NULL REFERENCES public.associations(id) ON DELETE CASCADE,
-  id_externo TEXT NOT NULL,
+  sga_id TEXT NOT NULL,
+  id_externo TEXT,
   associado_id UUID NOT NULL REFERENCES public.sga_associados(id) ON DELETE CASCADE,
   veiculo_id UUID REFERENCES public.sga_veiculos(id) ON DELETE SET NULL,
   competencia DATE NOT NULL,
@@ -71,10 +78,11 @@ CREATE TABLE IF NOT EXISTS public.sga_mensalidades (
   data_pagamento DATE,
   situacao TEXT NOT NULL DEFAULT 'aberta' CHECK (situacao IN ('aberta', 'paga', 'atrasada', 'cancelada')),
   atualizado_em TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT uq_sga_mensalidades_externo UNIQUE (associacao_id, id_externo)
+  CONSTRAINT uq_sga_mensalidades_sga_id UNIQUE (associacao_id, sga_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_sga_mensalidades_assoc ON public.sga_mensalidades(associacao_id);
+CREATE INDEX IF NOT EXISTS idx_sga_mensalidades_sga_id ON public.sga_mensalidades(sga_id);
 CREATE INDEX IF NOT EXISTS idx_sga_mensalidades_associado ON public.sga_mensalidades(associado_id);
 CREATE INDEX IF NOT EXISTS idx_sga_mensalidades_veiculo ON public.sga_mensalidades(veiculo_id);
 CREATE INDEX IF NOT EXISTS idx_sga_mensalidades_competencia ON public.sga_mensalidades(associacao_id, competencia);
