@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import {
   Search, CheckCircle2, XCircle, Clock, FileText, User, Loader2, RefreshCw,
   Sparkles, Send, TrendingUp, LayoutGrid, ListFilter, Filter, ChevronRight
@@ -27,7 +28,9 @@ const QuotesManager = () => {
   const [search, setSearch] = useState('');
   const [selectedConsultant, setSelectedConsultant] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'table' | 'pipeline'>('table');
+  const [searchParams] = useSearchParams();
+  const initialMode = (searchParams.get('mode') === 'pipeline' || searchParams.get('view') === 'pipeline') ? 'pipeline' : 'table';
+  const [viewMode, setViewMode] = useState<'table' | 'pipeline'>(initialMode);
   const [selectedQuote, setSelectedQuote] = useState<any | null>(null);
   const [visibleCount, setVisibleCount] = useState<number>(25);
 

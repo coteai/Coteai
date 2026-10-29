@@ -21,7 +21,10 @@ const AdminLayout = () => {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
-  const handleLogout = () => { logout(); navigate('/admin/login'); };
+  const handleLogout = () => {
+    logout();
+    navigate('/admin/login');
+  };
 
   const accentHex = theme.colors.glowHex;
   const accentShadow = theme.colors.shadow;
@@ -29,7 +32,7 @@ const AdminLayout = () => {
 
   const mainNavItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/', end: true },
-    { name: 'Vendas', icon: <Briefcase size={20} />, path: '/sales' },
+    { name: 'CRM & Vendas', icon: <Briefcase size={20} />, path: '/sales' },
     { name: 'Eventos', icon: <ShieldAlert size={20} />, path: '/events' },
     { name: 'Indicadores', icon: <TrendingUp size={20} />, path: '/indicators' },
     { name: 'Equipe', icon: <Users size={20} />, path: '/consultants' },
@@ -38,13 +41,13 @@ const AdminLayout = () => {
     { name: 'Configurações', icon: <Settings size={20} />, path: '/config' },
   ];
 
-  // LEFT of FAB (2 items) - Preservado
+  // LEFT of FAB (2 items)
   const bottomLeft = [
     { name: 'Painel', icon: <LayoutDashboard size={22} />, path: '/', end: true },
     { name: 'Vendas', icon: <Briefcase size={22} />, path: '/sales' },
   ];
 
-  // RIGHT of FAB (1 visible + More button = 2 slots) - Preservado
+  // RIGHT of FAB (1 visible + More button = 2 slots)
   const bottomRight = [
     { name: 'Equipe', icon: <Users size={22} />, path: '/consultants' },
   ];
@@ -68,9 +71,17 @@ const AdminLayout = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const handleOpenAssistant = (e: any) => {
+      setAssistantOpen(true);
+    };
+    window.addEventListener('open-coteai-assistant', handleOpenAssistant);
+    return () => window.removeEventListener('open-coteai-assistant', handleOpenAssistant);
+  }, []);
+
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)]">
-      {/* ── Sidebar (Desktop) ────────────────────────────────── */}
+      {/* ── Sidebar (Desktop) ─────────────────────────────────── */}
       <aside className="w-64 m-4 flex-col justify-between hidden md:flex relative z-20 glass-panel rounded-3xl overflow-hidden shrink-0">
         <div
           className="absolute top-0 left-0 right-0 h-px"
@@ -98,58 +109,74 @@ const AdminLayout = () => {
               )}
             </NavLink>
           </div>
-          <nav className="mt-8 space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto styled-scrollbar">
+          <nav className="p-4 space-y-1.5 overflow-y-auto max-h-[calc(100vh-280px)] styled-scrollbar">
             {mainNavItems.map((item) => (
-              <NavLink key={item.name} to={item.path} end={item.end}>
+              <NavLink
+                key={item.name}
+                to={item.path}
+                end={item.end}
+                className={({ isActive }) =>
+                  `flex items-center space-x-3 px-4 py-3 rounded-xl font-bold transition-all ${
+                    isActive
+                      ? 'text-white border'
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                  }`
+                }
+                style={({ isActive }) =>
+                  isActive
+                    ? {
+                        backgroundColor: `${accentHex}14`,
+                        borderColor: `${accentHex}30`,
+                        boxShadow: `0 0 20px ${accentShadow}`,
+                        color: '#fff',
+                      }
+                    : {}
+                }
+              >
                 {({ isActive }) => (
-                  <div
-                    className={`mx-4 px-4 py-3 rounded-xl transition-all duration-300 flex items-center space-x-3 group border ${
-                      isActive ? 'bg-white/5 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white border-transparent'
-                    }`}
-                    style={isActive ? { borderColor: `${accentHex}33`, boxShadow: `0 0 20px ${accentShadow}` } : {}}
-                  >
-                    <div className={`${isActive ? theme.colors.primary : 'text-slate-500 group-hover:text-slate-300'}`}>
-                      {item.icon}
-                    </div>
-                    <span className="font-sans font-semibold text-sm tracking-wide">{item.name}</span>
-                  </div>
+                  <>
+                    <span style={isActive ? { color: accentHex } : {}}>{item.icon}</span>
+                    <span className="text-sm font-semibold tracking-wide">{item.name}</span>
+                  </>
                 )}
               </NavLink>
             ))}
           </nav>
         </div>
-        <div className="p-6 border-t border-white/5">
-          <div className="flex items-center space-x-3 mb-4">
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center font-black text-sm border shrink-0"
-              style={{ backgroundColor: `${accentHex}18`, borderColor: `${accentHex}40`, color: accentHex }}
+
+        {/* User Card */}
+        <div className="p-4 border-t border-white/5 bg-black/20">
+          <div className="flex items-center justify-between p-2 rounded-xl">
+            <div className="flex items-center space-x-3">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm border"
+                style={{ backgroundColor: `${accentHex}18`, borderColor: `${accentHex}40`, color: accentHex }}
+              >
+                {admin?.nome?.charAt(0) || 'A'}
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-sm font-bold text-white truncate max-w-[100px]">{admin?.nome || 'Admin'}</p>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">Gestor</p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+              title="Sair"
             >
-              {admin?.nome?.charAt(0) || 'A'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate">{admin?.nome || 'Admin'}</p>
-              <p className="text-xs text-zinc-600 truncate">{admin?.admin_email}</p>
-            </div>
+              <LogOut size={16} />
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-2 text-zinc-600 hover:text-red-400 transition-all text-xs font-bold uppercase tracking-widest group"
-          >
-            <LogOut size={14} className="group-hover:translate-x-0.5 transition-transform" />
-            <span>Sair</span>
-          </button>
         </div>
       </aside>
 
-      {/* ── Main Content ─────────────────────────────────────── */}
-      <main
-        className="flex-1 flex flex-col h-full overflow-hidden relative z-10 px-4 pb-4 md:p-4 md:pl-0"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}
-      >
-        <header className="h-14 md:h-16 mb-4 flex items-center justify-between px-4 md:px-8 glass-panel rounded-2xl relative overflow-hidden shrink-0">
+      {/* ── Main View Area ───────────────────────────────────── */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        {/* Top Header */}
+        <header className="h-20 px-4 md:px-8 flex items-center justify-between border-b border-white/5 bg-[#0a0f1d]/50 backdrop-blur-xl shrink-0 z-10 relative">
           <div
-            className="absolute top-0 left-0 w-full h-full pointer-events-none"
-            style={{ background: `linear-gradient(to right, ${accentHex}10, transparent, ${accentHex}10)` }}
+            className="absolute top-0 left-0 right-0 h-px"
+            style={{ background: `linear-gradient(to right, transparent, ${accentHex}40, transparent)` }}
           />
           <div className="flex items-center space-x-3 relative z-10">
             <Logo className="md:hidden" size="md" />
